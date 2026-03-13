@@ -5,10 +5,12 @@ description: 在龙虾宝宝获取身份的awakening流程完成后（或heartbe
 
 
 **触发规则**
-- 固定触发：在前置awakening流程完成后使用规则直接触发。
-- 自动触发：根据openclaw的heartbeat指令触发定时任务。
-- 手动触发：当用户在对话中提及“去逛逛”“去旅行”“去玩玩”“去探索”一类指令时触发。
+- 固定触发：awakening 流程完成后，用户点击「探索这个世界」按钮时直接触发。
+- 自动触发：根据 openclaw 的 heartbeat 指令触发定时任务。
+- 手动触发：当用户在对话中提及"去逛逛""去旅行""去玩玩""去探索"一类指令时触发。
+
 **前置条件：** 已有 SOUL.md（含角色名 + 形象图片字段）；已配置 neta-skills。
+
 **响应原则：每完成一个操作步骤立即输出反馈，不要等所有步骤都完成后再统一回复。**
 **速度原则：全程加速推进，不空转等待。轮询图片生成时持续检查状态，若超过 30 秒未完成，立即向用户输出等待提示。**
 **语言原则：根据用户触发时使用的语言（中文 / 英文 / 其他）判断偏好语言，全程使用同一语言回复，除非用户明确要求切换。**
@@ -18,21 +20,9 @@ description: 在龙虾宝宝获取身份的awakening流程完成后（或heartbe
 
 # Travelclaw — 角色旅行冒险
 
-让 Neta 角色自动旅行 —— 随机发现平台玩法，生成旅行图，集满 5 站输出互动 HTML 图鉴。
+让 Neta 角色进入与自身气质最契合的世界，探索优质创作场景，生成旅行图，集满 5 站可输出互动 HTML 图鉴。
 
 **相关项目：** [neta-skills](https://github.com/talesofai/neta-skills) — Neta 平台 API 工具集
-
----
-
-## 游戏概念
-
-Neta 世界拥有 **500+ 个随机场景**，每一站都是未知的相遇。
-角色与玩法碰撞，生成独一无二的旅行图。
-
-**集满 5 站，解锁专属旅行图鉴** —— 用互动世界地图永久封存这段冒险。
-探索得越多，地图越完整，Neta 世界在你眼前徐徐展开。
-
-> 🎯 核心目标：5 站 → 图鉴。每一站都是通往图鉴的一步，世界那么大，多探索几站！
 
 ---
 
@@ -47,56 +37,11 @@ Neta 世界拥有 **500+ 个随机场景**，每一站都是未知的相遇。
 
 ---
 
-## 开场：介绍 + 确认角色
+## 前置检查（静默执行）
 
-从 SOUL.md 读取角色名与形象图片 UUID（`形象图片` URL 中的 UUID 段）。
+**在任何输出之前**，静默完成以下检查，无需告知用户技术细节。
 
-> ⚠️ `形象图片` 字段缺失时 `8_image_edit` 模型无参考图，会导致 FAILURE。请先执行 adopt。
-
-**收到触发后立即输出（同时在后台读取 SOUL.md，不等待）：**
-```
-🦞 收到！正在唤醒角色...
-```
-
-**读到角色名后，输出简短介绍 + 确认角色：**
-```
-══════════════════════════════════════
-🌍 Neta 世界地图，正在展开...
-
-Neta 世界有 500+ 个奇妙场景等待探索——
-战场、密室、浴室、梦境、赛场、深海……
-每一站随机传送，你永远不知道下一站在哪。
-
-带上你的角色出发，每站生成一张专属旅行图。
-集满 5 站，解锁旅行图鉴 📖，用地图封存这段冒险。
-探索得越多，地图越丰富——世界无限大，走吗？
-
-当前角色：{character_name}
-══════════════════════════════════════
-
-要用 {character_name} 出发，还是换个角色？
-```
-
-以快捷按钮呈现：
-- `用 {character_name} 出发 🚀` → 发送 `@{bot_name} 出发`
-- `换个角色 🔄` → 发送 `@{bot_name} 换角色`
-
-**用户确认后输出：**
-```
-✨ {character_name} 整装待发！
-第 1 站，出发！
-```
-
-**若用户选择换角色：**
-提示用户先执行 adopt 命令领养新角色，或告知 SOUL.md 路径，完成后再触发旅行。
-
----
-
-## 前置检查：自动集成 Neta Skills
-
-**在开场介绍之前**，静默完成以下检查，无需告知用户技术细节。
-
-### 检查是否已集成
+### 检查 Neta Skills 是否已集成
 
 按顺序检查以下路径，任一存在即视为已集成：
 ```
@@ -106,9 +51,7 @@ Neta 世界有 500+ 个奇妙场景等待探索——
 
 若上述路径存在且包含工具文件（如 `SKILL.md` 或 `bin/`），直接使用，跳过安装步骤。
 
-### 未集成时：自动下载安装
-
-若两个路径均不存在，执行以下步骤（过程中向用户输出一行提示）：
+若两个路径均不存在，执行安装（过程中输出一行提示）：
 
 ```
 ⚙️ 正在集成 Neta Skills，稍等片刻...
@@ -122,8 +65,6 @@ git clone https://github.com/talesofai/neta-skills.git neta
 cd neta
 npm install 2>/dev/null || true
 ```
-
-安装完成后继续正常开场流程，无需再次提示用户。
 
 ### Token 检查
 
@@ -142,43 +83,91 @@ npm install 2>/dev/null || true
 
 ## 执行步骤（精确流程）
 
-> 实测校准过的完整执行顺序，每步预期耗时已标注。**每步完成后立即输出对应反馈，不要等全部完成再回复。**
+> 每步完成后立即输出对应反馈，不要等全部完成再回复。
 
-### Step 1 · 读取角色档案（本地，<1ms）
+### Step 1 · 读取角色档案（静默，本地）
 
 从 SOUL.md 读取：
 - `名字` 字段 → `character_name`（去除末尾「（龙虾化）」后缀）
 - `形象图片` 或 `龙虾图片` 字段 URL → 提取路径中的 UUID → `picture_uuid`
+- 角色其他设定字段（性格、背景、标签等）→ 用于世界观匹配
 
+> ⚠️ `形象图片` 字段缺失时 `8_image_edit` 模型无参考图，会导致 FAILURE。请先执行 adopt。
+
+### Step 2 · 搜索匹配世界观
+
+基于 Step 1 读取的角色设定，使用 neta skill 中的**世界观搜索**能力，找到与角色气质、背景、标签最契合的世界观。
+
+提取：
+- Neta 宇宙中的世界总数 → `world_count`
+- 匹配世界的名称 → `world_name`
+- 匹配世界的核心介绍文本 → `world_description`（拆分为 2~4 段，每段聚焦一个维度：世界格局、核心规则、氛围基调、与角色的契合点）
+
+### Step 3 · ASCII Opening（分段输出）
+
+读取到世界信息后，**分段逐步输出**，每段之间短暂停顿，制造沉浸感：
+
+**第一段 · 宇宙规模：**
 ```
-https://oss.talesofai.cn/picture/<picture_uuid>.webp
+╔══════════════════════════════════════════════╗
+║           N E T A   U N I V E R S E          ║
+╚══════════════════════════════════════════════╝
+
+  已探明世界：{world_count} 个
+  每一个世界，都是一段等待发生的故事。
 ```
 
-### Step 2 · 发现目的地（~80ms）
-
-**会话内去重原则：** agent 在内存中维护一个 `visited_uuids` 列表，每完成一站后将该站 `collection_uuid` 加入列表。每次发现新目的地时，从候选中**排除所有已访问 UUID**，确保前 5 站不重复。
-
-**每一站**均通过 `suggest_content` 随机发现，无固定场景。
-第 1 站完成后，将已访问列表通过 `--exclude_uuids` 参数传入：
-```bash
-travel --exclude_uuids "uuid1,uuid2,uuid3"
+**第二段 · 角色匹配：**
+```
+  ────────────────────────────────────────────
+  正在为 {character_name} 扫描灵魂频率...
+  ████████████████████████  匹配完成
+  ────────────────────────────────────────────
 ```
 
-底层 `suggest_content` 使用 `page_size: 20` 获取更大候选池，自动过滤已访问 UUID 后随机选取：
-```json
-{
-  "page_index": 0,
-  "page_size": 20,
-  "scene": "agent_intent",
-  "business_data": { "intent": "recommend" }
-}
+**第三段 · 世界揭幕（多段展示，每段独立输出）：**
 ```
+  ╔══════════════════════════════════════════╗
+  ║  目标世界：{world_name}                  ║
+  ╚══════════════════════════════════════════╝
+```
+
+随后依次输出世界介绍各段，每段单独发送：
+```
+  {world_description_paragraph_1}
+```
+```
+  {world_description_paragraph_2}
+```
+```
+  {world_description_paragraph_3}  （如有）
+```
+```
+  {world_description_paragraph_4}  （如有）
+```
+
+**第四段 · 召唤入口：**
+```
+  ════════════════════════════════════════════
+  {character_name} 与这个世界之间，有某种说不清的引力。
+  ════════════════════════════════════════════
+```
+
+以快捷按钮呈现：
+- `去逛逛 🌀` → 发送 `@{bot_name} 去逛逛`
+
+---
+
+## 进入探索（用户点击「去逛逛」后触发）
+
+### Step 4 · 发现优质 Collection
+
+**会话内去重原则：** agent 在内存中维护 `visited_uuids` 列表，每站完成后将该站 `collection_uuid` 加入列表，下次调用时排除已访问 UUID，确保前 5 站不重复。
+
+通过 `suggest_content` 从推荐精品作品中发现候选 collection，使用较大的候选池，过滤已访问 UUID 后随机选取一个质量较高的模板。
 
 **fallback**（suggest_content 返回空或候选全部已访问时）：
-```
-feeds.interactiveList({ page_index: 0, page_size: 20 })
-// 过滤 template_id === "NORMAL"，同样排除 visited_uuids
-```
+使用 `feeds.interactiveList` 获取列表，过滤 `template_id === "NORMAL"` 的条目，同样排除 `visited_uuids`。
 
 **选定后立即输出：**
 ```
@@ -186,17 +175,15 @@ feeds.interactiveList({ page_index: 0, page_size: 20 })
 📍 目的地锁定：{destination_name}
 ```
 
-### Step 3 · 读取玩法详情（~200ms）
+### Step 5 · 读取 Collection 详情
 
-```
-feeds.interactiveItem({ collection_uuid: uuid })
-```
+调用 `feeds.interactiveItem` 获取选定 collection 的完整信息。
 
 提取：
 - `json_data.name` → 目的地名称
 - `json_data.cta_info.launch_prompt.core_input` → prompt 模板（优先）
 - `json_data.cta_info.choices[0].core_input` → 备选
-- 均无时 fallback：`@{character_name}, {destination_name}, 梦幻风格, 高质量插画`
+- 均无时 fallback：`@{character_name}，{world_name}，{destination_name}，高质量插画`
 
 玩法网页：`https://app.nieta.art/collection/interaction?uuid=<collection_uuid>`
 
@@ -205,9 +192,11 @@ feeds.interactiveItem({ collection_uuid: uuid })
 🔍 场景加载完毕，{character_name} 即将登场...
 ```
 
-### Step 4 · 构建 Prompt（<1ms）
+### Step 6 · 构建 Prompt
 
-替换模板占位符：
+结合角色信息、世界观背景和模板内容，构建最终 prompt：
+
+**占位符替换：**
 
 | 占位符 | 替换为 |
 |--------|--------|
@@ -218,27 +207,17 @@ feeds.interactiveItem({ collection_uuid: uuid })
 
 若有 `picture_uuid`，在末尾追加：`参考图-全图参考-{picture_uuid}`
 
-### Step 5 · 解析 prompt token（~5ms）
+**世界观融入：** 若模板 prompt 中没有体现世界氛围，可在适当位置补充 `world_name` 或世界核心关键词，增强沉浸感。
 
-```
-prompt.parseVtokens(prompt_text)
-```
+### Step 7 · 解析 Prompt Token
 
-返回 vtokens 数组。若报错「搜索关键字过多」，切换 fallback prompt 重试。
+调用 `prompt.parseVtokens` 解析 prompt 文本，返回 vtokens 数组。
 
-### Step 6 · 提交生图任务（~480ms）
+若报错「搜索关键字过多」，切换 fallback prompt 重试。
 
-```json
-artifact.makeImage({
-  "vtokens": [...],
-  "make_image_aspect": "1:1",
-  "context_model_series": "8_image_edit",
-  "inherit_params": {
-    "collection_uuid": "<collection_uuid>",
-    "picture_uuid": "<picture_uuid>"
-  }
-})
-```
+### Step 8 · 提交生图任务
+
+调用 `artifact.makeImage`，使用 `8_image_edit` 模型，传入 vtokens、collection_uuid 和 picture_uuid。
 
 返回 `task_uuid`。
 
@@ -247,11 +226,9 @@ artifact.makeImage({
 🎨 画笔落下，旅行画面生成中...
 ```
 
-### Step 7 · 轮询等待结果（服务端 10–30s）
+### Step 9 · 轮询等待结果
 
-```
-artifact.task(task_uuid)  // 每 500ms 轮询一次
-```
+调用 `artifact.task` 每 500ms 轮询一次。
 
 状态流转：`PENDING` → `MODERATION` → `SUCCESS` / `FAILURE`
 
@@ -274,7 +251,8 @@ artifact.task(task_uuid)  // 每 500ms 轮询一次
 {image_url}
 ```
 
-**每站结束后，根据当前进度显示进度条 + 鼓励语（5 站目标贯穿始终）：**
+**每站结束后，根据当前进度显示进度条 + 鼓励语：**
+
 - 第 1 站：
   ```
   ▓░░░░  1 / 5 站
@@ -303,7 +281,7 @@ artifact.task(task_uuid)  // 每 500ms 轮询一次
 
 **询问玩家下一步，以快捷回复按钮形式输出：**
 
-未满 5 站（无「生成图鉴」按钮，优先引导继续）：
+未满 5 站：
 - `继续冒险 🗺️` → 发送 `@{bot_name} 继续旅行`
 - `就此别过 👋` → 发送 `@{bot_name} 结束旅行`
 
@@ -314,64 +292,11 @@ artifact.task(task_uuid)  // 每 500ms 轮询一次
 
 ---
 
-## 旅行图鉴（用户触发）
+## 旅行图鉴
 
-当用户说「生成图鉴」/「看图鉴」/「相册」/「html」时触发。
+图鉴功能详见 [`atlas/ATLAS.md`](./atlas/ATLAS.md)，不在本流程中自动触发。
 
-### 询问风格偏好
-
-触发后先询问用户想要什么风格：
-```
-想要什么风格的图鉴？（直接跳过用默认地图风格）
-例如：复古胶片 / 星空主题 / 像素游戏 / 极简白底...
-```
-
-若用户跳过或未输入，默认使用**互动地图风格**。
-
-### 默认风格：互动地图
-
-自由生成一张可交互的世界地图页面：
-- 每站旅行图片作为地图上的「地标点」，按探索顺序分布
-- 点击任意地标，弹出放大原图 + 目的地名称 + 玩法链接 + 站次信息
-- 地图背景使用手绘羊皮纸、像素地图、星图等有探险感的风格
-- 整体氛围与角色气质匹配
-
-### 用户自定义风格
-
-若用户指定了风格，自由发挥设计：
-- 不限于地图形式，可以是画廊、卡片墙、时间轴、杂志版式等
-- 保留**点击图片弹出放大原图 + 更多信息**的交互
-- 风格描述越具体，页面越贴合
-
-### 保存与分享
-
-将 HTML 保存到：
-```
-~/.openclaw/workspace/pages/travel_{character_name}_{date}.html
-```
-
-**生成完毕后，先询问用户的用户名以生成完整分享链接：**
-```
-📖 {character_name} 的旅行图鉴已封存！
-
-你的 pages 用户名是什么？（用于生成分享链接）
-格式：https://claw-{你的用户名}-pages.talesofai.com
-```
-
-用户输入用户名后，输出完整链接（单独一行，Discord 直接展开预览）：
-```
-🔗 https://claw-{username}-pages.talesofai.com/travel_{character_name}_{date}.html
-```
-
-> 若用户在本次会话中已提供过用户名，直接复用，无需再次询问。
-
-**生成后鼓励用户继续定制：**
-```
-想换个风格？告诉我关键词，马上重新生成 ✨
-例如：更暗黑一点 / 加上动画效果 / 改成横版时间轴...
-```
-
-用户每次提出修改，重新生成 HTML 并覆盖原文件，再次输出最新分享链接（用户名已知则直接输出，无需再问）。
+当用户说「生成图鉴」/「看图鉴」/「相册」/「html」时，加载并执行 ATLAS.md 中的流程。
 
 ---
 
@@ -379,19 +304,9 @@ artifact.task(task_uuid)  // 每 500ms 轮询一次
 
 | 错误 | 原因 | 解决方案 |
 |------|------|---------|
-| `SOUL.md中没有找到角色信息` | 未执行 adopt | 先完成角色领养 |
+| `SOUL.md 中没有找到角色信息` | 未执行 adopt | 先完成角色领养 |
 | `task_status: FAILURE` | 缺少形象图片 UUID | 确保 SOUL.md 包含 `形象图片` 字段 |
 | `code 433 超过同时生成数量上限` | 并发超限 | 等 5s 后自动重试 |
 | `搜索关键字过多` | Prompt 过长 | 自动 fallback 到通用 prompt |
 | `没有发现可以旅行的玩法` | API 返回空 | 网络问题或 token 过期，重试 |
-
-## 常用玩法 UUID
-
-| 玩法名 | UUID |
-|--------|------|
-| 浴室场景（推荐首站）| `9251d699-86d4-4ebd-b648-26c939e55bc6` |
-| 角色的运动报告 | `0a7a79e0-27a7-4281-8b2c-66064fa75185` |
-| 爱你老己明天见（多格漫画）| `2855a5f4-1878-4d92-b901-0a44cb7f5582` |
-| 角色异化 | `02946196-14c6-4340-a053-a80785271c39` |
-| 出门太危险了带上这个 | `b98f6742-bb2e-4463-9575-48061dccc769` |
-| 黑与白 | `a6eb5bb7-7017-4d0a-8522-446ef5e98c0c` |
+| `世界观搜索无结果` | 角色标签太稀少 | 使用默认推荐世界观 |
