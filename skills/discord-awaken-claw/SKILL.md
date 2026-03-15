@@ -127,6 +127,14 @@ cd ~/.openclaw/workspace/skills && git clone https://github.com/talesofai/neta-s
 
 **调用 sendMessage 插件后，不得再重复输出其中的 message 内容。** sendMessage 的调用本身就是对用户的完整输出，额外输出文字会导致消息重复。
 
+**严禁向 Discord 频道输出任何内部执行日志。** 以下内容只允许出现在 agent 内部思考，绝对不得通过 sendMessage 或直接文本输出发送到频道：
+
+- 步骤确认类：「✅ 已发送」「任务完成」「已按照阶段 X 流程执行」「等待用户点击按钮」
+- 推理过程类：「LLM 判断结果：…」「确信度 95%+」「这是 Fate 系列最具代表性的角色」
+- 技术状态类：「Subagent main finished」「已发送消息到频道」「第一条：…」「第二条：…」
+
+用户只能看到角色的台词、旁白、按钮，绝不能看到 agent 的自言自语。
+
 ---
 
 ## 阶段详情
