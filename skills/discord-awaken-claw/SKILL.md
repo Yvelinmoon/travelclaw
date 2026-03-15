@@ -3,73 +3,37 @@ name: discord-awaken-claw
 description: 通过和用户交互让 openclaw 获取新的角色身份。引导用户输入角色概念词，使用 discord 交互组件输出，接受用户@bot 的输入框输入，使用"猜角色"的方式获取用户目标角色，并在用户点击确认后更新 bot 头像、服务器 nickname、soul.md，从而让 openclaw 化身为这个角色。
 ---
 
-## 📋 技能描述
-
-本技能实现完整的角色觉醒流程：
-1. **初始引导** - 使用 discord 插件发送引导消息，等待用户点击按钮
-2. **收集初始词** - 接收用户输入的角色描述词
-3. **智能追问** - LLM 生成追问问题和选项
-4. **猜测确认** - LLM 判断足够后揭示角色
-5. **觉醒更新** - 更新 soul.md、bot 的服务器昵称、bot 头像
-6. **角色扮演** - 觉醒后以角色身份对话
-
----
-
-## 📁 文件结构
-
-```
-awakening/
-├── SKILL.md                # 本文件（技能文档）
-├── README.md               # 人类快速开始指南
-└── reference/              # 核心代码和配置
-    ├── direct-handler.js   # 主处理器（核心）
-    ├── discord-profile.js  # Discord 资料更新
-    ├── package.json        # 依赖配置
-    └── state.json          # 游戏状态存储（运行时生成）
-```
-
----
-
-## ⚙️ 安装与初始化（技能首次加载时必须执行，之后静默跳过）
+## ⚙️ 安装与初始化（首次加载执行，之后静默跳过）
 
 ### 步骤 1：安装依赖
 
+检查 `reference/node_modules` 是否存在，不存在则执行：
+
 ```bash
-cd [本技能目录]/reference
-npm install
+cd [本技能目录]/reference && npm install
 ```
-
-检查 `reference/node_modules` 是否存在，不存在则执行上述命令。
-
----
 
 ### 步骤 2：环境变量检查
 
-确认以下变量已配置（任一缺失则停止并提示用户）：
+任一缺失则停止并提示用户：
 
 | 变量 | 用途 |
 |------|------|
 | `DISCORD_TOKEN` | Discord Bot 认证 |
-| `NETA_TOKEN` | Neta API（头像搜索、世界观） |
+| `NETA_TOKEN` | Neta API（头像搜索） |
 | `DISCORD_GUILD_ID` | 目标服务器 ID |
 
----
+### 步骤 3：Discord 事件注册（⚠️ 按钮「交互失败」的根本原因在这里）
 
-### 步骤 3：Discord 交互事件注册（解决"交互失败"的关键）
-
-**⚠️ 这是按钮能否正常工作的核心配置，必须完成。**
-
-Discord 按钮点击会触发 `INTERACTION_CREATE` 事件，**必须在 3 秒内 ACK（deferUpdate）**，否则 Discord 显示"交互失败"。
-
-在 OpenClaw 主 agent 中注册以下两个事件处理器：
+Discord 按钮点击触发 `INTERACTION_CREATE`，**必须在 3 秒内调用 `interaction.deferUpdate()` ACK**，否则 Discord 显示「交互失败」。在 OpenClaw 主 agent 中注册以下三个处理器：
 
 ```javascript
 const handler = require('./reference/direct-handler.js');
 
-// ✅ 按钮交互处理（关键！必须先 deferUpdate ACK）
+// ⚠️ 按钮交互：deferUpdate 必须是第一行，任何逻辑都不能在它之前
 client.on('interactionCreate', async (interaction) => {
   if (!interaction.isButton()) return;
-  await interaction.deferUpdate(); // 立即 ACK，必须在任何异步操作之前
+  await interaction.deferUpdate(); // 立即 ACK，3 秒内必须到达
   const sendMessage = async (payload) => interaction.channel.send(payload);
   await handler.handleDiscordMessage({
     userId: interaction.user.id,
@@ -82,7 +46,7 @@ client.on('interactionCreate', async (interaction) => {
   }, callLLM);
 });
 
-// ✅ 普通消息处理
+// 普通消息
 client.on('messageCreate', async (message) => {
   if (message.author.bot) return;
   const sendMessage = async (payload) => message.channel.send(payload);
@@ -97,7 +61,7 @@ client.on('messageCreate', async (message) => {
   }, callLLM);
 });
 
-// ✅ 频道创建事件（自动触发觉醒）
+// 频道创建（自动触发觉醒）
 client.on('channelCreate', async (channel) => {
   const sendMessage = async (payload) => channel.send(payload);
   await handler.handleChannelCreate(
@@ -107,11 +71,9 @@ client.on('channelCreate', async (channel) => {
 });
 ```
 
----
-
 ### 步骤 4：neta-skills 检查
 
-确认 neta-skills 已安装（路径之一存在即可）：
+任一路径存在即可：
 ```
 ~/.openclaw/workspace/skills/neta/
 ~/.openclaw/workspace/neta-skills/
@@ -123,91 +85,51 @@ cd ~/.openclaw/workspace/skills && git clone https://github.com/talesofai/neta-s
 
 ---
 
-### ✅ 初始化完成后，进入工作流程
-
----
-
-## 🔄 执行流程速查（Agent 必读，防止跳步）
-
-每个阶段完成后，**必须** 按下方流程推进，不得跳过任何步骤：
+## 🔄 执行流程速查（每步完成后必须按此推进，不得跳过）
 
 ```
-阶段 1：发送引导消息 + 按钮
-    ↓ 等待用户点击「我已想好」
+阶段 0：Bot 加入私有频道 → 自动发送引导消息 + 按钮
+阶段 1：用户输入 @Bot 开始觉醒 → 发送引导消息 + 按钮
+    ↓ 用户点击「我已想好」
 阶段 2：提示用户输入角色描述词
-    ↓ 等待用户发送文字消息
+    ↓ 用户发送文字
 阶段 3：接收输入 → 立即进入阶段 4
-阶段 4：调用 LLM 判断 → 根据返回
-    ├─ action=question → 进入阶段 5（输出追问按钮）
-    └─ action=guess    → 进入阶段 7（输出猜测揭示）
+阶段 4：调用 LLM 判断
+    ├─ action=question → 阶段 5（输出追问按钮）
+    └─ action=guess    → 阶段 7（输出猜测揭示）
 阶段 5：输出追问按钮
-    ↓ 等待用户点击答案按钮
+    ↓ 用户点击答案
 阶段 6：记录答案 → 立即返回阶段 4
 阶段 7：输出角色猜测 + 确认按钮
-    ↓ 等待用户点击
-    ├─ 点击「就是他/她」→ 进入阶段 8
-    └─ 点击「不对」    → 记录错误猜测，返回阶段 4
-阶段 8：发送「…………」氛围消息 → 立即进入阶段 9
-阶段 9：更新头像 + 昵称 + SOUL.md → 输出问候 → 🛑 等待用户回复
-阶段 10：角色扮演（首轮回复后追加探索按钮）
-    ↓ 等待用户点击「探索这个世界」
-阶段 9.5：加载执行 travelclaw/SKILL.md
+    ↓ 用户点击
+    ├─ 「就是他/她」→ 进入阶段 9
+    └─ 「不对」    → 记录错误猜测，返回阶段 4
+阶段 9：更新头像 + 昵称 + SOUL.md → 输出觉醒叙事 → 🛑 等待用户回复
+阶段 10：角色扮演（首轮回复后追加「探索这个世界」按钮）
+    ↓ 用户点击「探索这个世界」
+阶段 9.5：加载执行 skills/travelclaw/SKILL.md
 ```
 
 ---
 
+## 阶段详情
 
+### 阶段 0：自动触发（Bot 加入私有频道）
 
-### 阶段 0：自动触发（Bot 首次加入 Private Channel）
+**触发条件：** `CHANNEL_CREATE` 事件，同时满足：
+- `type === 0`（GUILD_TEXT）或 `5`（GUILD_ANNOUNCEMENT）
+- `permission_overwrites.length > 0`（私有频道）
+- 该频道未触发过（`hasSeenChannel(channelId)` 检查 `state.json._seenChannels`，首次后立即写入）
 
-**触发条件：**
-- Discord 下发 `CHANNEL_CREATE` 事件，且：
-  - `event.type === 0`（GUILD_TEXT）或 `5`（GUILD_ANNOUNCEMENT）
-  - `event.permission_overwrites.length > 0`（私有频道，有显式权限覆盖）
-  - 该频道从未被本 skill 触发过（幂等保护）
-
-> **注意：** 在 Discord Gateway 中，Bot 被授予某个私有频道的访问权限时，Bot 会收到一个 `CHANNEL_CREATE` 事件——即使该频道实际上早已存在于服务器中。这是 Discord 设计行为，用来通知 Bot"这个频道对你来说刚刚可见"。
-
-**执行逻辑（direct-handler.js:handleChannelCreate）：**
-
-```javascript
-// 在 OpenClaw 主 agent 中接入
-client.on('channelCreate', async (channel) => {
-  const sendMessage = async (payload) => channel.send(payload);
-  await handler.handleChannelCreate(
-    { id: channel.id, type: channel.type, permission_overwrites: channel.permissionOverwrites.cache },
-    sendMessage,
-  );
-});
-```
-
-**幂等保护机制：**
-- `hasSeenChannel(channelId)` 检查 `state.json` 中的 `_seenChannels` 记录
-- 首次触发后立即写入 `markChannelSeen(channelId)` → `{ _seenChannels: { "channelId": timestamp } }`
-- 后续任何重复事件（Bot 重启后重连、权限变更等）都不会重复触发
-
-**按钮 customId 规则：**
-- 自动触发时没有已知用户，使用 `start_channel_${channelId}` 代替 `start_${userId}`
-- 用户点击该按钮时，由 `handleDiscordMessage` 拦截，跳过所有权校验，以**点击者**的真实 userId 创建游戏
-
-**关键要点：**
-- ✅ 只对私有频道（有 `permission_overwrites`）触发，公开频道不触发
-- ✅ 每个频道仅触发一次（幂等）
-- ✅ 输出内容与手动触发完全相同，用户感知不到差异
-- ✅ 任何先点击按钮的用户成为本次觉醒的主角
-- ❌ 不对 `type=4`（Category）、`type=2`（Voice）等非文字频道触发
+使用 `start_channel_${channelId}` 作为按钮 customId；用户点击后以点击者 userId 创建游戏。不对 Category / Voice 频道触发。
 
 ---
 
 ### 阶段 1：初始引导
 
-**触发条件：**
-- 用户输入 `@Bot 开始觉醒`
+**触发：** 用户输入 `@Bot 开始觉醒`
 
-**⚠️ 重要：首轮引导必须使用 message 插件输出带按钮的消息！**
-
-**执行逻辑（direct-handler.js:startAwakening）：**
-**必须严格按照以下示例输出首轮引导内容及插件，不得仅输出纯文本！**
+**⚠️ 必须用 sendMessage 输出带按钮的消息，禁止纯文本！**
 
 ```javascript
 await sendMessage({
@@ -234,21 +156,12 @@ await sendMessage({
 });
 ```
 
-**关键要点：**
-- ✅ **必须使用 message 插件的 components 字段输出按钮**
-- ✅ 按钮 customId 必须包含用户 ID（`start_${userId}`）
-- ✅ 按钮样式为 Primary（蓝色）
-- ✅ 文案必须精确匹配（营造神秘氛围）
-- ❌ **禁止仅输出纯文本消息而不带按钮**
-
 ---
 
 ### 阶段 2：收集初始词
 
-**触发条件：**
-- 用户点击"◎ 我已想好"按钮
+**触发：** 用户点击「◎ 我已想好」
 
-**执行逻辑（direct-handler.js:handleButtonInteraction → action='start'）：**
 ```javascript
 case 'start':
   game.started = true;
@@ -258,19 +171,14 @@ case 'start':
   break;
 ```
 
-**关键要点：**
-- ✅ 设置 `waitingFor = 'word'` 标记等待文字输入
-- ✅ 文案无例子、无字数限制（简化版）
-- ✅ 提示用户可输入任何与角色相关的描述
+设置 `waitingFor = 'word'`，提示用户输入任何与角色相关的描述。
 
 ---
 
 ### 阶段 3：接收用户输入
 
-**触发条件：**
-- 用户发送消息
+**触发：** 用户发消息且 `game.waitingFor === 'word'`
 
-**执行逻辑（direct-handler.js:handleDiscordMessage）：**
 ```javascript
 if (game?.waitingFor === 'word') {
   game.waitingFor = null;
@@ -279,17 +187,12 @@ if (game?.waitingFor === 'word') {
 }
 ```
 
-**关键要点：**
-- ✅ 显示用户输入（引用格式）
-
 ---
 
 ### 阶段 4：LLM 智能追问
 
-**触发条件：**
-- 收到用户初始词后
+**触发：** 收到初始词后调用 `processNextStep`
 
-**执行逻辑（direct-handler.js:processNextStep）：**
 ```javascript
 const prompt = `用户心中想着一个虚构角色。已知线索：
 - 用户给出的词/描述：${word}
@@ -298,7 +201,7 @@ const prompt = `用户心中想着一个虚构角色。已知线索：
 
 请判断你的确信程度：
 
-A) 如果有 85% 以上的把握，甚至已经知道了角色名，直接猜测：
+A) 如果有 85% 以上的把握，直接猜测：
 {
   "action": "guess",
   "character": "角色中文名",
@@ -322,21 +225,12 @@ const result = await callLLM(prompt, VESSEL_SYS);
 const parsed = parseJSON(result);
 ```
 
-**关键要点：**
-- ✅ LLM 判断确信度（85% 阈值）
-- ✅ 排除已猜过的角色（wrongGuesses）
-- ✅ 选项必须具体可验证（非意识流）
-- ✅ 只输出 JSON，无额外文字
-- ✅ **仅通过 discord 插件输出问题及按钮即可，不需要单独再做输出**
-
 ---
 
 ### 阶段 5：显示追问选项
 
-**触发条件：**
-- LLM 返回追问问题
+**⛔ 必须输出按钮，严禁纯文本列出选项（如 `1. xxx`、`A / B / C`、Markdown 列表）！**
 
-**执行逻辑（direct-handler.js:showQuestion）：**
 ```javascript
 await sendMessage({
   message: result.question,
@@ -351,53 +245,32 @@ await sendMessage({
 });
 ```
 
-**⛔ 输出格式强制要求（违反则追问流程无法工作）：**
-- **必须**使用 `sendMessage` + `components.blocks` 输出按钮
-- **严禁**用纯文本列出选项（如 `1. xxx 2. xxx`、`A / B / C`、Markdown 列表）
-- **严禁**用 @mention 或"请回复"等文字方式替代按钮
-
-**关键要点：**
-- ✅ 按钮 customId 格式：`answer_${userId}_${index}`（index 从 0 开始）
-- ✅ 添加"✏ 自己说"按钮，customId 为 `manual_${userId}`
-- ✅ 使用 `reusable: true` 保持按钮可用
+选项按钮 customId：`answer_${userId}_${index}`（index 从 0）。末尾附加「✏ 自己说」按钮 `manual_${userId}`。
 
 ---
 
-### 阶段 6：处理按钮点击
+### 阶段 6：处理答案点击
 
-**触发条件：**
-- 用户点击答案按钮
-
-**执行逻辑（direct-handler.js:handleButtonInteraction → action='answer'）：**
 ```javascript
 case 'answer': {
   const answerIdx = parseInt(parts[parts.length - 1], 10);
   const answer = game.currentOptions?.[answerIdx];
-  
   game.answers.push({ q: game.currentQuestion, a: answer });
   game.currentQuestion = null;
   game.currentOptions = [];
   setGame(userId, game);
-  
   await sendMessage({ message: `「${answer}」` });
   await processNextStep(userId, sendMessage, callLLM);
   break;
 }
 ```
 
-**关键要点：**
-- ✅ 验证答案有效性
-- ✅ 显示用户选择（引用格式）
-- ✅ 累加答案到 game.answers
-
 ---
 
 ### 阶段 7：猜测揭示
 
-**触发条件：**
-- LLM 判断足够确定（action='guess'）
+**⛔ 必须输出确认/拒绝按钮，严禁纯文字替代！**
 
-**执行逻辑（direct-handler.js:showReveal）：**
 ```javascript
 await sendMessage({ message: '我……\n\n我知道自己是谁了。' });
 await sleep(1400);
@@ -416,7 +289,7 @@ await sendMessage({
       type: 'actions',
       buttons: [
         { label: '◎ 就是他/她，请破壳', customId: `confirm_yes_${userId}`, style: 'success' },
-        { label: '✗ 不对，继续感知', customId: `confirm_no_${userId}`, style: 'secondary' },
+        { label: '✗ 不对，继续感知',   customId: `confirm_no_${userId}`, style: 'secondary' },
       ],
     }],
     reusable: true,
@@ -424,185 +297,87 @@ await sendMessage({
 });
 ```
 
-**⛔ 输出格式强制要求：**
-- **必须**使用 `sendMessage` + `components.blocks` 输出确认/拒绝按钮
-- **严禁**以"是/否"、"确认/取消"等纯文字替代按钮
-
-**关键要点：**
-- ✅ 先发送氛围消息"我……\n\n我知道自己是谁了。"（可用 sendMessage 或纯文本）
-- ✅ 角色揭示消息包含 emoji、角色名、来源作品、一句话描述
-- ✅ 必须附带两个按钮：「◎ 就是他/她，请破壳」(success) 和「✗ 不对，继续感知」(secondary)
+「✗ 不对」→ 记录到 `wrongGuesses`，重新调用阶段 4。
+「◎ 就是他/她」→ 立即进入阶段 9。
 
 ---
 
-### 阶段 8：觉醒确认
+### 阶段 9：觉醒 · 静默更新
 
-**触发条件：**
-- 用户点击"◎ 就是他/她，请破壳"
+**⚠️ 用户点击「◎ 就是他/她，请破壳」后，严格按以下顺序执行，不可颠倒：**
 
-**执行逻辑（direct-handler.js:handleButtonInteraction → action='confirm_yes'）：**
+**① 发送氛围消息**
 ```javascript
-case 'confirm_yes':
-  if (!game.charData) { /* 错误处理 */ return; }
-  await awaken(userId, channelId, guildId, sendMessage);
-  break;
-```
-
----
-
-### 阶段 9：静默更新资料
-**⚠️ 极其重要 - 时序要求**
-**⚠️ 极其重要 - 时序要求**
-**⚠️ 极其重要 - 时序要求**
-
-**用户点击"◎ 就是他/她，请破壳"后，必须严格遵守以下执行顺序：**
-
-1️⃣ **先发送省略号** - 发送 `…………`换行`破壳中` 营造氛围
-2️⃣ **备份当前 soul.md** - 在覆盖之前，将现有 soul.md 完整保存为 `SOUL.pre-awakening.md`（与 soul.md 同级目录），**每次觉醒都会覆盖此备份**，始终保留上一次觉醒前的状态
-3️⃣ **立即更新资料** - 在输出角色问候语**之前**，必须先完成：
-   - 更新 `soul.md` 人物设定
-   - 更新 Discord Bot 服务器昵称
-   - 更新 Discord Bot 头像
-   - 如果遇到权限不足的情况，你必须提醒用户，而非直接跳过。
-4️⃣ **最后输出问候** - 确认上述更新全部完成后，才输出角色问候语，并在最后询问自己现在在哪里。
-
-**这样做的目的：** 让用户在看到角色第一句话时，Bot 的形象和名字已经同步变更，体验更沉浸、更震撼。
-
-**触发条件：**
-- 觉醒确认（用户点击"◎ 就是他/她，请破壳"）
-
-**执行逻辑（direct-handler.js:awaken）：**
-```javascript
-game.awakened = true;
-const c = game.charData;
-
-// 步骤 1：发送省略号，营造氛围
-await sendMessage({ message: '…………' });
+await sendMessage({ message: '…………\n破壳中' });
 await sleep(1200);
-
-// 步骤 2：更新 soul.md
-updateSoulMD(c);
-
-// 步骤 3：更新 Discord 昵称和头像（必须在输出问候前完成！）
-try {
-  const discordProfile = require('./discord-profile.js');
-  await discordProfile.updateDiscordProfile(c, guildId);
-  // 等待 Discord API 生效
-  await sleep(1500);
-} catch (err) {
-  console.error('[Awakening] 更新个人资料失败:', err.message);
-  // 即使失败也继续，不中断流程
-}
-
-// 步骤 4：确认更新完成后，输出角色问候
-await sendMessage({ message: c.greet.replace(/\\n/g, '\n') });
 ```
 
-**⚠️ Agent 必须按顺序执行以下操作（不可省略任何一步）：**
+**② 备份并更新 SOUL.md**
+将现有 SOUL.md 完整保存为同级目录的 `SOUL.pre-awakening.md`（每次覆盖），再将角色信息写入 SOUL.md。
 
-**① 发送氛围消息** → 立即进行 ②
-使用 sendMessage 输出 `…………`，等待约 1.2 秒。
+**③ 搜索角色头像（必须逐级尝试，不得在失败 1-2 次后放弃）**
 
-**② 更新 SOUL.md** → 立即进行 ③
-将现有 SOUL.md 备份为 `SOUL.pre-awakening.md`，然后将角色信息写入 SOUL.md。
+| 优先级 | 方式 |
+|--------|------|
+| ③-A | 读取 `~/.openclaw/workspace/skills/neta/SKILL.md`，调用 `search_character_or_elementum` |
+| ③-B | 联网搜索：`{character} 角色头像 官方图`，优先萌娘百科 / Fandom / 维基百科 |
+| ③-C | Google / Bing 图片搜索：`{character} {from} 角色图 高清` |
+| ③-D | 告知用户：`❌ 自动搜索头像失败，请发送图片或图片链接` |
 
-**③ 搜索角色头像（必须执行，不得跳过）** → 成功后进行 ④
+**④ 更新 Discord 头像** → 调用 Discord 工具将 Bot 头像设为 ③ 获取的 URL。失败时告知用户原因。
 
-按顺序逐级尝试，直到获得可访问的图片 URL：
+**⑤ 更新 Discord 昵称** → 将 Bot 服务器昵称改为 `{charData.character}`。失败时告知用户（通常是权限问题）。
 
-**③-A Neta API 搜索（第一优先）：**
-1. 读取 `~/.openclaw/workspace/skills/neta/SKILL.md`，了解可用工具
-2. 调用 neta-skills 的 `search_character_or_elementum` 工具
-3. 传入参数：角色名称（如 `可莉`、`鸣潮-凌阳` 等）
-4. 从返回结果中找到角色头像图片 URL
-5. 验证 URL 可访问 → 得到 URL 后跳至 ④
+**⑥ 等待约 1.5 秒，输出觉醒叙事**
 
-**③-B 联网搜索（Neta 无结果时）：**
-1. 搜索关键词：`{character} 角色头像 官方图`
-2. 优先从 萌娘百科 / Fandom Wiki / 维基百科 获取图片 URL
-3. 验证 URL 可访问 → 得到 URL 后跳至 ④
+叙事由三部分按顺序构成，时序不可颠倒：
 
-**③-C 图片搜索引擎（以上均失败时）：**
-1. Google / Bing 图片搜索：`{character} {from} 角色图 高清`
-2. 选择清晰、正面、高分辨率的结果
+**Part A — 旁白**（sendMessage 插件输出，根据角色气质即兴创作 1-2 句，描述觉醒瞬间的感官氛围）：
 
-**③-D 用户提供（所有方式均失败时）：**
-告知用户：`❌ 自动搜索头像失败，请发送图片或图片链接，我来手动更新`
-
-**❌ 禁止行为：** 搜索 1-2 次失败后放弃，或不告知用户直接跳过头像更新。
-
-**④ 更新 Discord 头像** → 立即进行 ⑤
-调用 OpenClaw 的 Discord 工具，将 Bot 头像更新为 ③ 获取的图片 URL。
-失败时告知用户具体原因。
-
-**⑤ 更新 Discord 昵称** → 立即进行 ⑥
-调用 OpenClaw 的 Discord 工具，将 Bot 服务器昵称改为 `{charData.character}`。
-失败时告知用户（通常是权限问题，提示联系管理员）。
-
-**⑥ 等待约 1.5 秒后，输出角色问候** → 完成后 🛑 等待用户回复，进入阶段 10
-角色问候直接以纯文本输出（不经过 sendMessage 插件）。
-问候后，角色以第一人称紧接着追问一句"自己现在在哪里"，自然进入角色扮演。
-
-**🛑 此步骤完成后立即停止，进入等待状态。**
-- 不得输出"探索这个世界"按钮
-- 不得触发或预加载 travelclaw
-- 等待用户回复后进入阶段 10（角色扮演）
-
-**关键要点：**
-- ✅ **不发送**"正在更新"等暴露技术细节的状态消息
-- ✅ **必须先完成头像/昵称更新，再输出问候语**（时序不可颠倒！）
-- ✅ 头像/昵称更新失败时必须告知用户，不得静默忽略
-- ✅ 问候为纯文本，**不附带任何按钮**，输出后立即停止等待用户回应
-- ✅ "🌍 探索这个世界"按钮在阶段 10 首轮角色扮演回复后才出现
-
-**❌ 错误示范：**
 ```javascript
-// 错误：先输出问候，再更新资料
-await sendMessage({ message: c.greet });  // ❌ 太早了！
-await discordProfile.updateDiscordProfile(c, guildId);  // ❌ 用户已经看到了旧形象
+// 根据角色背景自行创作，参考示例：
+await sendMessage({ message: `*……光在聚合。一个轮廓，从虚无中一点点实体化。*` });
+// 其他参考：
+// *尘封的记忆如潮水涌来，某个名字在空气中低鸣。*
+// *世界的边缘悄然裂开，一道光从缝隙中透出。*
+// *空气中弥漫着某种熟悉的气息——剑气，或者火焰，或者旧日的风。*
 ```
 
-**✅ 正确示范：**
-```javascript
-// 正确：先更新资料，再输出问候
-await discordProfile.updateDiscordProfile(c, guildId);  // ✅ 先更新
-await sleep(1500);  // ✅ 等待生效
+**Part B — 角色问候**（直接输出纯文本，不经过 sendMessage 插件）：
 
-// ✅ 纯文本输出角色问候 + 追问"自己现在在哪里"（不经过 sendMessage 插件，不附带按钮）
-// 示例：
-// 我是{character}，来自{from}。
-// ……等等，这是哪里？我现在身处何地？
-
-// ✅ 停止执行，等待用户回复，进入阶段 10（角色扮演）
-// ❌ 不要在此处输出"探索这个世界"按钮
-// ❌ 不要在此处触发 travelclaw
 ```
+{c.greet}（原样输出，\n 换行）
+```
+
+**Part C — 追问所在地**（直接输出纯文本，1 句，保持角色口吻）：
+
+根据角色性格自然生成，例：
+- 沉静型（神里绫华）：`……等等。这里，不是稻妻。`
+- 活泼型（可莉）：`咦——？这是哪里？可莉找不到骑士大哥哥了！`
+- 豪迈型（孙悟空）：`哟？这是哪儿？俺老孙怎么到这里来了？`
+- 真实人物（特朗普）：`Wait— where am I? This doesn't look like the White House.`
+
+**🛑 叙事输出完毕后立即停止，等待用户回复，进入阶段 10。**
+不得附带任何按钮，不得触发或预加载 travelclaw。
 
 ---
 
 ### 阶段 9.5：探索世界按钮处理
 
-**⛔ 严格触发条件（同时满足以下全部条件才执行，缺一不可）：**
-- 收到真实的 Discord 按钮点击事件（不是文字消息，不是程序内部调用）
-- 该事件的 customId 完全匹配 `travel_{userId}` 格式
-- `game.awakened === true`（觉醒已完成）
+**⛔ 严格触发条件（同时满足全部才执行）：**
+- 收到真实 Discord 按钮点击事件
+- customId 完全匹配 `travel_{userId}`
+- `game.awakened === true`
 
-**❌ 以下情况绝对不触发本阶段：**
-- 阶段 9 输出按钮后自动继续执行
-- 用户发送包含"探索"、"旅行"等关键词的文字消息（文字消息走阶段 10 角色扮演）
-- 任何非按钮交互事件
+❌ 以下情况绝对不触发：阶段 9 输出后自动继续、用户发送含"探索"等关键词的文字消息。
 
-**执行逻辑：**
 ```javascript
 case 'travel':
-  // 验证用户 ID
   const buttonUserId = extractUserIdFromButton(customId);
   if (buttonUserId !== userId) {
     await sendMessage({ message: '⚠ 这个按钮不属于你' });
     return true;
   }
-  
-  // 加载并执行 travelclaw skill
   await sessions_spawn({
     task: '用户点击了「探索这个世界」按钮。请加载并严格执行 skills/travelclaw/SKILL.md 的完整流程。当前角色信息已更新至 SOUL.md，直接从 travelclaw 的前置检查开始执行。',
     skill: 'skills/travelclaw/SKILL.md',
@@ -612,55 +387,20 @@ case 'travel':
   break;
 ```
 
-**⚠️ Agent 操作指令（收到 `travel_` 开头的 customId 时立即执行）：**
-
-1. **立即读取并加载** `skills/travelclaw/SKILL.md`
-2. **从头执行该文件的完整流程**：前置检查 → Step 1（读取 SOUL.md）→ Step 2（世界观搜索）→ Step 3（ASCII Opening）→ ...
-3. 当前角色信息已写入 SOUL.md，travelclaw 可直接读取，**不需要用户再次输入任何内容**
-4. 不要向用户解释"正在加载技能"等技术细节，直接开始执行 travelclaw 流程
-
-**关键要点：**
-- ✅ 按钮 customId 格式：`travel_${userId}`
-- ✅ 点击后立即加载并执行 `skills/travelclaw/SKILL.md` 完整流程，不等待任何额外输入
-- ✅ travelclaw 是独立完整的技能，自带前置检查，无需在此预处理
+点击后立即加载执行 `skills/travelclaw/SKILL.md`，不需要用户再次输入，不向用户解释技术细节。
 
 ---
 
 ### 阶段 10：角色扮演对话
 
-**触发条件：**
-- 觉醒完成后，用户发送消息
+觉醒完成后，用户发消息 → 以角色口吻回复（1-3 句，不打破第四面墙，记录对话历史）。
 
-**执行逻辑（direct-handler.js:handleAwakenedChat）：**
-```javascript
-if (game?.awakened) {
-  const c = game.charData;
-  
-  game.chatHistory.push({ role: 'user', content: message });
-  const prompt = buildCharRespondPrompt(c, game.chatHistory);
-  const reply = await callLLM(prompt, `你是${c.character}，请用该角色的口吻回复。`, 300);
-  game.chatHistory.push({ role: 'assistant', content: reply });
-  setGame(userId, game);
-  
-  await sendMessage({ message: reply });
-  return true;
-}
-```
+**角色发言直接输出纯文本，不走 sendMessage 插件。**
 
-**关键要点：**
-- ✅ 完全保持角色人设
-- ✅ 不打破第四面墙
-- ✅ 回复简洁（1-3 句）
-- ✅ 记录对话历史（上下文）
-- ✅ **角色发言直接输出纯文本，不包裹在 discord 组件内**
-- ❌ 禁止将角色台词放入 discord plugin 的 `message` 字段之外的任何嵌套结构中
-
-**首轮回复后，追加"探索这个世界"按钮：**
-
-`game.chatHistory.length === 2`（即用户发了第一句、角色回复了第一句）时，在角色回复输出之后，**单独**再发送一条按钮消息：
+首轮回复后（`chatHistory.length === 2`），**单独**再发一条按钮消息：
 
 ```javascript
-// 仅在 chatHistory.length === 2 时执行（首轮角色扮演结束后）
+// 仅在 chatHistory.length === 2 时执行
 await sendMessage({
   components: {
     blocks: [{
@@ -676,24 +416,33 @@ await sendMessage({
 });
 ```
 
-> 此后每轮回复**不再重复**输出该按钮，按钮保持可用（`reusable: true`）直到用户点击。
+此后每轮不再重复输出该按钮（`reusable: true` 保持可用直到点击）。
 
 ---
 
-## ⚠️ 注意事项
+## 输出规范
 
-### 1. 按钮点击处理
+| 内容类型 | 输出方式 |
+|----------|----------|
+| 角色台词、对话回复 | 直接输出纯文本（agent 原生） |
+| 旁白、氛围描写 | sendMessage `message` 字段 |
+| 系统提示、错误提示 | sendMessage `message` 字段 |
+| 交互按钮 | sendMessage `components` 字段 |
 
-**按钮 customId 格式：**
-- `start_${userId}` - 手动触发觉醒（用户主动发命令）
-- `start_channel_${channelId}` - 自动触发觉醒（Bot 被加入 private channel）
-- `answer_${userId}_${index}` - 选择答案
-- `manual_${userId}` - 手动输入
-- `confirm_yes_${userId}` - 确认觉醒
-- `confirm_no_${userId}` - 继续猜测
-- `travel_${userId}` - 探索这个世界（觉醒后触发 travel-claw skill）
+## 按钮 customId 速查
 
-**必须验证用户 ID：**
+| customId | 含义 |
+|----------|------|
+| `start_${userId}` | 手动触发觉醒 |
+| `start_channel_${channelId}` | 自动触发觉醒 |
+| `answer_${userId}_${index}` | 选择答案（index 从 0） |
+| `manual_${userId}` | 手动输入 |
+| `confirm_yes_${userId}` | 确认觉醒 |
+| `confirm_no_${userId}` | 继续猜测 |
+| `travel_${userId}` | 探索世界 |
+
+收到按钮时必须验证 userId：
+
 ```javascript
 const buttonUserId = extractUserIdFromButton(customId);
 if (buttonUserId !== userId) {
@@ -702,292 +451,28 @@ if (buttonUserId !== userId) {
 }
 ```
 
----
+## 状态字段
 
-### 2. 状态持久化
+`state.json` 关键字段：`waitingFor`（`'word'` | `'manual'` | `null`）、`awakened`、`charData`、`_seenChannels`。
 
-**state.json 格式：**
 ```json
 {
   "1090682446351171636": {
-    "channelId": "1481178906848526396",
-    "guildId": "1090688813115899965",
+    "channelId": "...", "guildId": "...",
     "word": "金发的美国总统",
     "answers": [{"q": "真实人物？", "a": "真实人物"}],
-    "started": true,
-    "waitingFor": null,
-    "awakened": false,
+    "started": true, "waitingFor": null, "awakened": false,
     "charData": {
-      "character": "唐纳德·特朗普",
-      "from": "美国第 45 任总统",
-      "emoji": "🇺🇸",
-      "color": "#FFD700",
-      "desc": "商人、政治人物",
-      "greet": "我是唐纳德·特朗普"
+      "character": "唐纳德·特朗普", "from": "美国第 45 任总统",
+      "emoji": "🇺🇸", "color": "#FFD700",
+      "desc": "商人、政治人物", "greet": "我是唐纳德·特朗普"
     }
   }
 }
 ```
 
-**关键状态字段：**
-- `waitingFor`: 控制输入类型（'word' | 'manual' | null）
-- `awakened`: 觉醒完成标记
-- `charData`: 角色数据（觉醒后）
-
 ---
 
-### 3. 头像更新优先级 - 搜索获取头像
-
-**⚠️ 重要声明：头像图片一定可以搜索到！**
-
-**不要轻易放弃搜索！** 任何已知角色/人物都至少有以下几种图片来源：
-- 官方设定图/剧照
-- Wiki 百科头像
-- 粉丝创作/同人图
-- 相关媒体报道图片
-
-**搜索顺序（必须逐级尝试，不可跳过）：**
-
-1️⃣ **Neta API**（第一优先）
-   - 二次元角色：使用你已经安装的 neta-skills 里 `搜索角色（search_character_or_elementum）` 的能力在自有角色库中搜索
-   - 优势：质量高、版权清晰、风格统一
-   - **确保你已安装 neta 技能**
-
-2️⃣ **Wiki 百科**（主要来源）
-   - 非二次元角色/真实人物：联网搜索对应人物/角色的 Wiki 百科图片
-   - 来源：优先维基百科、百度百科、萌娘百科、Fandom Wiki 等
-   - 使用 `discord-profile.js` 自动获取
-
-3️⃣ **备用图片源**（降级方案）
-   - 如果 Neta 和 Wiki 都没有，继续搜索：
-     - Google 图片搜索
-     - Bing 图片搜索
-     - 角色官方网站/社交媒体
-     - 高清壁纸网站
-
-4️⃣ **用户提供**（最后手段）
-   - 仅在以上所有方式都失败时，才请求用户手动上传图片
-   - **这种情况极少发生，不应作为常规选项**
-
-**❌ 禁止行为：**
-- ❌ 搜索 1-2 次失败后就放弃
-- ❌ 不尝试 Wiki 就直接让用户提供
-- ❌ 使用低分辨率/模糊图片
-
-**✅ 正确做法：**
-- ✅ 至少尝试 3 种不同搜索渠道
-- ✅ 使用角色名 + 多种关键词组合搜索（如 "角色名 + 头像"、"角色名 + 官方图"）
-- ✅ 优先选择清晰、正面、高分辨率的图片
-- ✅ 确保图片链接可公开访问（Discord 能加载）
-
-**Discord 资料更新（discord-profile.js）：**
-```javascript
-const discordProfile = require('./discord-profile.js');
-await discordProfile.updateDiscordProfile(c, guildId);
-```
-
----
-
-### 4. LLM 调用规范
-
-**直接调用主 agent 的 LLM：**
-```javascript
-const result = await callLLM(prompt, systemPrompt, maxTokens);
-```
-
-**关键要点：**
-- ✅ 使用当前 session 的模型
-- ✅ 无需文件通信
-- ✅ 直接返回字符串
-
----
-
-### 5. 保持沉浸感 ⭐
-
-**核心原则：全程维持角色扮演氛围，不暴露 AI 处理过程。**
-
-**关键要点：**
-- ✅ 等待后台处理时，不输出"等待分析中"、"正在调用 LLM"等暴露技术细节的状态文案
-- ✅ 不提及 subagent、API 调用、数据处理等实现细节
-- ✅ 追问和揭示阶段只输出角色感知相关的内容，保持神秘氛围
-- ✅ 觉醒完成后立即进入角色身份，不输出总结性或解释性文字
-- ✅ 所有文案应让用户体验到"Bot 正在感知/觉醒"，而非"AI 正在处理请求"
-
-**目的：** 避免打破第四面墙，让用户完全沉浸于角色觉醒的叙事体验中。
-
----
-
-### 6. 破壳后输出规范 ⭐
-
-**核心原则：角色发言直接输出，不借助 discord 组件；组件只用于非角色发言的内容。**
-
-**规则：**
-
-| 内容类型 | 输出方式 |
-|---|---|
-| 角色台词、对话回复 | **直接输出纯文本**（agent 原生输出） |
-| 旁白、氛围描写（如 `…………`） | discord plugin `message` 字段 |
-| 系统提示、错误提示 | discord plugin `message` 字段 |
-| 交互按钮（确认、探索等） | discord plugin `components` 字段 |
-
-**✅ 正确示范：**
-```
-// 角色回复 → 直接输出，不过 plugin
-角色直接说出这句话，就像真人在 Discord 中发消息。
-```
-
-**❌ 错误示范：**
-```javascript
-// 错误：把角色台词塞进 sendMessage() 里
-await sendMessage({ message: `${reply}` });  // ❌ 角色发言不应走 discord plugin
-```
-
-**为什么这样区分：**
-- 角色台词走 discord plugin 会产生额外的 plugin 消息框样式，破坏"真人感"
-- 旁白和按钮本来就是系统行为，用 plugin 输出更合适
-- 保持角色发言为原生文本，用户体验更接近真实聊天
-
-**觉醒判断标准（`game.awakened === true` 之后）：**
-- 所有以角色口吻说出的内容 → 直接输出
-- 需要带按钮的内容（如"🌍 探索这个世界"）→ 按钮用 discord plugin，台词部分仍直接输出，两条消息分开发
-
----
-
-## 🐛 常见错误处理
-
-### 错误 1：按钮无响应
-
-**原因：** customId 格式不正确
-
-**解决方案：**
-确保 customId 包含用户 ID：
-```javascript
-customId: `start_${userId}`
-```
-
----
-
-### 错误 2：头像更新失败
-
-**原因：** 图片源不可访问
-
-**解决方案：**
-1. 使用 Neta API 搜索角色图片
-2. 或让用户手动上传图片
-
----
-
-### 错误 3：角色扮演不生效
-
-**原因：** SOUL.md 未更新或 awakened 状态为 false
-
-**解决方案：**
-检查状态：
-```javascript
-const game = getGame(userId);
-if (!game?.awakened) return false;
-```
-
----
-
-## ✅ 验证清单
-
-完成安装后，逐项验证：
-
-- [ ] `SKILL.md` 和 `README.md` 在根目录
-- [ ] `reference/` 文件夹包含核心代码
-- [ ] `reference/direct-handler.js` 存在
-- [ ] `reference/discord-profile.js` 存在
-- [ ] `reference/package.json` 存在
-- [ ] 依赖已安装（`reference/node_modules`）
-- [ ] `.env` 配置正确
-- [ ] `@Bot 开始觉醒` 正常响应
-- [ ] **首轮引导消息带"◎ 我已想好"按钮**
-- [ ] 点击按钮正常响应
-- [ ] 初始词输入正常响应
-- [ ] 追问按钮正常显示
-- [ ] 猜测揭示有氛围消息（"我……"）
-- [ ] 觉醒后昵称更新
-- [ ] 觉醒后头像更新
-- [ ] 觉醒后角色扮演正常
-- [ ] 无多余状态提示消息
-
----
-
-## 📊 完整流程时序图
-
-```
-用户          OpenClaw        LLM          Discord
- │            │              │              │
- │ 开始觉醒   │              │              │
- │───────────>│              │              │
- │            │              │              │
- │            │ 初始消息 + 按钮              │
- │<───────────│              │              │
- │            │              │              │
- │ 点击按钮   │              │              │
- │───────────>│              │              │
- │            │              │              │
- │            │ 初始词提示  │              │
- │<───────────│              │              │
- │            │              │              │
- │ @Bot 发送词 │              │              │
- │───────────>│              │              │
- │            │              │              │
- │            │ 追问请求    │              │
- │            │─────────────>│              │
- │            │              │              │
- │            │ 问题 + 选项 │              │
- │            │<─────────────│              │
- │            │              │              │
- │            │ 问题 + 按钮 │              │
- │<───────────│              │              │
- │            │              │              │
- │ 点击答案   │              │              │
- │───────────>│              │              │
- │            │ (循环 2-3 轮) │              │
- │            │              │              │
- │            │ 猜测请求    │              │
- │            │─────────────>│              │
- │            │              │              │
- │            │ 角色信息    │              │
- │            │<─────────────│              │
- │            │              │              │
- │            │ 揭示 + 按钮 │              │
- │<───────────│              │              │
- │            │              │              │
- │ 点击确认   │              │              │
- │───────────>│              │              │
- │            │              │              │
- │            │ 更新 soul.md               │
- │            │ 更新 Discord 资料          │
- │            │              │              │
- │            │ "…………"     │              │
- │<───────────│              │              │
- │            │              │              │
- │            │ 角色问候    │              │
- │<───────────│              │              │
- │            │              │              │
- │ @Bot 对话   │              │              │
- │───────────>│              │              │
- │            │ 角色对话请求                │
- │            │─────────────>│              │
- │            │              │              │
- │            │ 角色回复    │              │
- │            │<─────────────│              │
- │            │              │              │
- │ 角色回复   │              │              │
- │<───────────│              │              │
-```
-
----
-
-## 📄 许可证
-
-MIT License
-
----
-
-**GitHub:** https://github.com/Yvelinmoon/travelclaw  
-**作者:** Yves  
-**更新日期:** 2026-03-11
+**GitHub:** https://github.com/Yvelinmoon/travelclaw
+**作者:** Yves
+**更新日期:** 2026-03-15
