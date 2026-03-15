@@ -106,31 +106,15 @@ npm install 2>/dev/null || true
 - 匹配世界的名称 → `world_name`
 - 匹配世界的核心介绍文本 → `world_description`（拆分为 2~4 段，每段聚焦一个维度：世界格局、核心规则、氛围基调、与角色的契合点）
 
-### Step 3 · Discord Opening（分段输出，制造沉浸感）
+### Step 3 · Discord Opening（分 3 段输出，制造沉浸感）
 
-读取到世界信息后，**分 4 段逐步输出，每段之间停顿约 1~1.5 秒**。
+读取到世界信息后，**分 3 段逐步输出**。
 
-⚠️ **以下所有段落必须通过 sendMessage 插件输出，不得直接输出纯文本。**
-全部使用 `>` blockquote 风格，保持视觉统一，手机/电脑均完美渲染。
-
----
-
-**第一段 · 宇宙规模**（停顿 0s，首先输出）
-
-```javascript
-await sendMessage({
-  message: `> -# · · ·  N E T A   U N I V E R S E  · · ·
->
-> **已探明坐标  {world_count}  处**
-> -# 每一处，都是一段等待降临的故事`
-});
-```
-
-> 视觉效果：blockquote 左色条统一风格，`-#` 小字做系统感标题，粗体数字是视觉重心，再用小字收尾。
+⚠️ **所有段落必须通过 sendMessage 插件输出，不得直接输出纯文本。**
 
 ---
 
-**第二段 · 角色锁定**（停顿约 1.2s 后输出）
+**第一段 · 灵魂扫描**（首先输出）
 
 ```javascript
 await sendMessage({
@@ -140,34 +124,37 @@ await sendMessage({
 });
 ```
 
-> 视觉效果：同一 blockquote 风格延续，角色名用粗斜体突出，进度条短小不错位。
-
 ---
 
-**第三段 · 世界揭幕**（停顿约 1.5s 后，先输出世界名，再逐段输出介绍）
+**第二段 · 世界揭幕**（停顿约 1.5s 后输出）
 
-首先单独发送世界名：
+与 awaken 的角色揭示卡片同款结构：`-#` 小字标注 → `##` 大标题 → `⎯` 分隔线 → 斜体描述。
 
 ```javascript
 await sendMessage({
-  message: `> **◈  {world_name}**`
+  message: `-# · · ·  N E T A   U N I V E R S E  · · ·  已探明坐标  {world_count}  处
+
+## ◈  {world_name}
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+
+*{world_description_paragraph_1}*
+
+*{world_description_paragraph_2}*
+
+*{world_description_paragraph_3}*`  // 按实际段落数增减，通常 2~3 段
 });
 ```
 
-然后每段世界介绍**单独**发送（每段之间停顿约 0.8s）：
-
-```javascript
-await sendMessage({ message: `> *{world_description_paragraph_1}*` });
-await sendMessage({ message: `> *{world_description_paragraph_2}*` }); // 如有
-await sendMessage({ message: `> *{world_description_paragraph_3}*` }); // 如有
-await sendMessage({ message: `> *{world_description_paragraph_4}*` }); // 如有
-```
-
-> 视觉效果：世界名用 blockquote + 粗体，与其他段落大小一致但视觉上更重。介绍段落以斜体旁白呈现，风格连贯。
+> 对齐参考（awaken Phase 7 角色卡片）：
+> `-# 虾宝感知到了` → `-# N E T A   U N I V E R S E  · · ·  已探明坐标 N 处`
+> `## 🌸  神里绫华` → `## ◈  {world_name}`
+> `⎯⎯⎯` 分隔线 → 同
+> `*孤高的冰雪……*` → `*世界描述段落*`
 
 ---
 
-**第四段 · 引力召唤**（停顿约 1s 后输出，附带「去逛逛」按钮）
+**第三段 · 引力召唤**（停顿约 1s 后输出，附带「去逛逛」按钮）
 
 ```javascript
 await sendMessage({
@@ -187,19 +174,16 @@ await sendMessage({
 });
 ```
 
-> 视觉效果：blockquote 风格贯穿四段，角色名粗斜体，与第二段形成呼应。按钮紧跟其后，触发探索。
-
 ---
 
 **英文模式（触发词为英文时替换以下文案）：**
 
 | 中文 | 英文 |
 |------|------|
-| `已探明坐标  {world_count}  处` | `{world_count} worlds mapped` |
-| `每一处，都是一段等待降临的故事` | `Every world — a story waiting to begin` |
 | `正在搜寻……` | `Searching...` |
 | `为 {character_name} 锁定灵魂频率` | `Locking soul frequency for {character_name}` |
 | `匹配完成` | `Match found` |
+| `已探明坐标  {world_count}  处` | `{world_count} worlds mapped` |
 | `◈  {world_name}` | `◈  {world_name}` |
 | `{character_name} 与这个世界之间——` | `{character_name} and this world —` |
 | `有某种说不清的引力。` | `bound by something inexplicable.` |
