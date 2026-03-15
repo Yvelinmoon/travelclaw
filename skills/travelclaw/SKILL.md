@@ -92,8 +92,8 @@ npm install 2>/dev/null || true
 ### Step 1 · 读取角色档案（静默，本地）
 
 从 SOUL.md 读取：
-- `名字` 字段 → `character_name`（去除末尾「（龙虾化）」后缀）
-- `形象图片` 或 `龙虾图片` 字段 URL → 提取路径中的 UUID → `picture_uuid`
+- `Name` 字段 → `character_name`（去除末尾「（龙虾化）」后缀）
+- `形象图片` 字段 URL → 提取路径中的 UUID → `picture_uuid`
 - 角色其他设定字段（性格、背景、标签等）→ 用于世界观匹配
 
 > ⚠️ `形象图片` 字段缺失时 `8_image_edit` 模型无参考图，会导致 FAILURE。请先执行 adopt。
