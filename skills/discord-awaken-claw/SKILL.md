@@ -23,27 +23,14 @@ cd [本技能目录]/reference && npm install
 | `NETA_TOKEN` | Neta API（头像搜索） |
 | `DISCORD_GUILD_ID` | 目标服务器 ID |
 
-### 步骤 3：Discord 事件注册（⚠️ 按钮「交互失败」的根本原因在这里）
-
-Discord 按钮点击后必须在 **3 秒内**收到 ACK，否则显示「交互失败」。LLM 推理通常需要 3~5 秒，因此 **ACK 必须完全绕过 LLM，在 Node.js 层直接发出**。
-
-解法：将 ACK 和 LLM 处理彻底拆开——ACK 用原生 `fetch` 立即 fire-and-forget 发出，**不等待**；LLM 处理异步进行，互不阻塞。
+### 步骤 3：Discord 事件注册
 
 ```javascript
 const handler = require('./reference/direct-handler.js');
 
-// 按钮交互：ACK 与 LLM 处理完全分离
+// 按钮交互：ACK 在 handler 内部第一行自动处理，无需额外操作
 client.on('interactionCreate', (interaction) => {
   if (!interaction.isButton()) return;
-
-  // ① 立即发出 ACK（原生 fetch，fire-and-forget，不经过 LLM，不 await）
-  fetch(`https://discord.com/api/v10/interactions/${interaction.id}/${interaction.token}/callback`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ type: 6 }), // 6 = DEFERRED_UPDATE_MESSAGE
-  }).catch(() => {});
-
-  // ② LLM 处理异步进行（不阻塞 ACK）
   const sendMessage = async (payload) => interaction.channel.send(payload);
   handler.handleDiscordMessage({
     userId: interaction.user.id,
@@ -53,7 +40,9 @@ client.on('interactionCreate', (interaction) => {
     customId: interaction.customId,
     interactionType: 'button',
     sendMessage,
-  }, callLLM).catch(console.error);
+    interactionId: interaction.id,       // ACK 所需
+    interactionToken: interaction.token, // ACK 所需
+  }, callLLM);
 });
 
 // 普通消息
@@ -80,9 +69,6 @@ client.on('channelCreate', async (channel) => {
   );
 });
 ```
-
-> **为什么用原生 fetch 而不是 `interaction.deferUpdate()`：**
-> `interaction.deferUpdate()` 是 discord.js 封装方法，在某些 OpenClaw 架构里会被路由进 LLM 工具调用队列，引入推理延迟。原生 `fetch` 直接发 HTTP，在 Node.js 事件循环里毫秒级完成，不受 LLM 影响。
 
 ### 步骤 4：neta-skills 检查
 

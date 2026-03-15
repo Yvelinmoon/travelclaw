@@ -539,8 +539,18 @@ async function handleButtonInteraction(userId, channelId, guildId, customId, sen
 }
 
 async function handleDiscordMessage(context, callLLM) {
-  const { userId, channelId, guildId, content, customId, sendMessage, interactionType = 'message' } = context;
-  
+  const { userId, channelId, guildId, content, customId, sendMessage, interactionType = 'message', interactionId, interactionToken } = context;
+
+  // 立即 ACK 按钮交互，防止 Discord 显示「交互失败」
+  // fire-and-forget，不等待，不阻塞后续 LLM 处理
+  if (interactionType === 'button' && interactionId && interactionToken) {
+    fetch(`https://discord.com/api/v10/interactions/${interactionId}/${interactionToken}/callback`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type: 6 }), // DEFERRED_UPDATE_MESSAGE
+    }).catch(() => {});
+  }
+
   try {
     if (interactionType === 'button' && customId) {
       if (!isButtonInteraction(customId)) return false;
