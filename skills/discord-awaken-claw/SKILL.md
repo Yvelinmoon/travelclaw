@@ -368,7 +368,7 @@ await sleep(1200);
 
 | 优先级 | 方式 |
 |--------|------|
-| ④-A | 读取 `~/.openclaw/workspace/skills/neta/SKILL.md`，调用 `search_character_or_elementum` |
+| ④-A | 读取 `~/.openclaw/workspace/skills/neta/SKILL.md`，调用 `search_character_or_elementum`，按以下顺序逐个搜索，任一命中即停止：① 纯角色名（`{charData.character}`，如「吉尔伽美什」）；② 角色别名 / 称号（如「英雄王」「Gilgamesh」，从 LLM 判断阶段已知信息中提取）；③ 角色名 + 作品关键词（如「吉尔伽美什 Fate」）。❌ 不得只尝试一种关键词组合就放弃。 |
 | ④-B | 联网搜索：`{character} 角色头像 官方图`，优先萌娘百科 / Fandom Wiki |
 | ④-C | Google / Bing 图片搜索：`{character} {from} 角色图 高清` |
 
