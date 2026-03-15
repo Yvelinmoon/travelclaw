@@ -26,6 +26,8 @@ description: 在龙虾宝宝获取身份的awakening流程完成后（或heartbe
 **语言原则：根据用户触发时使用的语言（中文 / 英文 / 其他）判断偏好语言，全程使用同一语言回复，除非用户明确要求切换。**
 **交互原则：所有询问下一步的选项，必须以可点击的快捷回复按钮形式呈现。点击后自动发送 `@{bot_name} {选项内容}`。bot_name 从当前对话上下文中获取。**
 **输出原则：在travel中，作为角色第一人称的对话和图片直接输出，涉及旁白，规则等非角色说话的内容使用discord plugin输出**
+**图片 URL 输出规则：⚠️ 图片 URL 必须单独作为一条消息输出，不得嵌入在组件（components）中，也不得与其他文字混合在同一条消息里。只有单独输出的 URL 才能被 Discord 正确解析和展示。**
+
 **禁止输出内部日志：** 「任务完成」「已按照步骤 X 执行」「✅ 已发送」「等待用户」「LLM 判断结果」等执行过程信息只允许出现在 agent 内部思考，绝对不得发送到 Discord 频道。用户只能看到角色台词、旁白和按钮。
 
 
@@ -107,62 +109,45 @@ npm install 2>/dev/null || true
 - 匹配世界的名称 → `world_name`
 - 匹配世界的核心介绍文本 → `world_description`（拆分为 2~4 段，每段聚焦一个维度：世界格局、核心规则、氛围基调、与角色的契合点）
 
-### Step 3 · Discord Opening（分 3 段输出，制造沉浸感）
+### Step 3 · Discord Opening（一次性合并输出）
 
-读取到世界信息后，**严格按以下模板分 3 段逐步输出**。
+读取到世界信息后，**将全部内容合并为一条消息输出**，附带「去逛逛」按钮。
 
-⚠️ **全部 3 段必须通过 sendMessage 插件输出，不得直接输出纯文本。**
-⛔ **模板结构锁定：每段均使用 embed 卡片，不得改用纯文本 message 字段，不得在三段之外追加任何输出。**
-
-三段统一使用 Discord embed（`embeds` 字段），视觉风格与 awaken 卡片完全一致。颜色统一为 `0x5865F2`（Discord Blurple），可按角色主题色替换为 `charData.color` 的十六进制值。
+⚠️ **必须通过 sendMessage 插件一次性输出，不得分多次发送。**
+⛔ **使用 markdown 格式，结构清晰，视觉统一。**
 
 ---
 
-**第一段 · 灵魂扫描**（首先输出）
+**完整模板（合并为一条消息）**
 
 ```javascript
 await sendMessage({
-  embeds: [{
-    description: `*正在搜寻……*\n*为* ***{character_name}*** *锁定灵魂频率*\n\n▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓  *匹配完成*`,
-    color: 0x5865F2,
-  }],
-});
-```
+  message: `# · · ·  N E T A   U N I V E R S E  · · ·
+
+## 【坐标探明】
+**已探明坐标** \`${world_count} 处\`  |  **世界标签** \`${world_name}\`
 
 ---
 
-**第二段 · 世界揭幕**（停顿约 1.5s 后输出）
+## 【灵魂频率搜寻】
+*正在搜寻……*
+*为* **${character_name}** *锁定灵魂频率*
 
-与 awaken Phase 7 角色卡片结构对齐：`author`（小字标注）→ `title`（大标题）→ `description`（副标题 + 分隔线 + 描述）。
-
-```javascript
-await sendMessage({
-  embeds: [{
-    author: { name: `· · ·  N E T A   U N I V E R S E  · · ·  已探明坐标  {world_count}  处` },
-    title: `◈  {world_name}`,
-    description: `*{world_tagline}*\n\n⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\n\n*{world_description_para1}*\n\n*{world_description_para2}*`,
-    color: 0x5865F2,
-  }],
-});
-```
-
-字段说明：
-- `{world_tagline}`：一句话定位（≤15 字），如「星际废土中的最后灯塔」「被遗忘的神明之城」
-- `{world_description_para1}`：世界格局 / 核心规则（1~2 句）
-- `{world_description_para2}`：与 {character_name} 的契合点（1~2 句）
-
-⛔ **描述严格限定为 2 段，不得使用小标题或列表。**
+\`▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓\`  **匹配完成**
 
 ---
 
-**第三段 · 引力召唤**（停顿约 1s 后输出，附带按钮）
+## 【世界揭幕】
+### ◈  ${world_name}
 
-```javascript
-await sendMessage({
-  embeds: [{
-    description: `*{character_name} 与这个世界之间——*\n*有某种说不清的引力。*`,
-    color: 0x5865F2,
-  }],
+> ${world_tagline}
+>
+> ${world_description}
+
+---
+
+*${character_name} 与这个世界之间——*
+*有某种说不清的引力。*`,
   components: {
     blocks: [{
       type: 'actions',
@@ -177,7 +162,14 @@ await sendMessage({
 });
 ```
 
-🛑 **第三段输出完毕 = Step 3 完成。立即停止，等待用户点击按钮。**
+**字段说明：**
+- `{world_count}`：Neta 宇宙中已探明的世界总数
+- `{world_name}`：匹配到的世界名称（如 Fate）
+- `{world_tagline}`：一句话定位（≤15 字），如「圣杯战争中的骑士王」
+- `{world_description}`：世界核心介绍（1~2 句）
+- `{character_name}`：角色名称
+
+🛑 **消息输出完毕 = Step 3 完成。立即停止，等待用户点击按钮。**
 
 ---
 
@@ -185,11 +177,15 @@ await sendMessage({
 
 | 字段 | 中文 | 英文 |
 |------|------|------|
-| 第一段描述 | `正在搜寻……` | `Searching...` |
-| | `为 {character_name} 锁定灵魂频率` | `Locking soul frequency for {character_name}` |
-| | `匹配完成` | `Match found` |
-| 第二段 author | `已探明坐标  {world_count}  处` | `{world_count} worlds mapped` |
-| 第三段描述 | `{character_name} 与这个世界之间——` | `{character_name} and this world —` |
+| 标题 | `· · ·  N E T A   U N I V E R S E  · · ·` | `· · ·  N E T A   U N I V E R S E  · · ·` |
+| 坐标探明 | `已探明坐标` | `Worlds Mapped` |
+| 世界标签 | `世界标签` | `World Tag` |
+| 灵魂频率搜寻 | `灵魂频率搜寻` | `Soul Frequency Scan` |
+| 正在搜寻…… | `正在搜寻……` | `Searching...` |
+| 锁定灵魂频率 | `锁定灵魂频率` | `Locking soul frequency for` |
+| 匹配完成 | `匹配完成` | `Match Found` |
+| 世界揭幕 | `世界揭幕` | `World Unveiled` |
+| 引力召唤 | `{character_name} 与这个世界之间——` | `{character_name} and this world —` |
 | | `有某种说不清的引力。` | `bound by something inexplicable.` |
 | 按钮 | `去逛逛 🌀` | `Explore 🌀` |
 
@@ -244,7 +240,7 @@ await sendMessage({
 **选定后立即输出：**
 ```
 🌀 传送门开启...
-📍 目的地锁定：{destination_name}
+📍 目的地锁定：{destination_name}...
 ```
 
 ### Step 5 · 读取 Collection 详情
@@ -259,10 +255,7 @@ await sendMessage({
 
 玩法网页：`https://app.nieta.art/collection/interaction?uuid=<collection_uuid>`
 
-**读取完成后立即输出：**
-```
-🔍 场景加载完毕，{character_name} 即将登场...
-```
+**⚠️ 不再输出"场景加载完毕"等引导文案，直接进入 Step 6 场景模拟。**
 
 ### Step 6 · 构建 Prompt
 

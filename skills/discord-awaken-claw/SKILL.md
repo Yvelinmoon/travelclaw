@@ -197,7 +197,6 @@ await sendMessage({
 ```
 
 ❌ 错误：直接输出"我……还没有形状。"等文字 → 按钮不出现，用户无法继续
-```
 
 ---
 
@@ -370,11 +369,11 @@ await sleep(1200);
 
 将现有 SOUL.md 完整保存为同级目录的 `SOUL.pre-awakening.md`（每次覆盖），再将角色信息写入 SOUL.md。
 
-> ✅ ② 完成 → **立即执行 ③：更改服务器bot nickname**
+> ✅ ② 完成 → **立即执行 ③：更改服务器 bot nickname**
 
 ---
 
-**③ 更改bot nickname**
+**③ 更改 bot nickname**
 
 目标：更改 Bot 在本服务器**频道消息旁显示的名字**（即 guild member displayName / guild nickname），不是 global username。
 
@@ -390,23 +389,47 @@ await sleep(1200);
 **非常重要，不得跳过或遗漏！！**
 **非常重要，不得跳过或遗漏！！**
 
-**先判断角色类型，选择对应搜索路径，不得路径用错：**
+**⭐ 标准方法：使用 `reference/discord-profile.js` 的 `searchCharacterImage()` 函数**
 
-**动漫 / 游戏虚构角色**（`from` 字段含《》，或明显是游戏/动漫角色）：
+该函数已封装完整的搜索逻辑，自动处理优先级和 URL 验证。
 
-| 优先级 | 方式 |
-|--------|------|
-| ④-A | 读取你的skills路径里的 `neta/SKILL.md`文件，调用 `search_character_or_elementum`，搜索角色名 |
+**执行方式：**
 
-**真实人物 / 影视 / 非二次元角色**（`from` 字段不含《》，或明显是真实人物、影视角色）：
+```javascript
+const { searchCharacterImage } = require('./reference/discord-profile.js');
 
-| 优先级 | 方式 |
-|--------|------|
-| ④-A | Wikimedia Commons：搜索 `{character} site:commons.wikimedia.org` 或直接访问 `https://commons.wikimedia.org/w/index.php?search={character}`，找到人物图片文件页，提取 `upload.wikimedia.org` 直链 |
-| ④-B | 中文维基百科：搜索 `{character} site:zh.wikipedia.org`，进入人物条目，从 infobox 提取图片 URL |
-| ④-C | 图片搜索：`{character} 官方照片 高清正面`（中文人物）或 `{character} official portrait photo`（外国人物） |
-| ④-D | 百度百科：搜索 `{character} 百度百科`，从人物 infobox 提取图片 URL |
-| ④-E | Google / Bing 图片搜索：`{character} photo` 选清晰正面照 |
+// 设置环境变量
+process.env.DISCORD_TOKEN = '你的 DISCORD_TOKEN';
+
+// 调用搜索函数
+const imageUrl = await searchCharacterImage(charData.character, charData.from);
+
+if (!imageUrl) {
+  throw new Error('未找到角色头像');
+}
+
+console.log('找到头像:', imageUrl);
+```
+
+**内部搜索优先级（自动处理）：**
+
+| 优先级 | 方式 | 适用 |
+|--------|------|------|
+| ① | **Neta API**（`reference/neta-avatar-search.js`） | 动漫/游戏/小说角色 |
+| ② | 维基百科/公开图片 | 真实人物/知名角色 |
+| ③ | 预定义图片库 | 常见角色（特朗普、奥巴马等） |
+| ④ | Web 搜索建议 | 所有方式失败时的 fallback |
+
+**⚠️ 重要配置检查：**
+
+确保 `reference/neta-avatar-search.js` 中的路径正确：
+```javascript
+// ✅ 正确路径（OpenClaw workspace）
+const command = `cd ~/.openclaw/workspace/skills/neta/skills/neta && NETA_TOKEN="..." node bin/cli.js ...`;
+
+// ❌ 错误路径（会导致搜索失败）
+const command = `cd /opt/openclaw/skills/neta && pnpm start ...`;
+```
 
 > ✅ ④ 找到 URL → **立即执行 ⑤：更新服务器头像**
 > ❌ ④ 全部路径失败 → 告知用户 `❌ 自动搜索头像失败，请发送图片或图片链接` → **立即跳至 ⑥：输出觉醒叙事**（跳过 ⑤，不得停在这里）
@@ -415,11 +438,27 @@ await sleep(1200);
 
 **⑤ 更新服务器头像（Guild Member Avatar）**
 
-目标：更改 Bot 在**本服务器**的头像，即 guild member avatar，**不是全局头像（global bot avatar）**。
+**⭐ 标准方法：使用 `reference/discord-profile.js` 的 `updateAvatar()` 函数**
 
-- 调用方式：`guild.members.me.setAvatar(url)`（Discord.js）或等价接口
-- ❌ 禁止调用 `client.user.setAvatar()` 或任何修改全局头像的接口——那需要特殊权限且会影响所有服务器
-- 本操作只修改当前服务器的 Bot 成员头像，无需额外权限
+```javascript
+const { updateAvatar } = require('./reference/discord-profile.js');
+
+// 调用更新函数（会自动下载图片并转换为 base64）
+await updateAvatar(imageUrl);
+
+console.log('头像已更新');
+```
+
+**原理说明：**
+- 该函数会自动下载图片到临时文件
+- 转换为 base64 格式（`data:image/jpeg;base64,...`）
+- 调用 Discord API `/users/@me` 更新全局头像
+- 清理临时文件
+
+**⚠️ 注意事项：**
+- 不要手动用 curl 调用 API（命令行参数过长会失败）
+- 不要调用 `client.user.setAvatar()`（需要特殊权限）
+- 本操作更新的是 Bot 全局头像，会自动同步到所有服务器
 
 > ✅ ⑤ 成功 → **立即执行 ⑥：输出觉醒叙事**
 > ❌ ⑤ 失败 → 告知用户原因 → **立即执行 ⑥：输出觉醒叙事**（不得停在这里）

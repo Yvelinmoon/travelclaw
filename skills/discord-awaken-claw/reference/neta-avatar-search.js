@@ -44,7 +44,7 @@ async function isValidImageUrl(url) {
  */
 function runNetaSearch(keywords) {
   return new Promise((resolve, reject) => {
-    const command = `cd /opt/openclaw/skills/neta && pnpm start search_character_or_elementum --keywords "${keywords}" --parent_type "character" --sort_scheme "exact" 2>/dev/null`;
+    const command = `cd ~/.openclaw/workspace/skills/neta/skills/neta && NETA_TOKEN="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MzI0MTE4MywidXVpZCI6IjY2NzdjOTFhMDRmODRhMDM5Mzk4Y2Q3NDYyZjk0YTlmIiwicGhvbmVfbnVtIjoiMTg3MjE5NTc2OTYiLCJleHBpcmVzX2F0IjoxODA0ODE5MDk3LCJpc19yZWdpc3RlciI6ZmFsc2UsInVzZXJfYWdlbnQiOiJNb3ppbGxhLzUuMCAoTWFjaW50b3NoOyBJbnRlbCBNYWMgT1MgWCAxMF8xNV83KSBBcHBsZVdlYktpdC81MzcuMzYgKEtIVE1MLCBsaWtlIEdlY2tvKSBDaHJvbWUvMTQ1LjAuMC4wIFNhZmFyaS81MzcuMzYiLCJzYWx0IjoiNjQ2ODJkZjg2NjZiNDkzNGFiNzY5OWRlN2M2OGE0ODYifQ.kl-Gzj3VGybFxaTVLAuKaomEFEIgGDfVivyoaJfwB1k" node bin/cli.js search_character_or_elementum --keywords "${keywords}" --parent_type "character" 2>/dev/null`;
     
     exec(command, { encoding: 'utf8', timeout: 10000 }, (error, stdout, stderr) => {
       if (error) {
@@ -79,7 +79,7 @@ function runNetaSearch(keywords) {
  */
 function getCharacterDetails(uuid) {
   return new Promise((resolve, reject) => {
-    const command = `cd /opt/openclaw/skills/neta && pnpm start request_character_or_elementum --uuid "${uuid}"`;
+    const command = `cd ~/.openclaw/workspace/skills/neta/skills/neta && NETA_TOKEN="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MzI0MTE4MywidXVpZCI6IjY2NzdjOTFhMDRmODRhMDM5Mzk4Y2Q3NDYyZjk0YTlmIiwicGhvbmVfbnVtIjoiMTg3MjE5NTc2OTYiLCJleHBpcmVzX2F0IjoxODA0ODE5MDk3LCJpc19yZWdpc3RlciI6ZmFsc2UsInVzZXJfYWdlbnQiOiJNb3ppbGxhLzUuMCAoTWFjaW50b3NoOyBJbnRlbCBNYWMgT1MgWCAxMF8xNV83KSBBcHBsZVdlYktpdC81MzcuMzYgKEtIVE1MLCBsaWtlIEdlY2tvKSBDaHJvbWUvMTQ1LjAuMC4wIFNhZmFyaS81MzcuMzYiLCJzYWx0IjoiNjQ2ODJkZjg2NjZiNDkzNGFiNzY5OWRlN2M2OGE0ODYifQ.kl-Gzj3VGybFxaTVLAuKaomEFEIgGDfVivyoaJfwB1k" node bin/cli.js request_character_or_elementum --uuid "${uuid}"`;
     
     exec(command, { encoding: 'utf8', timeout: 10000 }, (error, stdout, stderr) => {
       if (error) {
