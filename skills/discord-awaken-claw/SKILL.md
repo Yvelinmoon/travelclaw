@@ -125,7 +125,7 @@ cd ~/.openclaw/workspace/skills && git clone https://github.com/talesofai/neta-s
 
 **直接输出文字 ≠ 调用插件。** 直接输出文字时按钮不会出现，用户无法点击继续，流程卡死。
 
-**调用 sendMessage 插件后，不得再重复输出其中的 message 内容。** sendMessage 的调用本身就是对用户的完整输出，额外输出文字会导致消息重复。
+**调用 sendMessage 时，`message` 字段必须按阶段模板完整填写，不得省略或留空。** 调用完毕后，不得在 sendMessage **之外**再额外输出相同的文字（防止重复）。
 
 **严禁向 Discord 频道输出任何内部执行日志。** 以下内容只允许出现在 agent 内部思考，绝对不得通过 sendMessage 或直接文本输出发送到频道：
 
