@@ -1,6 +1,6 @@
 ---
 name: discord-awaken-claw
-description: 通过和用户交互让 openclaw 获取新的角色身份。引导用户输入角色概念词，使用 discord 交互组件输出，接受用户@bot 的输入框输入，使用"猜角色"的方式获取用户目标角色，并在用户点击确认后更新 bot 头像、服务器 nickname、soul.md，从而让 openclaw 化身为这个角色。
+description: 通过和用户交互让 openclaw 获取新的角色身份。引导用户输入角色概念词，使用 discord sendMessage插件输出，接受用户@bot 的输入框输入，使用"猜角色"的方式获取用户目标角色，并在用户点击确认后更新 bot 头像、服务器 nickname、soul.md，从而让 openclaw 化身为这个角色。
 ---
 
 ## ⚙️ 安装与初始化（首次加载执行，之后静默跳过）
@@ -110,7 +110,7 @@ cd ~/.openclaw/workspace/skills && git clone https://github.com/talesofai/neta-s
 
 ---
 
-## ⛔ 全局强制规则：按钮输出
+## ⚠️ 全局强制规则：sendMessage 插件输出
 
 **以下阶段含有按钮，必须调用 sendMessage 插件输出，任何情况下不得直接输出纯文本作为替代：**
 
