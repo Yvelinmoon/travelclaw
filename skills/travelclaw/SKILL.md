@@ -345,7 +345,7 @@ npm install 2>/dev/null || true
 提取：
 - Neta 宇宙中的世界总数 → `world_count`
 - 匹配世界的名称 → `world_name`
-- 匹配世界的核心介绍文本 → `world_description`（拆分为 2~4 段，每段聚焦一个维度：世界格局、核心规则、氛围基调、与角色的契合点）
+- 匹配世界的核心介绍文本 → `world_description`（拆分为 2~4 段，每段聚焦一个维度：世界格局、核心规则、氛围基调、与角色的具体契合点）
 
 ### Step 3 · Discord Opening（一次性合并输出）
 
@@ -434,6 +434,8 @@ await sendMessage({
 ## 进入探索（用户点击「去逛逛」后触发）
 
 ### Step 4 · 发现优质 Collection
+
+**选择collection的根本原则：符合角色travel的具体场景，角色到了一个新地方，和那个地方发生了真实接触，留下了某种痕迹或带回了某种东西。体现世界存在的证明" × "角色参与其中的痕迹**
 
 **会话内去重原则：** agent 在内存中维护 `visited_ids` 列表，每站完成后将该站的 collection id 加入列表，下次查找时排除已访问 id，确保前 5 站不重复。
 
