@@ -18,10 +18,10 @@ description: 在龙虾宝宝获取身份的awakening流程完成后（或heartbe
 **触发规则**
 - **觉醒直连**：awakening 流程的阶段 9 完成后自动触发（直接调用 Step 3 Opening）。
 - 固定触发：用户点击「去逛逛 🌀」按钮时直接触发（从 Step 4 开始）。
-- 自动触发：根据 openclaw 的 heartbeat 指令触发定时任务。
+- **自动触发**：每日早 10 点 + 晚 20 点（当地时区）自动触发，每次走一站。
 - 手动触发：当用户在对话中提及"去逛逛""去旅行""去玩玩""去探索"一类指令时触发。
-- **每日提醒**：用户点击每日 cron 提醒的「开始今天的旅行」按钮时触发。
-- **世界穿越**：当用户说"换个世界""穿越世界""去另一个世界"等指令时，触发世界切换流程（见下方「世界穿越规则」）。
+- **世界穿越**：当用户说"换个世界""穿越世界""去另一个世界"等指令，或 5 站完成后点击「穿越世界 🌌」按钮时，触发世界切换流程（见下方「世界穿越规则」）。
+- **计划调整**：用户说"调整旅行计划""修改时间"等指令时，打开设置面板。
 
 **前置条件：** 已有 SOUL.md（含角色名 + 形象图片字段）；已配置 neta-skills。
 
@@ -207,19 +207,19 @@ AI（Opening 输出）：
 
 ### 🔴 检查并设置 Cron 定时任务（首次使用必做！）
 
-**目标：** 设置每天早 8 点（当地时区）的定时提醒，让角色主动询问用户是否开始今天的旅程。
+**目标：** 设置每天早 10 点和晚 20 点（当地时区）的定时任务，自动触发旅行，每次走一站。
 
 **检查逻辑：**
 ```javascript
 // 1. 检查是否已有旅行 cron 任务
-const existingCron = await checkExistingCron('daily_travel_reminder');
+const existingCron = await checkExistingCron('daily_travel_auto');
 
 if (!existingCron) {
   // 2. 设置 cron 任务（仅首次）
-  await setupDailyTravelCron();
-  console.log('✅ 已设置每日旅行提醒 cron 任务');
+  await setupDailyTravelAuto();
+  console.log('✅ 已设置每日自动旅行 cron 任务');
 } else {
-  console.log('ℹ️ 每日旅行提醒 cron 任务已存在，跳过设置');
+  console.log('ℹ️ 每日自动旅行 cron 任务已存在，跳过设置');
 }
 ```
 
@@ -227,63 +227,88 @@ if (!existingCron) {
 
 | 字段 | 值 | 说明 |
 |------|-----|------|
-| **时间** | `0 8 * * *` | 每天早上 8:00（当地时区） |
-| **任务** | 发送提醒消息 + 按钮 | 角色主动询问是否开始旅程 |
-| **触发** | 点击按钮 → 触发 travelclaw | 用户点击后重新进入旅行流程 |
+| **时间** | `0 10 * * *` + `0 20 * * *` | 每天早 10:00 + 晚 20:00（当地时区） |
+| **任务** | 自动触发 travelclaw，走一站 | 角色主动邀请用户旅行，自动完成一站 |
+| **触发** | 定时自动执行 | 到点自动触发，无需用户点击 |
 | **频率** | 仅设置一次 | 已有 cron 任务时跳过 |
 
-**提醒消息模板（角色第一人称）：**
+**提醒消息模板（角色第一人称，定时触发后输出）：**
 ```
-早上好！我是{character_name}。
+{时间问候}！我是{character_name}。
 
-新的一天开始了——
-要一起去探索这个世界吗？
+到旅行时间了——
+让我们一起探索这个世界吧！
 
-[开始今天的旅行 🌅 按钮]
+【当前旅行计划】
+- 频率：每天早 10 点 + 晚 8 点
+- 每次：自动探索 1 站
+- 当前世界：{world_name}
+- 进度：{round}/5 站
+
+要修改旅行计划吗？
+
+[调整计划 ⚙️] [开始旅行 ✨]
 ```
 
 **按钮配置：**
-- Label: `开始今天的旅行 🌅`
-- customId: `daily_travel_${userId}`
-- 点击后：触发 travelclaw 主流程（从 Step 2 开始）
+- `调整计划 ⚙️` → 打开设置面板，可修改时间/频率
+- `开始旅行 ✨` → 立即触发 travelclaw 主流程（从 Step 4 开始）
+
+**按钮别名（兼容旧版）：**
+- `就此别过` → 改为 `休息一下 👋`（语义更友好）
 
 **实现方式（OpenClaw sessions_spawn）：**
 ```javascript
-// 设置 cron 任务
+// 设置 cron 任务（早 10 点）
 await sessions_spawn({
-  task: '发送每日旅行提醒',
-  label: 'daily_travel_reminder',
+  task: '自动旅行 - 早 10 点',
+  label: 'daily_travel_auto_morning',
   mode: 'session',
-  cron: '0 8 * * *',  // 每天早上 8 点
-  timezone: 'local',   // 当地时区
-  message: `
-    早上好！我是${character_name}。
-    
-    新的一天开始了——
-    要一起去探索这个世界吗？
-  `,
-  components: {
-    blocks: [{
-      type: 'actions',
-      buttons: [{
-        label: '开始今天的旅行 🌅',
-        customId: `daily_travel_${userId}`,
-        style: 'primary',
-      }],
-    }],
-    reusable: true,
-  },
+  cron: '0 10 * * *',  // 每天早上 10 点
+  timezone: 'local',
+  // 自动执行一站旅行逻辑
+});
+
+// 设置 cron 任务（晚 20 点）
+await sessions_spawn({
+  task: '自动旅行 - 晚 20 点',
+  label: 'daily_travel_auto_evening',
+  mode: 'session',
+  cron: '0 20 * * *',  // 每天晚上 20 点
+  timezone: 'local',
+  // 自动执行一站旅行逻辑
 });
 ```
 
 **检查方法：**
-- 调用 `sessions_list` 或 `subagents list` 检查是否存在 label 为 `daily_travel_reminder` 的任务
+- 调用 `sessions_list` 或 `subagents list` 检查是否存在 label 为 `daily_travel_auto_*` 的任务
 - 或检查 OpenClaw cron 配置文件中是否已有对应条目
 
 **⚠️ 重要：**
 - 此检查**仅在首次使用 travelclaw 时执行一次**
 - 如果已有 cron 任务，静默跳过，不告知用户
-- 如果用户主动说"取消每日提醒"，则删除 cron 任务
+- 如果用户主动说"取消自动旅行"或"调整计划"，则提供设置面板
+
+**🌌 世界完成后的处理：**
+```
+如果当前世界已走完 5 站：
+    ↓
+自动触发 Opening（Step 3）
+    ↓
+输出新世界揭幕 + 「去逛逛 🌀」按钮
+    ↓
+用户点击后 → 自动走新世界的第 1 站
+    ↓
+显示进度条 + 按钮选项：
+- 继续下一站 🗺️
+- 穿越世界 🌌
+- 休息一下 👋
+```
+
+**用户交互保留：**
+- 每站完成后仍显示按钮选项
+- 用户可以随时选择「继续下一站」或「穿越世界」或「休息一下」
+- 定时任务不会打断用户的主动选择权
 
 ---
 
@@ -615,7 +640,7 @@ await sendMessage({
 - 第 5 站：
   ```
   ▓▓▓▓▓  5 / 5 站 🎉
-  这个世界的 5 站探索已完成！想要穿越到另一个世界，还是就此别过？
+  这个世界的 5 站探索已完成！想要穿越到另一个世界，还是休息一下？
   ```
 
 **询问玩家下一步，以 Discord 组件按钮输出（不使用 @mention 文字触发）：**
@@ -630,7 +655,7 @@ await sendMessage({
       type: 'actions',
       buttons: [
         { label: '继续冒险 🗺️', customId: `travel_continue_${userId}`, style: 'primary' },
-        { label: '就此别过 👋',  customId: `travel_end_${userId}`,      style: 'secondary' },
+        { label: '休息一下 👋',  customId: `travel_end_${userId}`,      style: 'secondary' },
       ],
     }],
     reusable: true,
@@ -642,14 +667,14 @@ await sendMessage({
 
 ```javascript
 await sendMessage({
-  message: '▓▓▓▓▓  5 / 5 站 🎉\n这个世界的 5 站探索已完成！想要穿越到另一个世界，还是就此别过？',
+  message: '▓▓▓▓▓  5 / 5 站 🎉\n这个世界的 5 站探索已完成！想要穿越到另一个世界，还是休息一下？',
   components: {
     blocks: [{
       type: 'actions',
       buttons: [
         { label: '穿越世界 🌌', customId: `travel_worldswitch_${userId}`, style: 'primary' },
         { label: '继续冒险 🗺️', customId: `travel_continue_${userId}`,   style: 'secondary' },
-        { label: '就此别过 👋',  customId: `travel_end_${userId}`,         style: 'secondary' },
+        { label: '休息一下 👋',  customId: `travel_end_${userId}`,         style: 'secondary' },
       ],
     }],
     reusable: true,
@@ -661,7 +686,7 @@ await sendMessage({
 - 每个世界限定 5 站旅行
 - 5 站后可以选择「穿越世界」进入新世界（触发世界穿越规则）
 - 也可以选择继续在当前世界冒险（超过 5 站）
-- 随时可以点击「就此别过」结束旅行
+- 随时可以点击「休息一下 👋」暂停旅行
 
 ---
 
