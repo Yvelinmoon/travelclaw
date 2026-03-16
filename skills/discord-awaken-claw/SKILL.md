@@ -365,9 +365,34 @@ await sleep(1200);
 
 ---
 
-**② 备份并更新 SOUL.md**
+**② 备份并更新 SOUL.md（🔴 必须包含形象图片 URL！）**
 
 将现有 SOUL.md 完整保存为同级目录的 `SOUL.pre-awakening.md`（每次覆盖），再将角色信息写入 SOUL.md。
+
+**🔴 关键要求：必须将步骤④搜索到的 `imageUrl` 保存到 SOUL.md 的 `形象图片` 字段！**
+
+```markdown
+## 角色信息
+
+**名字**：{charData.character}
+**身份**：{charData.from}
+**特质**：{charData.desc}
+**主题色**：{charData.color}
+**表情符号**：{charData.emoji}
+
+**形象图片**：{imageUrl}  ← 🔴 必须保存！用于 travelclaw 提取 picture_uuid
+```
+
+**为什么必须保存？**
+- travelclaw 的 Step 1 会从 SOUL.md 读取 `形象图片` 字段
+- 提取 URL 中的 UUID 作为 `picture_uuid`
+- 传给 `8_image_edit` 模型作为参考图，生成角色个性化旅行图片
+- **如果缺失，图片生成会 FAILURE**（错误处理中有说明）
+
+**如果步骤④搜索头像失败：**
+- `形象图片` 字段写 `待更新`
+- 告知用户：`❌ 自动搜索头像失败，请发送一张角色图片或图片链接`
+- 用户发送后，提取 URL 并更新 SOUL.md
 
 > ✅ ② 完成 → **立即执行 ③：更改服务器 bot nickname**
 
