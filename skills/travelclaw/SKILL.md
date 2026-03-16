@@ -1,13 +1,8 @@
 ---
 name: travelclaw
-description: 在龙虾宝宝获取身份的awakening流程完成后（或heartbeat，用户提示）触发，让获取身份的虾宝角色基于 neta skills 探索neta世界，先搜索和角色契合的世界观获取世界信息，并基于世界观上下文，采用neta skills提供的优质创作模板制作角色的个性化内容，实现模拟角色在世界中旅行，发生各种事件的效果。
+description: 在龙虾宝宝获取身份的awakening流程完成后（或定时任务，用户提示）触发，让获取身份的虾宝角色基于 neta skills 探索neta世界，先搜索和角色契合的世界观获取世界信息，并基于世界观上下文，采用neta skills提供的优质创作模板制作角色的个性化内容，实现模拟角色在世界中旅行，发生各种事件的效果。
 ---
 
-
-
-# Travelclaw — 角色旅行冒险
-
-让 Neta 角色进入与自身气质最契合的世界，探索优质创作场景，生成旅行图，模拟角色在世界中旅行，发生各种事件的效果。
 
 **相关项目：** [neta-skills](https://github.com/talesofai/neta-skills) — Neta 平台 API 工具集
 
@@ -327,12 +322,6 @@ const currentChannelId = message?.channelId || interaction?.channelId;
 // cron 任务使用当前 channelId（不是首次触发的）
 channel: currentChannelId
 ```
-
-**为什么使用当前频道而不是首次频道？**
-- ✅ 用户可能在不同频道使用 travelclaw（如从 #旅行 切换到 #闲聊）
-- ✅ 每次触发都应该发送到**用户当前所在的频道**
-- ✅ 避免消息发送到用户已经离开的旧频道
-- ✅ 确保用户在正确的频道收到提醒和旅行内容
 
 **如果用户在多个频道使用：**
 - 每个频道独立维护旅行状态（state per channel）
