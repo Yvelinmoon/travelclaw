@@ -92,7 +92,7 @@ Step 3 → 输出完整世界观揭幕 + 「去逛逛 🌀」按钮
 用户：换个世界逛逛吧
 
 AI（Opening 输出）：
-# · · ·  N E T A   U N I V E R S E  · · ·
+#   N E T A   U N I V E R S E
 
 ## 【坐标探明】
 **已探明坐标** `42 处`  |  **世界标签** `奇幻魔法`
@@ -415,7 +415,7 @@ await sendMessage({
 
 | 字段 | 中文 | 英文 |
 |------|------|------|
-| 标题 | `· · ·  N E T A   U N I V E R S E  · · ·` | `· · ·  N E T A   U N I V E R S E  · · ·` |
+| 标题 | `  N E T A   U N I V E R S E  ` | `  N E T A   U N I V E R S E  ` |
 | 坐标探明 | `已探明坐标` | `Worlds Mapped` |
 | 世界标签 | `世界标签` | `World Tag` |
 | 灵魂频率搜寻 | `灵魂频率搜寻` | `Soul Frequency Scan` |
