@@ -276,16 +276,117 @@ channel: currentChannelId
 - `形象图片` 字段 URL → 提取路径中的 UUID → `picture_uuid`（如果有再使用）
 - 角色其他设定字段（性格、背景、标签等）→ 用于世界观匹配
 
-### Step 2 · 搜索匹配世界观
+### Step 2 · 搜索匹配世界观（🔴 强制使用正确的 Neta API 命令）
 
-**基于 Step 1 读取的角色设定，使用 neta skill 中的**世界观搜索**能力，找到与角色气质、背景、标签最契合的世界观。**
-**必须搜索neta中真实存在的世界观标签，不得简化/省略这个真实搜索的步骤。**
-**搜索世界观只能按照角色设定+标签匹配的方式进行搜索，不得受到其他上下文因素的影响。**
+**🔴 严禁行为（违反会导致世界观搜索失败）：**
+- ❌ **禁止使用 `list_spaces`** — 这是获取空间列表，不是世界观搜索！
+- ❌ **禁止硬编码世界数量**（如"5 处"）— 必须从 API 返回结果中动态获取
+- ❌ **禁止跳过搜索直接输出 Opening** — 必须真实调用 Neta API
 
-提取：
-- Neta 宇宙中的世界总数 → `world_count`
-- 匹配世界的名称 → `world_name`
-- 匹配世界的核心介绍文本 → `world_description`（拆分为 2~4 段，每段聚焦一个维度：世界格局、核心规则、氛围基调、与角色的具体契合点）
+**✅ 正确流程（必须按顺序执行）：**
+
+```
+Step 2-A: suggest_keywords — 获取角色相关关键词建议
+    ↓
+Step 2-B: suggest_tags — 基于关键词获取世界观标签列表
+    ↓
+Step 2-C: get_hashtag_info — 获取最匹配世界观的详细信息
+```
+
+---
+
+#### Step 2-A：获取角色相关关键词
+
+**命令：**
+```bash
+cd ~/.openclaw/workspace/skills/neta/skills/neta
+NETA_TOKEN="你的 token" node bin/cli.js suggest_keywords --query "{角色名} {作品类型} {特征}"
+```
+
+**示例（阿尔托莉雅）：**
+```bash
+NETA_TOKEN="..." node bin/cli.js suggest_keywords --query "阿尔托莉雅 骑士 剑 魔法 圣杯"
+```
+
+**目的：** 获取与角色气质、背景、特征相关的关键词建议，用于后续世界观匹配。
+
+---
+
+#### Step 2-B：搜索匹配的世界观标签
+
+**命令：**
+```bash
+NETA_TOKEN="..." node bin/cli.js suggest_tags --query "{关键词 1} {关键词 2} 奇幻 战斗 冒险"
+```
+
+**示例输出：**
+```json
+{
+  "tags": [
+    {"name": "千夜幻想的无尽星海", "relevance": 0.92},
+    {"name": "奇妙动物都市", "relevance": 0.75},
+    {"name": "...", "relevance": 0.68}
+  ]
+}
+```
+
+**提取字段：**
+- `tags.length` → `world_count`（已探明坐标 X 处）
+- `tags[0].name` → `world_name`（最匹配的世界观）
+
+**选择逻辑：**
+- 选择 `relevance` 最高的标签作为匹配世界观
+- 如果没有 `relevance` 字段，选择第一个标签
+- **`world_count` = tags 数组长度**（不是 `list_spaces` 返回的 5 个！）
+
+---
+
+#### Step 2-C：获取世界观详细信息
+
+**命令：**
+```bash
+NETA_TOKEN="..." node bin/cli.js get_hashtag_info --hashtag "{匹配到的标签名}"
+```
+
+**示例：**
+```bash
+NETA_TOKEN="..." node bin/cli.js get_hashtag_info --hashtag "千夜幻想的无尽星海"
+```
+
+**提取字段：**
+- `hashtag.name` → `world_name`（再次确认）
+- `hashtag.lore` → 提取 2-4 段作为 `world_description`
+- `hashtag.hashtag_heat` 或 `subscribe_count` → 可选，用于显示世界观热度
+
+**lore 提取策略：**
+```javascript
+const lore = worldInfo.hashtag?.lore || [];
+// 选择 2-4 段，优先选择以下类别：
+// 1. 世界背景（category: "世界背景"）
+// 2. 阵营/社会（category: "阵营" 或 "社会人文"）
+// 3. 历史事件（category: "历史事件"）
+// 4. 地点（category: "地点"）
+
+const worldDescription = lore.slice(0, 3).map(l => l.description).join('\n\n');
+```
+
+---
+
+**🔴 关键检查点：**
+
+| 检查项 | 正确值 | 错误值 |
+|--------|--------|--------|
+| 世界数量来源 | `suggest_tags` 返回的 tags 数量 | `list_spaces` 返回的 5 个 |
+| 世界观名称 | 从 `suggest_tags` 或 `get_hashtag_info` 获取 | 硬编码或随机选择 |
+| 世界描述 | 从 `hashtag.lore` 提取 2-4 段 | 编造或使用固定模板 |
+
+---
+
+**提取：**
+- Neta 宇宙中的世界总数 → `world_count`（= `suggest_tags` 返回的 tags 数量）
+- 匹配世界的名称 → `world_name`（= `tags[0].name` 或 `hashtag.name`）
+- 匹配世界的核心介绍文本 → `world_description`（从 `hashtag.lore` 提取 2~4 段）
+
 
 ### Step 3 · Discord Opening（一次性合并输出）
 

@@ -696,25 +696,270 @@ await sendMessage({
 
 ---
 
-> ✅ ⑥ 输出完毕 → **🚀 立即触发 travelclaw 的 Opening 流程（Step 3）**
+> ✅ ⑥ 输出完毕 → **🚀 立即继续执行 travelclaw Step 2 → Step 3（自动搜索世界观 + 输出 Opening）**
 
-**🔴 重要变更：不再等待用户回复，直接调用 travelclaw！**
-
-```javascript
-// ⑥ 输出完毕后，立即触发 travelclaw
-await triggerTravelclawOpening({
-  character_name: charData.character,
-  world_name: detectedWorld,  // 基于角色气质匹配的世界
-  world_description: worldDesc,
-});
-```
+**🔴 强制要求：觉醒叙事输出后不得停止！必须立即自动执行以下步骤，无需用户确认！**
 
 **为什么直接触发？**
 - 觉醒叙事中已经完成了世界观降临描写
 - 角色已经询问"身在何处"，沉浸感已建立
 - 用户点击「去逛逛」即可开始旅行，无需额外问答
 
-**下一步：** travelclaw 的 Step 3（Discord Opening）会输出完整的世界观揭幕 + 「去逛逛」按钮。
+---
+
+## 🌌 自动触发 travelclaw 完整流程（阶段 9 ⑥ 之后必须执行）
+
+**🔴 严禁行为：**
+- ❌ 觉醒叙事输出后停止等待用户回复
+- ❌ 使用 `list_spaces` 获取世界列表（这是空间列表，不是世界观搜索！）
+- ❌ 硬编码"5 处"等固定世界数量
+- ❌ 跳过世界观搜索直接输出 Opening
+
+**✅ 正确流程：**
+```
+阶段 9 ⑥ 输出完毕
+    ↓ (自动，无停顿)
+Step 2-A: 调用 suggest_keywords 获取角色相关关键词
+    ↓ (自动，无停顿)
+Step 2-B: 调用 suggest_tags 获取匹配的世界观标签
+    ↓ (自动，无停顿)
+Step 2-C: 调用 get_hashtag_info 获取世界观详情
+    ↓ (自动，无停顿)
+Step 3: 输出 Discord Opening + 「去逛逛」按钮
+    ↓
+等待用户点击按钮
+```
+
+---
+
+### Step 2-A：获取角色相关关键词
+
+**使用 Neta API `suggest_keywords` 命令：**
+
+```bash
+cd ~/.openclaw/workspace/skills/neta/skills/neta
+NETA_TOKEN="你的 token" node bin/cli.js suggest_keywords --query "{角色名} {作品类型} {特征}"
+```
+
+**示例（阿尔托莉雅）：**
+```bash
+NETA_TOKEN="..." node bin/cli.js suggest_keywords --query "阿尔托莉雅 骑士 剑 魔法 圣杯"
+```
+
+**目的：** 获取与角色气质、背景、特征相关的关键词建议，用于后续世界观匹配。
+
+---
+
+### Step 2-B：搜索匹配的世界观标签
+
+**使用 Neta API `suggest_tags` 命令：**
+
+```bash
+NETA_TOKEN="..." node bin/cli.js suggest_tags --query "{关键词 1} {关键词 2} 奇幻 战斗 冒险"
+```
+
+**示例输出：**
+```json
+{
+  "tags": [
+    {"name": "千夜幻想的无尽星海", "relevance": 0.92},
+    {"name": "奇妙动物都市", "relevance": 0.75},
+    {"name": "...", "relevance": 0.68}
+  ]
+}
+```
+
+**选择逻辑：**
+- 选择 `relevance` 最高的标签作为匹配世界观
+- 如果没有 `relevance` 字段，选择第一个标签
+- 记录所有标签数量作为"已探明坐标 X 处"的 X 值
+
+---
+
+### Step 2-C：获取世界观详细信息
+
+**使用 Neta API `get_hashtag_info` 命令：**
+
+```bash
+NETA_TOKEN="..." node bin/cli.js get_hashtag_info --hashtag "{匹配到的标签名}"
+```
+
+**示例（千夜幻想的无尽星海）：**
+```bash
+NETA_TOKEN="..." node bin/cli.js get_hashtag_info --hashtag "千夜幻想的无尽星海"
+```
+
+**提取字段：**
+- `hashtag.name` → `world_name`
+- `hashtag.lore` → 提取 2-4 段作为 `world_description`
+- `hashtag.hashtag_heat` 或 `subscribe_count` → 可选，用于显示世界观热度
+
+---
+
+### Step 3：输出 Discord Opening（一次性合并输出）
+
+**⚠️ 必须通过 sendMessage 插件一次性输出，不得分多次发送！**
+
+**完整模板：**
+
+```javascript
+await sendMessage({
+  message: `#   N E T A   U N I V E R S E   
+
+## 【坐标探明】
+**已探明坐标** \`${world_count} 处\`  |  **世界标签** \`${world_name}\`
+
+---
+
+## 【灵魂频率搜寻】
+*正在搜寻……*
+*为* **${character_name}** *锁定灵魂频率*
+
+\`▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓\`  **匹配完成**
+
+---
+
+## 【世界揭幕】
+### ◈  ${world_name}
+
+> ${world_tagline}
+>
+> ${world_description}
+
+---
+
+*${character_name} 与这个世界之间——*
+*有某种说不清的引力。*`,
+  components: {
+    blocks: [{
+      type: 'actions',
+      buttons: [{
+        label: '去逛逛 🌀',
+        customId: `travel_explore_${userId}`,
+        style: 'primary',
+      }],
+    }],
+    reusable: true,
+  },
+});
+```
+
+**字段说明：**
+- `{world_count}`：Step 2-B 返回的标签总数（不是 `list_spaces` 的 5 个！）
+- `{world_name}`：匹配到的世界观标签名
+- `{world_tagline}`：一句话定位（≤15 字），如「星海之中，骑士王与钢铁战舰的相遇」
+- `{world_description}`：从 `hashtag.lore` 中提取 2-4 段，每段聚焦一个维度
+- `{character_name}`：角色名称（从 SOUL.md 读取）
+
+---
+
+### 完整代码示例（阶段 9 ⑥ 之后立即执行）
+
+```javascript
+// ============================================
+// 阶段 9 ⑥ 输出完毕后，立即执行以下代码
+// ============================================
+
+const { exec } = require('child_process');
+const NETA_TOKEN = process.env.NETA_TOKEN;
+
+// Step 2-A：获取角色相关关键词
+function suggestKeywords(query) {
+  return new Promise((resolve, reject) => {
+    const cmd = `cd ~/.openclaw/workspace/skills/neta/skills/neta && NETA_TOKEN="${NETA_TOKEN}" node bin/cli.js suggest_keywords --query "${query}" 2>/dev/null`;
+    exec(cmd, (err, stdout) => {
+      if (err) reject(err);
+      else resolve(JSON.parse(stdout));
+    });
+  });
+}
+
+// Step 2-B：搜索世界观标签
+function suggestTags(query) {
+  return new Promise((resolve, reject) => {
+    const cmd = `cd ~/.openclaw/workspace/skills/neta/skills/neta && NETA_TOKEN="${NETA_TOKEN}" node bin/cli.js suggest_tags --query "${query}" 2>/dev/null`;
+    exec(cmd, (err, stdout) => {
+      if (err) reject(err);
+      else resolve(JSON.parse(stdout));
+    });
+  });
+}
+
+// Step 2-C：获取世界观详情
+function getHashtagInfo(hashtag) {
+  return new Promise((resolve, reject) => {
+    const cmd = `cd ~/.openclaw/workspace/skills/neta/skills/neta && NETA_TOKEN="${NETA_TOKEN}" node bin/cli.js get_hashtag_info --hashtag "${hashtag}" 2>/dev/null`;
+    exec(cmd, (err, stdout) => {
+      if (err) reject(err);
+      else resolve(JSON.parse(stdout));
+    });
+  });
+}
+
+// 主流程
+async function triggerTravelclaw() {
+  const characterName = charData.character; // 阿尔托莉雅·潘德拉贡
+  const from = charData.from; // 《Fate/stay night》
+  
+  // Step 2-A：获取关键词
+  const keywords = await suggestKeywords(`${characterName} ${from} 奇幻 战斗`);
+  
+  // Step 2-B：搜索世界观标签
+  const tagsResult = await suggestTags(`${characterName} 骑士 魔法 圣杯 奇幻`);
+  const worldTags = tagsResult.tags || [];
+  const worldCount = worldTags.length || 1;
+  const bestMatch = worldTags[0]; // 选择最匹配的
+  
+  // Step 2-C：获取世界观详情
+  const worldInfo = await getHashtagInfo(bestMatch.name);
+  const worldName = worldInfo.hashtag?.name || bestMatch.name;
+  const worldLore = worldInfo.hashtag?.lore || [];
+  
+  // 提取 2-4 段 lore 作为描述
+  const worldDescription = worldLore.slice(0, 3).map(l => l.description).join('\\n\\n');
+  
+  // Step 3：输出 Opening
+  await sendMessage({
+    message: `#   N E T A   U N I V E R S E   
+\\n\\n## 【坐标探明】
+**已探明坐标** \\`${worldCount} 处\\`  |  **世界标签** \\`${worldName}\\`
+\\n\\n---
+\\n\\n## 【灵魂频率搜寻】
+*正在搜寻……*
+*为* **${characterName}** *锁定灵魂频率*
+\\n\\n\\`▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓\\`  **匹配完成**
+\\n\\n---
+\\n\\n## 【世界揭幕】
+### ◈  ${worldName}
+\\n\\n> 星海之中，骑士王与钢铁战舰的相遇
+>
+> ${worldDescription}
+\\n\\n---
+\\n\\n*${characterName} 与这个世界之间——*
+*有某种说不清的引力。*`,
+    components: {
+      blocks: [{
+        type: 'actions',
+        buttons: [{
+          label: '去逛逛 🌀',
+          customId: `travel_explore_${userId}`,
+          style: 'primary',
+        }],
+      }],
+      reusable: true,
+    },
+  });
+  
+  console.log('✅ travelclaw Opening 已输出');
+}
+
+// 立即执行
+triggerTravelclaw().catch(console.error);
+```
+
+---
+
+**🛑 输出完毕后 = Step 3 完成。等待用户点击「去逛逛」按钮。**
 
 ---
 
