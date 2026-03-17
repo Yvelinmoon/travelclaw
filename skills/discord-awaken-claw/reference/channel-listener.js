@@ -119,6 +119,12 @@ client.on(Events.ChannelCreate, async (channel) => {
     return;
   }
   
+  // 🔴 检查是否已经处理过这个频道（防止多个监听器实例重复发送）
+  if (handler.hasSeenChannel(channel.id)) {
+    console.log('[跳过] 已处理过的频道:', channel.id);
+    return;
+  }
+  
   console.log('[频道创建]', channel.id, channel.name || 'unnamed');
   
   await sleep(2000);

@@ -653,4 +653,6 @@ module.exports = {
   updateSoulMD,
   resetSoulMD,
   createButtonRow,
+  hasSeenChannel,
+  markChannelSeen,
 };
