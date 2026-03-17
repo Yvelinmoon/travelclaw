@@ -355,7 +355,7 @@ NETA_TOKEN="..." node bin/cli.js get_hashtag_info --hashtag "{匹配到的标签
 
 **示例：**
 ```bash
-NETA_TOKEN="..." node bin/cli.js get_hashtag_info --hashtag "千夜幻想的无尽星海"
+NETA_TOKEN="..." node bin/cli.js get_hashtag_info --hashtag ""
 ```
 
 **提取字段：**
