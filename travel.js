@@ -4,10 +4,11 @@
  *
  * Commands:
  *   node travel.js soul [soul_path]                   → {name, picture_uuid}
- *   node travel.js suggest [exclude_csv]              → {uuid, name}
+ *   node travel.js suggest [exclude_csv]              → {uuid, name, from_ref}
  *   node travel.js gen <char_name> <pic_uuid> <uuid>  → {scene, status, url, collection_uuid}
  *
- * All API calls go directly to https://api.talesofai.cn — no CLI subprocess needed.
+ * suggest priority: scenes.json (local, tag-scored) → online API fallback
+ * API: https://api.talesofai.cn
  * Token resolved from: NETA_TOKEN env → ~/.openclaw/workspace/.env → clawhouse .env
  */
 
@@ -82,11 +83,68 @@ if (cmd === 'soul') {
   out({ name, picture_uuid: picUuid ?? null });
 }
 
-// ── suggest: pick a random destination ──────────────────────────────────────
+// ── suggest: pick a destination (local scenes.json first, API fallback) ─────
 
 else if (cmd === 'suggest') {
   const exclude = (args[0] ?? '').split(',').filter(Boolean);
 
+  // ── Priority 1: local scenes.json with tag-based scoring ──────────────────
+  const scenesPaths = [
+    resolve(homedir(), '.openclaw/workspace/skills/neta-travel/scenes.json'),
+    resolve(homedir(), 'developer/neta-travel/scenes.json'),
+    resolve(homedir(), 'developer/travelclaw/scenes.json'),
+    new URL('./scenes.json', import.meta.url).pathname,
+  ];
+
+  let refPick = null;
+  for (const p of scenesPaths) {
+    try {
+      const scenes = JSON.parse(readFileSync(p, 'utf8'));
+      const available = scenes.filter(s => s.collection_uuid && !exclude.includes(s.collection_uuid));
+      if (!available.length) break;
+
+      // Score against SOUL.md tags if available
+      const soulText = (() => {
+        const soulPaths = [
+          resolve(homedir(), '.openclaw/workspace/SOUL.md'),
+          resolve(homedir(), 'developer/clawhouse/SOUL.md'),
+        ];
+        for (const sp of soulPaths) {
+          try { return readFileSync(sp, 'utf8'); } catch { /* try next */ }
+        }
+        return '';
+      })();
+
+      const soulWords = new Set(
+        soulText.split(/[，、。\s,\n：:*【】（）()]+/).filter(w => w.length >= 2)
+      );
+
+      const scored = available.map(s => {
+        let score = 0;
+        for (const tag of s.content_tags ?? []) {
+          for (const w of soulWords) { if (tag.includes(w) || w.includes(tag)) score += 2; }
+        }
+        for (const path of s.tax_paths ?? []) {
+          for (const w of soulWords) { if (path.includes(w)) score += 1; }
+        }
+        return { s, score };
+      });
+
+      // Pick best-scoring; break ties randomly
+      scored.sort((a, b) => b.score - a.score);
+      const topScore = scored[0].score;
+      const top = scored.filter(x => x.score === topScore);
+      refPick = top[Math.floor(Math.random() * top.length)].s;
+      break;
+    } catch { /* file not found, try next */ }
+  }
+
+  if (refPick) {
+    out({ uuid: refPick.collection_uuid, name: refPick.name, from_ref: true });
+    process.exit(0);
+  }
+
+  // ── Priority 2: online API ─────────────────────────────────────────────────
   const data = await api('POST', '/v1/recsys/content', {
     page_index: 0,
     page_size: 20,
@@ -102,7 +160,6 @@ else if (cmd === 'suggest') {
   let candidates = (data.module_list ?? [])
     .filter(m => m.template_id === 'NORMAL' && !exclude.includes(m.data_id));
 
-  // Fallback: interactive feed list
   if (!candidates.length) {
     const fb = await api('GET', '/v1/recsys/feed/interactive?page_index=0&page_size=20');
     candidates = (fb.module_list ?? [])
@@ -112,7 +169,7 @@ else if (cmd === 'suggest') {
   if (!candidates.length) throw new Error('No destinations found. Check token or network.');
 
   const pick = candidates[Math.floor(Math.random() * candidates.length)];
-  out({ uuid: pick.data_id, name: pick.json_data?.name ?? pick.data_id });
+  out({ uuid: pick.data_id, name: pick.json_data?.name ?? pick.data_id, from_ref: false });
 }
 
 // ── gen: scene prompt + character lookup + image generation + poll ───────────
