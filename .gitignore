@@ -1,0 +1,13 @@
+# 敏感信息
+.env
+*.log
+*.pid
+state.json
+**/state.json
+
+# 依赖
+node_modules/
+
+# 备份文件
+*.bak
+*.backup

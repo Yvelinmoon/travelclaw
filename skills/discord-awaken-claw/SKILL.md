@@ -15,62 +15,43 @@ cd [本技能目录]/reference && npm install
 
 ### 步骤 2：环境变量检查
 
-任一缺失则停止并提示用户：
+**必需变量**（缺失则监听器无法启动）：
 
-| 变量 | 用途 |
-|------|------|
-| `DISCORD_TOKEN` | Discord Bot 认证 |
-| `NETA_TOKEN` | Neta API（头像搜索） |
-| `DISCORD_GUILD_ID` | 目标服务器 ID |
+| 变量 | 用途 | 获取方式 |
+|------|------|----------|
+| `DISCORD_TOKEN` | Discord Bot 认证 | Discord Developer Portal |
+| `DISCORD_GUILD_ID` | 目标服务器 ID | Discord 服务器设置 |
 
-### 步骤 3：Discord 事件注册
+**可选变量**（LLM 调用，缺失则使用 OpenClaw 主 agent）：
 
-```javascript
-const handler = require('./reference/direct-handler.js');
+| 变量 | 用途 | 默认值 |
+|------|------|--------|
+| `LITELLM_BASE_URL` | LLM API 地址 | `https://litellm.talesofai.cn/v1` |
+| `LITELLM_API_KEY` | LLM API 密钥 | - |
+| `LLM_MODEL` | LLM 模型 | `litellm/qwen3.5-plus` |
 
-// 按钮交互：ACK 在 handler 内部第一行自动处理，无需额外操作
-client.on('interactionCreate', (interaction) => {
-  if (!interaction.isButton()) return;
-  const sendMessage = async (payload) => interaction.channel.send(payload);
-  handler.handleDiscordMessage({
-    userId: interaction.user.id,
-    channelId: interaction.channel.id,
-    guildId: interaction.guild?.id,
-    content: null,
-    customId: interaction.customId,
-    interactionType: 'button',
-    sendMessage,
-    interactionId: interaction.id,       // ACK 所需
-    interactionToken: interaction.token, // ACK 所需
-  }, callLLM);
-});
+### 步骤 3：启动监听器（仅频道创建触发）
 
-// 普通消息
-client.on('messageCreate', async (message) => {
-  if (message.author.bot) return;
-  const sendMessage = async (payload) => message.channel.send(payload);
-  await handler.handleDiscordMessage({
-    userId: message.author.id,
-    channelId: message.channel.id,
-    guildId: message.guild?.id,
-    content: message.content,
-    customId: null,
-    interactionType: 'message',
-    sendMessage,
-  }, callLLM);
-});
+**监听器作用**：仅在 Bot 加入新频道时自动发送初始引导消息
 
-// 频道创建（自动触发觉醒）
-client.on('channelCreate', async (channel) => {
-  const sendMessage = async (payload) => channel.send(payload);
-  await handler.handleChannelCreate(
-    { id: channel.id, type: channel.type, permission_overwrites: channel.permissionOverwrites.cache },
-    sendMessage,
-  );
-});
+```bash
+# 后台运行监听器
+cd [本技能目录]
+DISCORD_TOKEN="你的 token" DISCORD_GUILD_ID="你的服务器 ID" node reference/channel-listener.js &
 ```
 
-### 步骤 4：neta-skills 检查
+**验证运行**：
+```bash
+ps aux | grep channel-listener
+# 输出应显示 node 进程
+```
+
+**查看日志**：
+```bash
+tail -f reference/channel-listener.log
+```
+
+### 步骤 4：neta-skills 检查（头像搜索用）
 
 任一路径存在即可：
 ```
@@ -81,6 +62,37 @@ client.on('channelCreate', async (channel) => {
 ```bash
 cd ~/.openclaw/workspace/skills && git clone https://github.com/talesofai/neta-skills.git neta && cd neta && npm install
 ```
+
+---
+
+## 🚀 快速部署（其他 OpenClaw 用户）
+
+### 前提条件
+
+1. **Discord Bot 已创建** 并邀请到服务器
+2. **环境变量已配置**（`~/.env` 或系统环境变量）
+3. **Node.js 已安装**（v18+）
+
+### 一键启动
+
+```bash
+# 1. 安装依赖
+cd ~/.openclaw/workspace/skills/travelclaw/skills/discord-awaken-claw/reference
+npm install
+
+# 2. 启动监听器（后台运行）
+cd ..
+nohup node reference/channel-listener.js > reference/channel-listener.log 2>&1 &
+
+# 3. 验证
+ps aux | grep channel-listener
+```
+
+### 注意事项
+
+- ⚠️ **监听器独立运行**：与 OpenClaw 主进程分离，需单独管理
+- ⚠️ **Bot 权限**：需要 `ViewChannel` 和 `SendMessages` 权限
+- ⚠️ **Intents 配置**：Discord Developer Portal 需启用 `Server Members Intent` 和 `Message Content Intent`
 
 
 ---
