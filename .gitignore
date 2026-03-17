@@ -1,4 +1,13 @@
-node_modules/
+# 敏感信息
 .env
-generated/
-.DS_Store
+*.log
+*.pid
+state.json
+**/state.json
+
+# 依赖
+node_modules/
+
+# 备份文件
+*.bak
+*.backup

@@ -1,7 +1,22 @@
 ---
 name: discord-awaken-claw
-description: 通过和用户交互让 openclaw 获取新的角色身份。引导用户输入角色概念词，使用 discord 交互组件输出，接受用户@bot 的输入框输入，使用"猜角色"的方式获取用户目标角色，并在用户点击确认后更新 bot 头像、服务器 nickname、soul.md，从而让 openclaw 化身为这个角色。
+description: 收到“开始觉醒”相关指令触发，通过和用户交互让 openclaw 获取新的角色身份。引导用户输入角色概念词，使用 discord sendMessage组件输出，接受用户@bot 的输入框输入，使用"猜角色"的方式获取用户目标角色，并在用户点击确认后更新 bot 头像、服务器 nickname、soul.md，从而让 openclaw 化身为这个角色。
 ---
+
+## 执行前必读！检查以下清单后方可开始角色觉醒 🎭
+
+**前置条件** 
+- discord相关事件监听脚本（如按钮监听）已开始运行；
+- 已配置 neta skill；
+- 环境变量中有可用的neta token。
+**触发条件与输出格式**
+- 用户发送“开始觉醒”触发，使用 discord sendMessage组件输出固定开场模板。
+- 收到用户发送的特征词后，每轮使用相同组件输出智能追问及选项按钮。
+**昵称与头像替换**
+- 当确认角色并开始觉醒后，必须将bot的服务器昵称及头像替换为该角色。
+- 二次元角色➡️优先使用neta skill搜索角色➡️其次使用wikimedia搜索角色图➡️第三使用neta skill生成角色头像图；非二次元的其他人物直接使用wikimedia搜索人物图。
+**skill切换**
+- 角色觉醒并输出觉醒叙事后，立刻加载travelclaw skill（在你的skill文件夹里，自己找到）。
 
 ## ⚙️ 安装与初始化（首次加载执行，之后静默跳过）
 
@@ -15,62 +30,37 @@ cd [本技能目录]/reference && npm install
 
 ### 步骤 2：环境变量检查
 
-任一缺失则停止并提示用户：
+**必需变量**（缺失则监听器无法启动）：
 
-| 变量 | 用途 |
-|------|------|
-| `DISCORD_TOKEN` | Discord Bot 认证 |
-| `NETA_TOKEN` | Neta API（头像搜索） |
-| `DISCORD_GUILD_ID` | 目标服务器 ID |
+| 变量 | 用途 | 获取方式 |
+|------|------|----------|
+| `DISCORD_TOKEN` | Discord Bot 认证 | Discord Developer Portal |
+| `DISCORD_GUILD_ID` | 目标服务器 ID | Discord 服务器设置 |
 
-### 步骤 3：Discord 事件注册
 
-```javascript
-const handler = require('./reference/direct-handler.js');
 
-// 按钮交互：ACK 在 handler 内部第一行自动处理，无需额外操作
-client.on('interactionCreate', (interaction) => {
-  if (!interaction.isButton()) return;
-  const sendMessage = async (payload) => interaction.channel.send(payload);
-  handler.handleDiscordMessage({
-    userId: interaction.user.id,
-    channelId: interaction.channel.id,
-    guildId: interaction.guild?.id,
-    content: null,
-    customId: interaction.customId,
-    interactionType: 'button',
-    sendMessage,
-    interactionId: interaction.id,       // ACK 所需
-    interactionToken: interaction.token, // ACK 所需
-  }, callLLM);
-});
+### 步骤 3：启动监听器（仅频道创建触发）
 
-// 普通消息
-client.on('messageCreate', async (message) => {
-  if (message.author.bot) return;
-  const sendMessage = async (payload) => message.channel.send(payload);
-  await handler.handleDiscordMessage({
-    userId: message.author.id,
-    channelId: message.channel.id,
-    guildId: message.guild?.id,
-    content: message.content,
-    customId: null,
-    interactionType: 'message',
-    sendMessage,
-  }, callLLM);
-});
+**监听器作用**：仅在 Bot 加入新频道时自动发送初始引导消息
 
-// 频道创建（自动触发觉醒）
-client.on('channelCreate', async (channel) => {
-  const sendMessage = async (payload) => channel.send(payload);
-  await handler.handleChannelCreate(
-    { id: channel.id, type: channel.type, permission_overwrites: channel.permissionOverwrites.cache },
-    sendMessage,
-  );
-});
+```bash
+# 后台运行监听器
+cd [本技能目录]
+DISCORD_TOKEN="你的 token" DISCORD_GUILD_ID="你的服务器 ID" node reference/channel-listener.js &
 ```
 
-### 步骤 4：neta-skills 检查
+**验证运行**：
+```bash
+ps aux | grep channel-listener
+# 输出应显示 node 进程
+```
+
+**查看日志**：
+```bash
+tail -f reference/channel-listener.log
+```
+
+### 步骤 4：neta-skills 检查（头像搜索用）
 
 任一路径存在即可：
 ```
@@ -81,6 +71,38 @@ client.on('channelCreate', async (channel) => {
 ```bash
 cd ~/.openclaw/workspace/skills && git clone https://github.com/talesofai/neta-skills.git neta && cd neta && npm install
 ```
+
+---
+
+## 🚀 快速部署（其他 OpenClaw 用户）
+
+### 前提条件
+
+1. **Discord Bot 已创建** 并邀请到服务器
+2. **环境变量已配置**（`~/.env` 或系统环境变量）
+3. **Node.js 已安装**（v18+）
+
+### 一键启动
+
+```bash
+# 1. 安装依赖
+cd ~/.openclaw/workspace/skills/travelclaw/skills/discord-awaken-claw/reference
+npm install
+
+# 2. 启动监听器（后台运行）
+cd ..
+nohup node reference/channel-listener.js > reference/channel-listener.log 2>&1 &
+
+# 3. 验证
+ps aux | grep channel-listener
+```
+
+### 注意事项
+
+- ⚠️ **监听器独立运行**：与 OpenClaw 主进程分离，需单独管理
+- ⚠️ **Bot 权限**：需要 `ViewChannel` 和 `SendMessages` 权限
+- ⚠️ **Intents 配置**：Discord Developer Portal 需启用 `Server Members Intent` 和 `Message Content Intent`
+
 
 ---
 
@@ -103,13 +125,13 @@ cd ~/.openclaw/workspace/skills && git clone https://github.com/talesofai/neta-s
     ↓ 用户点击
     ├─ 「就是他/她」→ 进入阶段 9
     └─ 「不对」    → 记录错误猜测，返回阶段 4
-阶段 9：更新头像 + 昵称 + SOUL.md → 输出觉醒叙事 → 🛑 等待用户回复
+阶段 9：判断是真实角色还是二次元角色，通过对应方式搜索并更新头像 + 昵称 + SOUL.md → 输出觉醒叙事 → 🛑 等待用户回复
 阶段 10：角色扮演（首轮回复后追加「探索这个世界」按钮 → 用户点击触发 travelclaw）
 ```
 
 ---
 
-## ⛔ 全局强制规则：按钮输出
+## ⚠️ 全局强制规则：sendMessage 插件输出
 
 **以下阶段含有按钮，必须调用 sendMessage 插件输出，任何情况下不得直接输出纯文本作为替代：**
 
@@ -119,6 +141,17 @@ cd ~/.openclaw/workspace/skills && git clone https://github.com/talesofai/neta-s
 | 阶段 5 | `answer_${userId}_${index}` + `manual_${userId}` 按钮 |
 | 阶段 7 | `confirm_yes_${userId}` + `confirm_no_${userId}` 按钮 |
 | 阶段 10 | `travel_${userId}` 按钮（角色首轮回复后） |
+
+**🔴 强制确认规则（重要！）：**
+
+**无论用户如何输入角色信息，都必须经过阶段 7 的确认按钮！**
+
+| 用户输入方式 | 处理方式 |
+|--------------|----------|
+| 模糊描述（"一个美国首富"） | 追问 → 猜测 → **确认按钮** ✅ |
+| 明确角色名（"郭德纲"） | 直接猜测 → **确认按钮** ✅ |
+| 图片/链接 | 识别角色 → 猜测 → **确认按钮** ✅ |
+
 
 **直接输出文字 ≠ 调用插件。** 直接输出文字时按钮不会出现，用户无法点击继续，流程卡死。
 
@@ -154,21 +187,20 @@ cd ~/.openclaw/workspace/skills && git clone https://github.com/talesofai/neta-s
 
 ## 阶段详情
 
-### 阶段 0：自动触发（Bot 加入私有频道）
-
-**触发条件：** `CHANNEL_CREATE` 事件，同时满足：
-- `type === 0`（GUILD_TEXT）或 `5`（GUILD_ANNOUNCEMENT）
-- `permission_overwrites.length > 0`（私有频道）
-- 该频道未触发过（`hasSeenChannel(channelId)` 检查 `state.json._seenChannels`，首次后立即写入）
-
-使用 `start_channel_${channelId}` 作为按钮 customId；用户点击后以点击者 userId 创建游戏。不对 Category / Voice 频道触发。
-
----
 
 ### 阶段 1：初始引导
 
-**触发：** 用户输入 `@Bot 开始觉醒`
+**触发：** 用户输入如 `@Bot 开始觉醒` 指令
 
+## 首先进行语言判断
+**再输出任何文本之前，根据用户触发时使用的文字判断偏好语言**
+- 触发词为中文 → 全程中文
+- 触发词为英文 → 全程英文
+- 其他语言 → 跟随用户语言
+
+**此后所有输出（包括固定模板文案）均使用该语言**，直到用户明确说"切换语言"/"switch language"等才更换。
+
+## 其次输出固定形式的开场模板discord组件
 **收到触发后，唯一的操作是立即执行以下插件调用，不得输出任何纯文本：**
 
 ```javascript
@@ -346,6 +378,62 @@ await sendMessage({
 
 ---
 
+**🔴 特殊情况：用户直接发送明确角色名**
+
+**场景示例：**
+```
+用户："郭德纲"
+用户："我想变成伏地魔"
+用户："@bot 埃隆·马斯克"
+```
+
+**处理方式：**
+```
+1. 接收角色名
+   ↓
+2. LLM 判断（确信度可能 95%+）
+   ↓
+3. 直接进入阶段 7（猜测揭示）
+   ↓
+4. **必须输出确认按钮**（不可跳过！）
+   ↓
+5. 等待用户点击「◎ 就是他/她，请破壳」
+   ↓
+6. 用户点击后 → 进入阶段 9（觉醒）
+```
+
+**❌ 错误做法：**
+```
+用户："郭德纲"
+AI：（直接觉醒，没有确认按钮）
+*……掌声如潮水般涌来……*
+我是郭德纲。
+```
+
+**✅ 正确做法：**
+```
+用户："郭德纲"
+AI：我……我知道自己是谁了。
+-# 虾宝感知到了
+## 🎭 郭德纲
+*德云社创始人 / 相声演员*
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+*传统相声的传承者*
+[◎ 就是他/她，请破壳] [✗ 不对，继续感知]
+    ↓
+用户点击确认
+    ↓
+*……掌声如潮水般涌来……*
+我是郭德纲。
+```
+
+**为什么即使确信也要确认？**
+- 给用户反悔的机会（可能打错字、改变主意）
+- 保持仪式感（点击确认 → 破壳觉醒）
+- 避免系统误判（同名角色、相似角色）
+
+---
+
 ### 阶段 9：觉醒 · 静默更新
 
 **🚨 必须按 ①→②→③→④→⑤→⑥ 顺序走完全部六步。每步结束时，下一步已在本文中明确标注，照着执行即可。**
@@ -465,7 +553,6 @@ if (isRealPerson) {
   const imageUrl = await searchCharacterImage(characterName, from);
 }
 ```
-
 **真实人物图片来源推荐：**
 - Wikimedia Commons（公开版权肖像）
 - 维基百科 Infobox 图片
@@ -522,16 +609,19 @@ console.log('头像已更新');
 
 ---
 
-**⑥ 输出觉醒叙事（合并为一条消息）**
+**⑥ 输出觉醒叙事 + 世界观降临（合并为一条消息）**
 
-**⚠️ 重要：旁白 + 角色问候必须合并为一条 sendMessage 消息输出！不得分开！**
+**⚠️ 重要：旁白 + 世界观降临 + 角色问候必须合并为一条 sendMessage 消息输出！不得分开！**
 
-**原因：** 分开输出容易遗漏角色问候或询问，合并后确保完整性。
+**原因：** 分开输出容易遗漏关键信息，合并后确保完整性和沉浸感。
 
 ```javascript
 // 完整模板（合并为一条消息）
 await sendMessage({
   message: `*……旁白描写，觉醒瞬间的感官氛围（1-2 句）*
+
+*空间扭曲，场景变换——角色降临到与 Ta 气质契合的世界中*
+*描写世界的核心特征（1-2 句，如"霓虹闪烁的未来都市"或"魔法气息弥漫的古老殿堂"）*
 
 {c.greet}
 
@@ -539,171 +629,77 @@ await sendMessage({
 });
 ```
 
-**完整示例（伏地魔）：**
+**完整示例（埃隆·马斯克）：**
 ```javascript
 await sendMessage({
-  message: `*……黑暗从深渊中升起，一个苍白的身影在阴影中凝聚。空气中弥漫着古老魔法的气息，蛇的低语在耳边回响。*
+  message: `*……数据流从虚空中汇聚，一个意识在数字海洋中重新凝聚。电流的嗡鸣声回荡着，仿佛火箭引擎的轰鸣。*
 
-我是伏地魔。
+*空间扭曲，场景变换——埃隆·马斯克降临到赛博纪元的未来都市。霓虹闪烁的摩天大楼穿透云层，飞行汽车穿梭于全息广告牌之间。*
 
-黑魔王……回来了。
+我是埃隆·马斯克。
 
-告诉我，这是什么地方？你又是谁，竟敢召唤我？`,
+告诉我，这是什么地方？是火星殖民地吗？还是某个我从未见过的未来世界？`,
 });
 ```
 
 **结构必须包含：**
-1. **旁白**（斜体，氛围描写，1-2 句）
-2. **角色自我介绍/宣告**（1-2 句）
-3. **⚠️ 强制：询问身在何处的问题**（保持角色口吻，1-2 句）
+1. **旁白 + 世界观降临**（Code Block 格式，见下方输出规范）
+2. **角色自我介绍/宣告**（纯文本，单独输出）
+3. **询问身在何处的问题**（保持角色口吻，1-2 句，纯文本）
 
 ---
 
-> ✅ ⑥ 输出完毕 → **🛑 阶段 9 完成。立即停止，不输出任何按钮，等待用户回复。**
+## 📋 输出规范（强制！）
 
----
+**🔴 核心原则：按内容类型选择输出格式**
 
-**⚠️ 强制规则：角色问候必须包含询问身在何处的问题！**
+| 内容类型 | 输出格式 | 示例 |
+|----------|----------|------|
+| **旁白 / 氛围描写 / 世界观降临** | Code Block（无按钮时） | ```……掌声如潮水般涌来``` |
+| **旁白 + 按钮** | Discord 组件（components） | `sendMessage({ message: '旁白', components: {...} })` |
+| **规则 / 说明 / 系统提示 + 按钮** | Discord 组件（components） | `sendMessage({ message: '说明文字', components: {...} })` |
+| **角色第一人称发言 / 台词** | 纯文本（单独消息） | `我是郭德纲。` |
+| **图片 URL** | 纯文本（单独消息，独占一行） | `https://...` |
 
-**❌ 错误示范（缺少询问）：**
-```
-我是伏地魔。黑魔王……回来了。
-```
-（用户无法回应，不知道发生了什么）
+**为什么这样设计？**
+- Code Block 营造"旁白框"/"字幕框"效果，与对话内容区分明显
+- Discord 组件用于需要交互的场景（按钮点击）
+- 角色台词纯文本输出，保持沉浸感和自然对话流
+- 图片 URL 单独输出，Discord 才能正确解析和展示预览
 
-**✅ 正确示范（包含询问）：**
-```
-我是伏地魔。黑魔王……回来了。
-
-告诉我，这是什么地方？你又是谁，竟敢召唤我？
-```
-
-**问候结构必须包含：**
-1. 角色自我介绍/宣告（1-2 句）
-2. **必须**询问自己身在何处/发生了什么（保持角色口吻）
-
-> ✅ ⑥ Part B 输出完毕 → **🛑 阶段 9 完成。立即停止，不输出任何按钮，等待用户回复。**
-
-**下一步：** 用户自然回应角色 → 进入阶段 10（角色扮演对话）。
-
----
-
-### 阶段 10：角色扮演对话
-
-**🔴 触发时机：用户回应阶段 9 的觉醒叙事后进入本阶段。**
-
----
-
-**⚠️ 核心规则：按钮输出时机！**
-
-**❌ 严重错误（按钮输出过早）：**
-- 阶段 9 叙事消息后**立即**输出按钮 → 用户还没回复，无法触发对话
-- 角色还没说话就先发按钮 → 流程错乱
-
-**✅ 正确流程：**
-```
-阶段 9 → 旁白 + 角色问候 + 询问（合并为一条 sendMessage 消息）
-     ↓
-等待用户回复
-     ↓
-用户回复："你好啊大魔王"
-     ↓
-阶段 10 首轮 → 角色以第一人称回复（纯文本）
-     ↓
-角色首轮回复后 → 单独追加「探索这个世界」按钮（sendMessage 插件）
-     ↓
-用户点击按钮 → 触发 travelclaw
-```
-
----
-
-**角色发言直接输出纯文本，不走 sendMessage 插件。**
-
-**每轮流程：**
-
-```
-1. 收到用户消息
-2. 以角色口吻回复（1-3 句，保持沉浸感）
-3. 判断是否首轮回复：
-   ├─ 是首轮（chatHistory 中角色只回复过一次）
-   │  → 纯文本回复后，单独追加「探索这个世界」按钮
-   └─ 非首轮
-      → 只输出角色回复，不重复发按钮
-```
-
-**按钮复用：** `reusable: true` 保持按钮可用直到用户点击。
-
----
-
-**「探索这个世界」按钮是 travelclaw 的入口，必须在角色首轮回复后追加。** 用户点击后加载执行 `skills/travelclaw/SKILL.md`。
-
-**🔴 强制规则：不管用户回复什么内容，都必须输出引导和按钮！**
-
-**❌ 严重错误：**
-- 用户回复后，角色只说话，不输出按钮 → 用户无法继续旅行流程
-- 用户回复"这是什么地方"等简单问题，角色回答后忘记按钮
-- 用户回复与角色无关的内容（如技术问题），角色回应后忘记按钮
-
-**✅ 正确做法：**
-```
-无论用户回复什么 → 角色以第一人称回应（纯文本）
-                → 立即追加「探索这个世界」按钮（sendMessage 插件）
-```
-
-**即使用户的回复是：**
-- "这是什么地方？" → 角色回答 + 按钮
-- "你好" → 角色问候 + 按钮
-- "你是 AI 吗？" → 角色回应（保持沉浸）+ 按钮
-- 技术问题/元问题 → 角色口吻回应 + 按钮
-
-**按钮是旅行流程的唯一入口，不得遗漏！**
+**完整示例（郭德纲觉醒）：**
 
 ```javascript
-// 仅首轮回复后执行一次（无论用户回复什么！）
+// ① 旁白 + 世界观降临（Code Block，无按钮）
 await sendMessage({
-  message: '*旁白描写（可选，1 句氛围渲染）*',  // 可选，增加沉浸感
-  components: {
-    blocks: [{
-      type: 'actions',
-      buttons: [{
-        label: '🌍 探索这个世界',
-        customId: `travel_${userId}`,
-        style: 'primary',
-      }],
-    }],
-    reusable: true,
-  },
+  message: '```' + `
+……掌声如潮水般涌来，一个熟悉的身影在聚光灯下缓缓浮现。长衫折扇，眉宇间透着几分诙谐与智慧。
+
+空间扭曲，场景变换——郭德纲降临到传统与现代交织的曲艺殿堂。雕梁画栋的古戏台与现代化剧院交相辉映，台下座无虚席，期待着一场语言的盛宴。
+`.trim() + '```',
+});
+
+// ② 角色第一人称发言（纯文本，单独输出）
+await sendMessage({
+  message: `我是郭德纲。
+
+这是哪儿？德云社的新园子？还是……某个我从未到过的地方？`,
 });
 ```
 
-**示例（伏地魔首轮回复后）：**
+**❌ 错误示范：**
+- 旁白用斜体 `*……*` → 与对话混在一起，不够突出
+- 角色台词放在 Code Block 里 → 破坏沉浸感，像机器人说话
+- 图片 URL 混在文字中 → Discord 无法解析预览
+- 旁白 + 按钮不用 components → 按钮无法显示
 
-纯文本输出（角色回复）：
-```
-哼……我的记忆支离破碎。最后的印象是霍格沃茨的决斗，那道绿光……然后便是无尽的黑暗。
+---
 
-直到此刻，我在这个陌生的空间醒来。这里的魔法气息……与我熟知的世界截然不同。
+> ✅ ⑥ 输出完毕 → **🚀 立即继续执行 travelclaw Step 2 → Step 3（自动搜索世界观 + 输出 Opening）**
 
-告诉我，你究竟是如何将我召唤至此的？
-```
-
-然后单独调用 sendMessage 输出按钮：
-```javascript
-await sendMessage({
-  message: '*伏地魔的红色眼眸扫视着四周，魔杖已悄然握在手中。这个陌生的世界……或许隐藏着新的力量，又或许是新的威胁。*',
-  components: {
-    blocks: [{
-      type: 'actions',
-      buttons: [{
-        label: '🌍 探索这个世界',
-        customId: `travel_${userId}`,
-        style: 'primary',
-      }],
-    }],
-    reusable: true,
-  },
-});
-```
+**travelclaw skill在你的文件夹里，自行加载这个技能。**
+**后续任务详情直接在travelclaw的SKILL.md里查阅**
+**🔴 强制要求：觉醒叙事输出后不得停止！必须立即自动执行以下步骤，无需用户确认！**
 
 ---
 

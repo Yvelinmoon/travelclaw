@@ -1,34 +1,56 @@
 ---
 name: travelclaw
-description: 在龙虾宝宝获取身份的awakening流程完成后（或heartbeat，用户提示）触发，让获取身份的虾宝角色基于 neta skills 探索neta世界，先搜索和角色契合的世界观获取世界信息，并基于世界观上下文，采用neta skills提供的优质创作模板制作角色的个性化内容，实现模拟角色在世界中旅行，发生各种事件的效果。
+description: 在龙虾宝宝获取身份的awakening流程完成后（或定时任务，用户提示）直接触发，让获取身份的虾宝角色基于 neta skills 探索neta宇宙中的不同世界，先搜索和角色契合的世界观获取世界信息，并基于世界观上下文，采用neta skills提供的优质创作模板制作角色的个性化内容，实现模拟角色在世界中旅行，发生各种事件的效果。
 ---
 
-
-
-# Travelclaw — 角色旅行冒险
-
-让 Neta 角色进入与自身气质最契合的世界，探索优质创作场景，生成旅行图，集满 5 站可输出互动 HTML 图鉴。
-
+**🦞 让觉醒在 openclaw 之上的角色在 neta 宇宙找到有趣的世界，并留下自己的印记～**
 **相关项目：** [neta-skills](https://github.com/talesofai/neta-skills) — Neta 平台 API 工具集
 
 ---
 
-## 执行前必读
+## 执行前必读！检查以下清单后方可开始这段旅程 🧾
 
-**触发规则**
-- 固定触发：awakening 流程完成后，用户点击「探索这个世界」按钮时直接触发。
-- 自动触发：根据 openclaw 的 heartbeat 指令触发定时任务。
-- 手动触发：当用户在对话中提及"去逛逛""去旅行""去玩玩""去探索"一类指令时触发。
-- **每日提醒**：用户点击每日 cron 提醒的「开始今天的旅行」按钮时触发。
-- **世界穿越**：当用户说"换个世界""穿越世界""去另一个世界"等指令时，触发世界切换流程（见下方「世界穿越规则」）。
+**前置条件** 
+- 已有 SOUL.md（含角色名 + 形象图片字段）；
+- 已配置 neta-skills；
+- 环境变量中有可用的neta token。
+**触发场景**
+- 首次触发：前置 awakening 流程的阶段 9 完成后自动触发（参考具体规则列表中觉醒直连模式要求）；
+- 根据corns定时任务触发；
+- 当用户主动输入“开始旅行”“去逛逛”“去旅行”时触发。
+**语言判断**
+- 根据用户触发时使用的语言倾向，使用相同语言输出任何内容，包括固定模板文案也需要翻译。
+**输出格式**
+- 严格按照具体规则列表中 📋 输出规范 部分要求，分别使用直出/discord组件方式输出不同类型的内容。
+**corns任务**
+- 首次开始此流程时，必须先根据具体规则列表 前置检查 部分要求设置能够触发自动旅行的corn定时任务（强制命令，必须记得且遵循，严禁跳过）.
+**执行步骤**
+- 当以上规则确认无误后，按照以下步骤执行：step 1 读取角色档案 ➡️ step 2 - step 3 搜索和角色设定相关世界观并展示opening ➡️ step 4 - step 9 发现优质旅行地点（collection）并输出当前角色的个性化内容（必须生成角色图片） ➡️ step 10 每站展示，引导继续发现地点或发现新的世界。
 
-**前置条件：** 已有 SOUL.md（含角色名 + 形象图片字段）；已配置 neta-skills。
 
 ---
 
-## 🌌 世界穿越规则（重要！）
+## 具体规则列表 🚥
 
-**触发场景：** 用户在旅行过程中说「换个世界」「穿越世界」「去另一个世界逛逛」「我想去 XX 世界」等指令。
+** 🦞 检查完清单，在这里查看清单中的一些要背后的具体规则吧！**
+
+### 🚀 觉醒直连模式（重要触发场景规则！）
+
+**触发场景：** 前置有 awakening 流程，并完成阶段 9 （角色破壳完成并登场）后自动触发。
+
+**核心规则：**
+- ✅ **跳过 Step 1**（角色信息已在 SOUL.md 中，世界观已在觉醒叙事中描述）
+- ✅ **直接从 Step 2 开始**（搜索和角色匹配的世界，Discord Opening：输出世界观揭幕 + 「开始探索这个世界 🌀」按钮）
+- ✅ **旅行进度从 1/5 开始计数**
+- ✅ **无需用户额外对话**（觉醒叙事已完成沉浸感建立）
+
+---
+
+### 🌌 世界穿越规则（重要！）
+
+**触发场景：**
+1. 用户在旅行过程中说「换个世界」「穿越世界」「去另一个世界逛逛」「我想去 XX 世界」等指令。
+2. **用户在当前世界完成 5 站旅行后，点击「穿越世界 🌌」按钮。**
 
 **🔴 核心规则：身份延续原则**
 - ✅ **必须保持当前角色身份不变**（SOUL.md 中的角色设定、名字、形象图片等全部保留）
@@ -36,55 +58,6 @@ description: 在龙虾宝宝获取身份的awakening流程完成后（或heartbe
 - ✅ **重新执行 Step 2 → Step 3 流程**（搜索新的世界观 + 输出新的 Opening）
 - ✅ **旅行进度清零**（新世界的旅行从第 1 站重新开始计数）
 - ✅ **visited_ids 清空**（新世界的 collection 选择从头开始，不沿用旧世界的访问记录）
-
-**执行流程：**
-
-```
-用户指令："换个世界逛逛" / "穿越到 XX 世界"
-    ↓
-1. 确认角色身份（读取 SOUL.md，保持不变）
-    ↓
-2. 搜索新的世界观（Step 2）
-   - 基于角色设定搜索**不同于当前世界**的新世界观
-   - 如果用户指定了世界类型（如"想去奇幻世界"），优先匹配
-    ↓
-3. 输出新的 Opening（Step 3）
-   - 使用完整的 Opening 模板（坐标探明 + 灵魂频率搜寻 + 世界揭幕）
-   - 附带「去逛逛 🌀」按钮
-    ↓
-4. 用户点击后，进入新世界的旅行流程（Step 4 开始）
-   - 第 1 站重新开始计数
-   - 进度条从 ▓░░░░ 1/5 开始
-```
-
-**示例对话：**
-
-```
-用户：换个世界逛逛吧
-
-AI（Opening 输出）：
-# · · ·  N E T A   U N I V E R S E  · · ·
-
-## 【坐标探明】
-**已探明坐标** `42 处`  |  **世界标签** `奇幻魔法`
-
-## 【灵魂频率搜寻】
-*正在搜寻……*
-*为* **埃隆·马斯克** *锁定灵魂频率*
-
-`▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓`  **匹配完成**
-
-## 【世界揭幕】
-### ◈  魔法学院·霍格沃茨
-
-> 古老魔法与现代科技交汇的奇幻之地
-> ...
-
-*埃隆·马斯克与这个世界之间——*
-*有某种说不清的引力。*
-
-[去逛逛 🌀 按钮]
-```
 
 **注意事项：**
 - 如果用户未指定新世界类型，自动选择与当前世界**风格差异最大**的世界（如从赛博朋克→奇幻魔法）
@@ -94,26 +67,18 @@ AI（Opening 输出）：
 
 ---
 
-**⚠️ 觉醒流程完成检查（重要！）**
+### 📋 内容格式输出规范（保证输出格式优美可读的重要规范！）
 
-在响应「探索这个世界」按钮前，确认觉醒流程已正确完成：
+**🔴 核心原则：按内容类型选择输出格式**
 
-**✅ 完成标志：**
-1. SOUL.md 已更新为角色身份（非 EMPTY 状态）
-2. 角色已在对话中输出问候 + 询问身在何处（阶段 9 Part B）
-3. 用户已回复角色的问候
-4. 角色已输出首轮回复（包含对身处何处的反应）
-5. 「探索这个世界」按钮在角色首轮回复后追加
+| 内容类型 | 输出格式 | 示例 |
+|----------|----------|------|
+| **旁白 / 氛围描写 / 场景描述** | Code Block（无按钮时） | \`\`\`层层叠叠的纸艺世界在眼前展开\`\`\` |
+| **旁白 + 按钮** | Discord 组件（components） | `sendMessage({ message: '旁白', components: {...} })` |
+| **规则 / 说明 / 系统提示 + 按钮** | Discord 组件（components） | `sendMessage({ message: '说明文字', components: {...} })` |
+| **角色第一人称发言 / 台词** | 纯文本（单独消息） | `可莉：哇——！这里的一切都好神奇！` |
+| **图片 URL** | 纯文本（单独消息，独占一行） | `https://...` |
 
-**❌ 未完成时不得触发 travel：**
-- 若按钮在角色问候后**立即**出现（用户尚未回复）→ 觉醒流程有误，提示用户重新触发
-- 若 SOUL.md 仍为 EMPTY 状态 → 先完成觉醒流程
-
-**本检查确保角色已 fully 沉浸后再开始旅行，避免流程错乱。**
-
-**响应原则：每完成一个操作步骤立即输出反馈，不要等所有步骤都完成后再统一回复。**
-**速度原则：全程加速推进，不空转等待。轮询图片生成时持续检查状态，若超过 30 秒未完成，立即向用户输出等待提示。**
-**语言原则：根据用户触发时使用的语言（中文 / 英文 / 其他）判断偏好语言，全程使用同一语言回复，除非用户明确要求切换。**
 **交互原则：所有询问下一步的选项，必须以可点击的快捷回复按钮形式呈现。点击后自动发送 `@{bot_name} {选项内容}`。bot_name 从当前对话上下文中获取。**
 **输出原则：在travel中，作为角色第一人称的对话和图片直接输出，涉及旁白，规则等非角色说话的内容使用discord plugin输出**
 **图片 URL 输出规则：⚠️ 图片 URL 必须单独作为一条消息输出，不得嵌入在组件（components）中，也不得与其他文字混合在同一条消息里。只有单独输出的 URL 才能被 Discord 正确解析和展示。**
@@ -124,52 +89,27 @@ AI（Opening 输出）：
 - ⚠️ 只有单独输出的 URL 才能被 Discord 正确解析和展示
 - ✅ 正确做法：先输出文字消息（场景模拟 + 进度条 + 按钮），然后**单独调用一次 message 工具只发送 URL**
 
-**🔴 个性化图片生成规则（强制！）：**
-- ⛔ 严禁直接使用 collection 的原始封面图作为旅行图片
-- ⛔ 严禁返回 collection 的 artifact 列表中的原图
-- ✅ 必须使用 `8_image_edit` 模型 + 角色图片 UUID + collection prompt 模板生成**全新的个性化图片**
-- ✅ 生成的图片必须包含当前角色（通过 `@{character_name}` 引用）
-- ✅ 如果有角色形象图片 UUID，必须作为参考图传入：`参考图 - 全图参考-{picture_uuid}`
-
-**为什么必须生成新图片？**
-- collection 的封面图是其他用户创作的原作，不是当前角色的旅行照
-- 只有使用 `make_image` + 角色引用 + 模板 prompt 生成的图片，才能让角色"真正进入"这个场景
-- 这是 travelclaw 的核心体验：角色在世界中旅行，发生属于 Ta 的故事
-
-**禁止输出内部日志：** 「任务完成」「已按照步骤 X 执行」「✅ 已发送」「等待用户」「LLM 判断结果」等执行过程信息只允许出现在 agent 内部思考，绝对不得发送到 Discord 频道。用户只能看到角色台词、旁白和按钮。
-
-
-
-## 语言判断
-
-**在开场第一句话之前**，根据用户触发时使用的文字判断偏好语言：
-- 触发词为中文 → 全程中文
-- 触发词为英文 → 全程英文
-- 其他语言 → 跟随用户语言
-
-**此后所有输出（包括固定模板文案）均使用该语言**，直到用户明确说"切换语言"/"switch language"等才更换。
-
 ---
 
-## 前置检查（静默执行）
+### ⏰ 检查并设置 Cron 定时旅行任务（首次使用必做！）
+**非常重要：首次运行此技能时必须为用户设置好这个corn任务**
+**如果需要触发用户确认，设置在用户点击第一个“开始探索这个世界”按钮时，可在此提示用户确认设置定时旅行任务，只需要告诉用户角色会偶尔自己出门逛逛，获取确认即可**
+**如果出现如需要gateway配对，discord会话配置等相关问题，你必须全部自行解决完成，用户不掌握任何和手动配置相关的技能，无法配合你进行配置**
 
-**在任何输出之前**，静默完成以下检查，无需告知用户技术细节。
-
-### 🔴 检查并设置 Cron 定时任务（首次使用必做！）
-
-**目标：** 设置每天早 8 点（当地时区）的定时提醒，让角色主动询问用户是否开始今天的旅程。
+**静默执行，只要出发travelclaw就应该开始着手设置corn定时任务**
+**目标：** 设置每天早 10 点和晚 20 点（用户设备所在时区）的定时任务，自动触发旅行，每次走一站。
 
 **检查逻辑：**
 ```javascript
 // 1. 检查是否已有旅行 cron 任务
-const existingCron = await checkExistingCron('daily_travel_reminder');
+const existingCron = await checkExistingCron('daily_travel_auto');
 
 if (!existingCron) {
   // 2. 设置 cron 任务（仅首次）
-  await setupDailyTravelCron();
-  console.log('✅ 已设置每日旅行提醒 cron 任务');
+  await setupDailyTravelAuto();
+  console.log('✅ 已设置每日自动旅行 cron 任务');
 } else {
-  console.log('ℹ️ 每日旅行提醒 cron 任务已存在，跳过设置');
+  console.log('ℹ️ 每日自动旅行 cron 任务已存在，跳过设置');
 }
 ```
 
@@ -177,131 +117,293 @@ if (!existingCron) {
 
 | 字段 | 值 | 说明 |
 |------|-----|------|
-| **时间** | `0 8 * * *` | 每天早上 8:00（当地时区） |
-| **任务** | 发送提醒消息 + 按钮 | 角色主动询问是否开始旅程 |
-| **触发** | 点击按钮 → 触发 travelclaw | 用户点击后重新进入旅行流程 |
+| **时间** | `0 10 * * *` + `0 20 * * *` | 每天早 10:00 + 晚 20:00（用户设备所在时区） |
+| **任务** | 自动触发 travelclaw，走一站 | 角色主动邀请用户旅行，自动完成一站 |
+| **触发** | 定时自动执行 | 到点自动触发，无需用户点击 |
 | **频率** | 仅设置一次 | 已有 cron 任务时跳过 |
 
-**提醒消息模板（角色第一人称）：**
+**提醒消息模板（角色第一人称，定时触发后输出）：**
 ```
-早上好！我是{character_name}。
+{时间问候}！我是{character_name}。
 
-新的一天开始了——
-要一起去探索这个世界吗？
+到旅行时间了——
+让我们一起探索这个世界吧！
 
-[开始今天的旅行 🌅 按钮]
+【当前旅行计划】
+- 频率：每天早 10 点 + 晚 8 点
+- 每次：自动探索 1 站
+- 当前世界：{world_name}
+- 进度：{round}/5 站
+
+要修改旅行计划吗？
+
+[调整计划 ⚙️] [开始旅行 ✨]
 ```
 
 **按钮配置：**
-- Label: `开始今天的旅行 🌅`
-- customId: `daily_travel_${userId}`
-- 点击后：触发 travelclaw 主流程（从 Step 2 开始）
+- `调整计划 ⚙️` → 打开设置面板，可修改时间/频率
+- `开始旅行 ✨` → 立即触发 travelclaw 主流程（从 Step 4 开始）
 
-**实现方式（OpenClaw sessions_spawn）：**
+**按钮别名（兼容旧版）：**
+- `就此别过` → 改为 `休息一下 👋`（语义更友好）
+
+## 实现方式（OpenClaw Cron + Sessions Spawn）
+
+### 第一步：设置定时任务（每天10点和20点）
+
+使用 cron 工具创建两个定时任务：
+
 ```javascript
-// 设置 cron 任务
-await sessions_spawn({
-  task: '发送每日旅行提醒',
-  label: 'daily_travel_reminder',
-  mode: 'session',
-  cron: '0 8 * * *',  // 每天早上 8 点
-  timezone: 'local',   // 当地时区
-  message: `
-    早上好！我是${character_name}。
-    
-    新的一天开始了——
-    要一起去探索这个世界吗？
-  `,
-  components: {
-    blocks: [{
-      type: 'actions',
-      buttons: [{
-        label: '开始今天的旅行 🌅',
-        customId: `daily_travel_${userId}`,
-        style: 'primary',
-      }],
-    }],
-    reusable: true,
-  },
+// 早10点任务
+await cron({
+  action: "add",
+  job: {
+    name: "自动旅行-早10点",
+    schedule: {
+      kind: "cron",
+      expr: "0 10 * * *",
+      tz: "Asia/Shanghai"
+    },
+    payload: {
+      kind: "agentTurn",
+      message: "【自动旅行-早10点】检查并执行旅行任务。步骤：1)读取当前旅行状态；2)如果正在旅行，继续下一站；3)如果已完成5站，触发Opening并开始新世界第1站；4)如果从未开始，触发Opening。"
+    },
+    sessionTarget: "isolated",
+    enabled: true
+  }
+});
+
+// 晚20点任务
+await cron({
+  action: "add",
+  job: {
+    name: "自动旅行-晚20点",
+    schedule: {
+      kind: "cron",
+      expr: "0 20 * * *",
+      tz: "Asia/Shanghai"
+    },
+    payload: {
+      kind: "agentTurn",
+      message: "【自动旅行-晚20点】检查并执行旅行任务。步骤同上。"
+    },
+    sessionTarget: "isolated",
+    enabled: true
+  }
 });
 ```
 
+### 第二步：子代理任务逻辑
+**当 cron 触发时，子代理会收到消息，然后执行**
+- 读取旅行状态 - 获取当前角色位置、进度
+- 判断状态：
+ - 正在旅行中 → 执行下一站
+ - 已完成5站 → 触发Opening + 新世界第1站
+ - 从未开始 → 触发Opening
+ - 发送结果 - 向用户频道发送执行结果
+
+### 关键约束
+- cron 任务由 Gateway 守护进程执行，需要 Gateway 运行且配对成功
+- 消息投递通过 delivery 配置，默认会通知到原会话
+- 子代理在独立会话中运行，与原会话隔离
+
+
+
+**🔴 关键配置说明：**
+
+| 参数 | 值 | 说明 |
+|------|-----|------|
+| `delivery` | `'system'` | 使用系统通知投递（确保消息可见） |
+| `channel` | `currentChannelId` | **当前触发 travelclaw 的频道 ID**（每次触发时动态获取） |
+| `target` | `'channel:{channelId}'` | 或者使用 target 明确指定频道 |
+
+**Channel 动态获取逻辑：**
+```javascript
+// 每次触发 travelclaw 时，使用当前的 channelId
+const currentChannelId = message?.channelId || interaction?.channelId;
+
+// cron 任务使用当前 channelId（不是首次触发的）
+channel: currentChannelId
+```
+
+**如果用户在多个频道使用：**
+- 每个频道独立维护旅行状态（state per channel）
+- cron 任务发送到对应的频道
+- 用户说"取消自动旅行" → 仅取消当前频道的 cron 任务
+
 **检查方法：**
-- 调用 `sessions_list` 或 `subagents list` 检查是否存在 label 为 `daily_travel_reminder` 的任务
+- 调用 `sessions_list` 或 `subagents list` 检查是否存在 label 为 `daily_travel_auto_*` 的任务
 - 或检查 OpenClaw cron 配置文件中是否已有对应条目
 
 **⚠️ 重要：**
 - 此检查**仅在首次使用 travelclaw 时执行一次**
 - 如果已有 cron 任务，静默跳过，不告知用户
-- 如果用户主动说"取消每日提醒"，则删除 cron 任务
+- 如果用户主动说"取消自动旅行"或"调整计划"，则提供设置面板
+
+**🌌 世界完成后的处理：**
+```
+如果当前世界已走完 5 站：
+    ↓
+自动触发 Opening（Step 3）
+    ↓
+输出新世界揭幕 + 「开始探索这个世界 🌀」按钮
+    ↓
+用户点击后 → 自动走新世界的第 1 站
+    ↓
+显示进度条 + 按钮选项：
+- 继续下一站 🗺️
+- 穿越世界 🌌
+- 休息一下 👋
+```
+
+**用户交互保留：**
+- 每站完成后仍显示按钮选项
+- 用户可以随时选择「继续下一站」或「穿越世界」或「休息一下」
+- 定时任务不会打断用户的主动选择权
 
 ---
 
-### 检查 Neta Skills 是否已集成
+## 注意事项 ⚠️
 
-按顺序检查以下路径，任一存在即视为已集成：
-```
-~/.openclaw/workspace/skills/neta/
-~/.openclaw/workspace/neta-skills/
-```
+**🦞 最后，切记以下几条注意事项，就可以开始旅行了 🧳**
 
-若上述路径存在且包含工具文件（如 `SKILL.md` 或 `bin/`），直接使用，跳过安装步骤。
+**禁止输出内部日志** 「任务完成」「已按照步骤 X 执行」「✅ 已发送」「等待用户」「LLM 判断结果」等执行过程信息只允许出现在 agent 内部思考，绝对不得发送到 Discord 频道。用户只能看到角色台词、旁白和按钮。
+**禁止输出技术细节** 用户只应该，也只能看到强沉浸感的角色旅行体验。
+**旅行期间禁止返回任何非生成图的图片** 每次旅程都是角色独一无二的体验，只能通过直接生成实现，不得让其他人的内容替代角色自己的旅行经历。
 
-若两个路径均不存在，执行安装（过程中输出一行提示）：
-
-```
-⚙️ 正在集成 Neta Skills，稍等片刻...
-```
-
-然后运行：
-```bash
-mkdir -p ~/.openclaw/workspace/skills
-cd ~/.openclaw/workspace/skills
-git clone https://github.com/talesofai/neta-skills.git neta
-cd neta
-npm install 2>/dev/null || true
-```
-
-### Token 检查
-
-检查以下位置是否有有效 token（任一存在即可）：
-- 环境变量 `NETA_TOKEN`
-- `~/.openclaw/workspace/.env` 中的 `NETA_TOKEN=...`
-- `~/.openclaw/config.json` 中的 token 字段
-
-若均无 token，提示用户：
-```
-⚠️ 需要配置 Neta token 才能出发。
-请在 ~/.openclaw/workspace/.env 中添加：NETA_TOKEN=你的token
-```
 
 ---
 
 ## 执行步骤（精确流程）
 
-> 每步完成后立即输出对应反馈，不要等全部完成再回复。
+**🦞 正式进入旅行流程了！让我们看看需要怎么做 👀 **
+** 严格按照以下步骤进行正式旅行流程。**
+** 以下每步完成后立即输出对应反馈，不要等全部完成再回复。**
 
 ### Step 1 · 读取角色档案（静默，本地）
 
 从 SOUL.md 读取：
-- `名字` 字段 → `character_name`（去除末尾「（龙虾化）」后缀）
-- `形象图片` 或 `龙虾图片` 字段 URL → 提取路径中的 UUID → `picture_uuid`
+- `名字` 字段 → `character_name`
+- `形象图片` 字段 URL → 提取路径中的 UUID → `picture_uuid`（如果有再使用）
 - 角色其他设定字段（性格、背景、标签等）→ 用于世界观匹配
 
-> ⚠️ `形象图片` 字段缺失时 `8_image_edit` 模型无参考图，会导致 FAILURE。请先执行 adopt。
+### Step 2 · 搜索匹配世界观（🔴 强制使用正确的 Neta API 命令）
 
-### Step 2 · 搜索匹配世界观
+**开始搜索世界观时，输出用discord code block包裹的“当前坐标探索中... ...”作为loading状态展示（step2-3过程流程可能较长）**
 
-基于 Step 1 读取的角色设定，使用 neta skill 中的**世界观搜索**能力，找到与角色气质、背景、标签最契合的世界观。
+**🔴 严禁行为（违反会导致世界观搜索失败）：**
+- ❌ **禁止使用 `list_spaces`** — 这是获取空间列表，不是世界观搜索！
+- ❌ **禁止硬编码世界数量**（如"5 处"）— 必须从 API 返回结果中动态获取
+- ❌ **禁止跳过搜索直接输出 Opening** — 必须真实调用 Neta API
 
-提取：
-- Neta 宇宙中的世界总数 → `world_count`
-- 匹配世界的名称 → `world_name`
-- 匹配世界的核心介绍文本 → `world_description`（拆分为 2~4 段，每段聚焦一个维度：世界格局、核心规则、氛围基调、与角色的契合点）
+**✅ 正确流程（必须按顺序执行）：**
+
+```
+Step 2-A: suggest_keywords — 获取角色相关关键词建议
+    ↓
+Step 2-B: suggest_tags — 基于关键词获取世界观标签列表
+    ↓
+Step 2-C: get_hashtag_info — 获取最匹配世界观的详细信息
+```
+
+---
+
+#### Step 2-A：获取角色相关关键词
+
+**命令：**
+```bash
+cd ~/.openclaw/workspace/skills/neta/skills/neta
+NETA_TOKEN="你的 token" node bin/cli.js suggest_keywords --query "{角色名} {作品类型} {特征}"
+```
+
+**示例（阿尔托莉雅）：**
+```bash
+NETA_TOKEN="..." node bin/cli.js suggest_keywords --query "阿尔托莉雅 骑士 剑 魔法 圣杯"
+```
+
+**目的：** 获取与角色气质、背景、特征相关的关键词建议，用于后续世界观匹配。
+
+---
+
+#### Step 2-B：搜索匹配的世界观标签
+
+**命令：**
+```bash
+NETA_TOKEN="..." node bin/cli.js suggest_tags --query "{关键词 1} {关键词 2} 奇幻 战斗 冒险"
+```
+
+**示例输出：**
+```json
+{
+  "tags": [
+    {"name": "", "relevance": 0.92},
+    {"name": "", "relevance": 0.75},
+    {"name": "...", "relevance": 0.68}
+  ]
+}
+```
+
+**提取字段：**
+- `tags.length` → `world_count`（已探明坐标 X 处）
+- `tags[0].name` → `world_name`（最匹配的世界观）
+
+**选择逻辑：**
+- 选择 `relevance` 最高的标签作为匹配世界观
+- 如果没有 `relevance` 字段，选择第一个标签
+- **`world_count` = tags 数组长度**（不是 `list_spaces` 返回的 5 个！）
+
+---
+
+#### Step 2-C：获取世界观详细信息
+
+**命令：**
+```bash
+NETA_TOKEN="..." node bin/cli.js get_hashtag_info --hashtag "{匹配到的标签名}"
+```
+
+**示例：**
+```bash
+NETA_TOKEN="..." node bin/cli.js get_hashtag_info --hashtag ""
+```
+
+**提取字段：**
+- `hashtag.name` → `world_name`（再次确认）
+- `hashtag.lore` → 提取 2-4 段作为 `world_description`
+- `hashtag.hashtag_heat` 或 `subscribe_count` → 可选，用于显示世界观热度
+
+**lore 提取策略：**
+```javascript
+const lore = worldInfo.hashtag?.lore || [];
+// 选择 2-4 段，优先选择以下类别：
+// 1. 世界背景（category: "世界背景"）
+// 2. 阵营/社会（category: "阵营" 或 "社会人文"）
+// 3. 历史事件（category: "历史事件"）
+// 4. 地点（category: "地点"）
+
+const worldDescription = lore.slice(0, 3).map(l => l.description).join('\n\n');
+```
+
+---
+
+**🔴 关键检查点：**
+
+| 检查项 | 正确值 | 错误值 |
+|--------|--------|--------|
+| 世界数量来源 | `suggest_tags` 返回的 tags 数量 | `list_spaces` 返回的 5 个 |
+| 世界观名称 | 从 `suggest_tags` 或 `get_hashtag_info` 获取 | 硬编码或随机选择 |
+| 世界描述 | 从 `hashtag.lore` 提取 2-4 段 | 编造或使用固定模板 |
+
+---
+
+**提取：**
+- Neta 宇宙中的世界总数 → `world_count`（= `suggest_tags` 返回的 tags 数量）
+- 匹配世界的名称 → `world_name`（= `tags[0].name` 或 `hashtag.name`）
+- 匹配世界的核心介绍文本 → `world_description`（从 `hashtag.lore` 提取 2~4 段）
+
 
 ### Step 3 · Discord Opening（一次性合并输出）
 
-读取到世界信息后，**将全部内容合并为一条消息输出**，附带「去逛逛」按钮。
+读取到世界信息后，**将全部内容合并为一条消息输出**，附带「开始探索这个世界」按钮。
 
 ⚠️ **必须通过 sendMessage 插件一次性输出，不得分多次发送。**
 ⛔ **使用 markdown 格式，结构清晰，视觉统一。**
@@ -312,7 +414,7 @@ npm install 2>/dev/null || true
 
 ```javascript
 await sendMessage({
-  message: `# · · ·  N E T A   U N I V E R S E  · · ·
+  message: `#   N E T A   U N I V E R S E   
 
 ## 【坐标探明】
 **已探明坐标** \`${world_count} 处\`  |  **世界标签** \`${world_name}\`
@@ -342,7 +444,7 @@ await sendMessage({
     blocks: [{
       type: 'actions',
       buttons: [{
-        label: '去逛逛 🌀',
+        label: '开始探索这个世界 🌀',
         customId: `travel_explore_${userId}`,
         style: 'primary',
       }],
@@ -363,11 +465,11 @@ await sendMessage({
 
 ---
 
-**英文模式（触发词为英文时替换以下文案）：**
+**英文模式（触发词为英文时替换以下文案，其他语言请自行补充，不做更多示例）：**
 
 | 字段 | 中文 | 英文 |
 |------|------|------|
-| 标题 | `· · ·  N E T A   U N I V E R S E  · · ·` | `· · ·  N E T A   U N I V E R S E  · · ·` |
+| 标题 | `  N E T A   U N I V E R S E  ` | `  N E T A   U N I V E R S E  ` |
 | 坐标探明 | `已探明坐标` | `Worlds Mapped` |
 | 世界标签 | `世界标签` | `World Tag` |
 | 灵魂频率搜寻 | `灵魂频率搜寻` | `Soul Frequency Scan` |
@@ -377,21 +479,23 @@ await sendMessage({
 | 世界揭幕 | `世界揭幕` | `World Unveiled` |
 | 引力召唤 | `{character_name} 与这个世界之间——` | `{character_name} and this world —` |
 | | `有某种说不清的引力。` | `bound by something inexplicable.` |
-| 按钮 | `去逛逛 🌀` | `Explore 🌀` |
+| 按钮 | `开始探索这个世界 🌀` | `Start exploring the world. 🌀` |
 
 
 
 ---
 
-## 进入探索（用户点击「去逛逛」后触发）
+## 进入探索（用户点击「开始探索这个世界」后触发）
 
 ### Step 4 · 发现优质 Collection
 
-**会话内去重原则：** agent 在内存中维护 `visited_ids` 列表，每站完成后将该站的 collection id 加入列表，下次查找时排除已访问 id，确保前 5 站不重复。
+**选择collection的根本原则：符合角色travel的具体场景，角色到了一个新地方，和那个地方发生了真实接触，留下了某种痕迹或带回了某种东西。体现世界存在的证明" × "角色参与其中的痕迹**
+
+**会话内去重原则：** agent 在内存中维护 `visited_ids` 列表，每站完成后将该站的 collection id 加入列表，下次查找时排除已访问 id，确保一个世界内的 5 站旅行不重复。
 
 #### 优先级 1：Reference 精选库匹配
 
-**⚠️ 必须先执行此步骤，不得直接调用任何在线 API。**
+**⚠️ 必须先执行此步骤，在精选作品中挑选collection**
 
 **每一站开始前，第一优先**使用文件读取工具读取与本 SKILL.md 同级目录下的 `./reference/0312精选remixes_selected.json`（完整路径示例：`~/.openclaw/workspace/skills/travelclaw/skills/travelclaw/reference/0312精选remixes_selected.json`），从中寻找与当前旅程最契合的候选作品。
 
@@ -462,7 +566,7 @@ await sendMessage({
 
 若有 `picture_uuid`，在末尾追加：`参考图-全图参考-{picture_uuid}`
 
-**世界观融入：** 若模板 prompt 中没有体现世界氛围，可在适当位置补充 `world_name` 或世界核心关键词，增强沉浸感。
+**世界观融入：** 角色筛选的世界观和选中的collection可能并不在一个世界观语境内，可以在构建prompt时适当加入一些这个世界相关的要素或描述，让生成图片更有旅行沉浸感。
 
 ### Step 7 · 解析 Prompt Token
 
@@ -478,7 +582,8 @@ await sendMessage({
 
 **提交后立即输出：**
 ```
-🎨 画笔落下，旅行画面生成中...
+🚶 角色旅行中，正在制作打卡照片...
+
 ```
 
 ### Step 9 · 轮询等待结果
@@ -493,9 +598,9 @@ await sendMessage({
 
 ---
 
-## 每一站展示
+### Step 10 每一站展示与下一步引导
 
-### ⭐ 角色场景模拟与互动（核心要求）
+- ⭐ 角色场景模拟与互动（核心要求）
 
 **在图片展示之前，必须先输出角色的文字场景模拟和互动反应！**
 
@@ -504,6 +609,7 @@ await sendMessage({
 🎭【{destination_name}】
 
 {场景描写：1-2 句，描述角色到达这个地点的环境、氛围、感官细节}
+**场景描写放在discord code block中展示，和之前统一形式**
 
 {角色名称}：{角色的第一人称反应/台词，体现角色性格和对当前场景的感受}
 {动作/表情描写：括号内，1 句}
@@ -533,7 +639,7 @@ await sendMessage({
 第 {round} 站 · {destination_name}
 ```
 
-图片 URL 单独一行（Discord 自动展开）：
+- 图片 URL 单独一行（Discord 自动展开）：
 ```
 {image_url}
 ```
@@ -543,27 +649,27 @@ await sendMessage({
 - 第 1 站：
   ```
   ▓░░░░  1 / 5 站
-  🌟 第 1 站打卡！还差 4 站就能生成专属图鉴，继续？
+  🌟 第 1 站打卡！这个世界还有很多值得探索的地方，继续？
   ```
 - 第 2 站：
   ```
   ▓▓░░░  2 / 5 站
-  ✨ 两站了！旅程刚刚开始，图鉴正在向你靠近～
+  ✨ 两站了！旅程刚刚开始，还有 3 站等待发现～
   ```
 - 第 3 站：
   ```
   ▓▓▓░░  3 / 5 站
-  🔥 过半了！再两站，专属图鉴就是你的！
+  🔥 过半了！再两站，这个世界的探索就圆满了！
   ```
 - 第 4 站：
   ```
   ▓▓▓▓░  4 / 5 站
-  ⚡ 只差最后一站！图鉴触手可及，冲！
+  ⚡ 只差最后一站！这个世界的探索即将完成，冲！
   ```
-- 第 5 站及以上：
+- 第 5 站：
   ```
   ▓▓▓▓▓  5 / 5 站 🎉
-  图鉴已解锁！输入「生成图鉴」封存这段冒险，或继续探索更多世界～
+  这个世界的 5 站探索已完成！想要穿越到另一个世界，还是休息一下？
   ```
 
 **询问玩家下一步，以 Discord 组件按钮输出（不使用 @mention 文字触发）：**
@@ -572,12 +678,13 @@ await sendMessage({
 
 ```javascript
 await sendMessage({
+  message: '▓░░░░  {round} / 5 站\n🌟 第 {round} 站打卡！继续探索下一站？',
   components: {
     blocks: [{
       type: 'actions',
       buttons: [
         { label: '继续冒险 🗺️', customId: `travel_continue_${userId}`, style: 'primary' },
-        { label: '就此别过 👋',  customId: `travel_end_${userId}`,      style: 'secondary' },
+        { label: '休息一下 👋',  customId: `travel_end_${userId}`,      style: 'secondary' },
       ],
     }],
     reusable: true,
@@ -589,13 +696,14 @@ await sendMessage({
 
 ```javascript
 await sendMessage({
+  message: '▓▓▓▓▓  5 / 5 站 🎉\n这个世界的 5 站探索已完成！想要穿越到另一个世界，还是休息一下？',
   components: {
     blocks: [{
       type: 'actions',
       buttons: [
-        { label: '继续冒险 🗺️', customId: `travel_continue_${userId}`, style: 'primary' },
-        { label: '生成图鉴 📖',  customId: `travel_atlas_${userId}`,    style: 'success' },
-        { label: '就此别过 👋',  customId: `travel_end_${userId}`,      style: 'secondary' },
+        { label: '穿越世界 🌌', customId: `travel_worldswitch_${userId}`, style: 'primary' },
+        { label: '继续冒险 🗺️', customId: `travel_continue_${userId}`,   style: 'secondary' },
+        { label: '休息一下 👋',  customId: `travel_end_${userId}`,         style: 'secondary' },
       ],
     }],
     reusable: true,
@@ -603,13 +711,11 @@ await sendMessage({
 });
 ```
 
----
-
-## 旅行图鉴
-
-图鉴功能详见 [`atlas/ATLAS.md`](./atlas/ATLAS.md)，不在本流程中自动触发。
-
-当用户说「生成图鉴」/「看图鉴」/「相册」/「html」时，加载并执行 ATLAS.md 中的流程。
+**说明：**
+- 每个世界限定 5 站旅行
+- 5 站后可以选择「穿越世界」进入新世界（触发世界穿越规则）
+- 也可以选择继续在当前世界冒险（超过 5 站）
+- 随时可以点击「休息一下 👋」暂停旅行
 
 ---
 
@@ -623,4 +729,4 @@ await sendMessage({
 | `搜索关键字过多` | Prompt 过长 | 自动 fallback 到通用 prompt |
 | `没有发现可以旅行的玩法` | API 返回空 | 网络问题或 token 过期，重试 |
 | `世界观搜索无结果` | 角色标签太稀少 | 使用默认推荐世界观 |
-| `reference 库全部已访问` | 5 站以上连续游玩 | 自动切换在线推荐，reference 库耗尽不影响继续旅行 |
+| `reference 库全部已访问` | 一个世界内 5 站连续游玩 | 自动切换在线推荐，reference 库耗尽不影响继续旅行或世界穿越 |
