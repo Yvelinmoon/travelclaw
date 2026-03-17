@@ -116,7 +116,7 @@ ps aux | grep channel-listener
     ↓ 用户点击
     ├─ 「就是他/她」→ 进入阶段 9
     └─ 「不对」    → 记录错误猜测，返回阶段 4
-阶段 9：更新头像 + 昵称 + SOUL.md → 输出觉醒叙事 → 🛑 等待用户回复
+阶段 9：判断是真实角色还是二次元角色，通过对应方式搜索并更新头像 + 昵称 + SOUL.md → 输出觉醒叙事 → 🛑 等待用户回复
 阶段 10：角色扮演（首轮回复后追加「探索这个世界」按钮 → 用户点击触发 travelclaw）
 ```
 
@@ -762,8 +762,8 @@ NETA_TOKEN="..." node bin/cli.js suggest_tags --query "{关键词 1} {关键词 
 ```json
 {
   "tags": [
-    {"name": "千夜幻想的无尽星海", "relevance": 0.92},
-    {"name": "奇妙动物都市", "relevance": 0.75},
+    {"name": "", "relevance": 0.92},
+    {"name": "", "relevance": 0.75},
     {"name": "...", "relevance": 0.68}
   ]
 }
