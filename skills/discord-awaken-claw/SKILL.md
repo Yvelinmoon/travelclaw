@@ -3,124 +3,36 @@ name: discord-awaken-claw
 description: Triggered when an "start awakening" related command is received. Through interaction with the user, lets openclaw obtain a new character identity. Guides the user to input a character concept keyword, outputs using the discord sendMessage component, accepts user @bot text input, uses a "guess the character" approach to identify the user's target character, and upon user confirmation updates the bot avatar, server nickname, and soul.md — transforming openclaw into that character.
 ---
 
-## Read before executing! Check the following checklist before starting character awakening 🎭
+## 🎭 For OpenClaw Agent — Direct Execution
 
-**Prerequisites**
-- Discord event listener script (e.g. button listener) is already running;
-- neta skill has been configured;
-- A usable neta token is present in environment variables.
+**You are the LLM.** This skill runs through you directly — no external scripts, no subagents, no `callLLM`.
 
-**Trigger conditions and output format**
-- Triggered when user sends "start awakening"; use the discord sendMessage component to output the fixed opening template.
-- After receiving the user's keyword, use the same component each round to output smart follow-up questions and option buttons.
+**Your workflow:**
+1. User triggers awakening → Send Phase 1 opening + button
+2. User clicks button → Send Phase 2 prompt
+3. User inputs clue → Generate Phase 4 question/guess → Send Phase 5/7 with buttons
+4. User confirms → Update avatar/nickname/SOUL.md → Output awakening narrative → Trigger travelclaw
 
-**Nickname and avatar replacement**
-- When a character is confirmed and awakening begins, the bot's server nickname and avatar must be replaced with that character's.
-- Anime/fictional character ➡️ prioritize Neta skill search ➡️ then Wikimedia image search ➡️ third use Neta skill to generate character avatar image; for real-world figures use Wikimedia directly.
-
-**Skill switching**
-- After character awakening and outputting the awakening narrative, immediately load the travelclaw skill (find it in your skills folder yourself).
-
-## ⚙️ Installation & Initialization (run on first load; silently skip after)
-
-### Step 1: Install dependencies
-
-Check if `reference/node_modules` exists; if not, run:
-
-```bash
-cd [this skill directory]/reference && npm install
-```
-
-### Step 2: Environment variable check
-
-**Required variables** (listener cannot start without these):
-
-| Variable | Purpose | How to obtain |
-|----------|---------|---------------|
-| `DISCORD_TOKEN` | Discord Bot authentication | Discord Developer Portal |
-| `DISCORD_GUILD_ID` | Target server ID | Discord server settings |
-
-
-
-### Step 3: Start the listener (only triggered on channel creation)
-
-**Listener purpose**: Only automatically sends an initial guide message when the Bot joins a new channel
-
-```bash
-# Run listener in background
-cd [this skill directory]
-DISCORD_TOKEN="your token" DISCORD_GUILD_ID="your server ID" node reference/channel-listener.js &
-```
-
-**Verify it's running**:
-```bash
-ps aux | grep channel-listener
-# Output should show a node process
-```
-
-**View logs**:
-```bash
-tail -f reference/channel-listener.log
-```
-
-### Step 4: neta-skills check (for avatar search)
-
-Any of these paths existing is sufficient:
-```
-~/.openclaw/workspace/skills/neta/
-~/.openclaw/workspace/neta-skills/
-```
-If not present, clone:
-```bash
-cd ~/.openclaw/workspace/skills && git clone https://github.com/talesofai/neta-skills.git neta && cd neta && npm install
-```
-
----
-
-## 🚀 Quick Deployment (for other OpenClaw users)
-
-### Prerequisites
-
-1. **Discord Bot created** and invited to the server
-2. **Environment variables configured** (`~/.env` or system environment variables)
-3. **Node.js installed** (v18+)
-
-### One-click startup
-
-```bash
-# 1. Install dependencies
-cd ~/.openclaw/workspace/skills/travelclaw/skills/discord-awaken-claw/reference
-npm install
-
-# 2. Start listener (background)
-cd ..
-nohup node reference/channel-listener.js > reference/channel-listener.log 2>&1 &
-
-# 3. Verify
-ps aux | grep channel-listener
-```
-
-### Notes
-
-- ⚠️ **Listener runs independently**: separate from the OpenClaw main process; manage separately
-- ⚠️ **Bot permissions**: requires `ViewChannel` and `SendMessages`
-- ⚠️ **Intents configuration**: Discord Developer Portal must have `Server Members Intent` and `Message Content Intent` enabled
-
+**Key rules:**
+- Always use `sendMessage` component for messages with buttons
+- Always require confirmation (Phase 7) before awakening
+- **🔴 MANDATORY: Update avatar + nickname BEFORE Phase 9 narrative** (user must see the transformation!)
+- **🔴 VERIFICATION: Check guild member nickname/avatar before outputting narrative**
+- After awakening, auto-trigger travelclaw (no user confirmation needed)
 
 ---
 
 ## 🔄 Execution Flow Quick Reference (must follow each step in order; no skipping)
 
 ```
-Phase 0: Bot joins private channel → auto-send guide message + button
-Phase 1: User inputs @Bot start awakening → send guide message + button
+Phase 1: User triggers awakening → send opening message + button
     ↓ User clicks "I have one in mind"
 Phase 2: Prompt user to input character description keyword
     ↓ User sends text
 Phase 3: Receive input → immediately enter Phase 4
-Phase 4: Call LLM to judge
-    ├─ action=question → Phase 5 (output follow-up buttons)
-    └─ action=guess    → Phase 7 (output guess reveal)
+Phase 4: You decide — question or guess?
+    ├─ Not confident → Phase 5 (output follow-up buttons)
+    └─ Confident (>85%) → Phase 7 (output guess reveal)
 Phase 5: Output follow-up buttons
     ↓ User clicks answer
 Phase 6: Record answer → immediately return to Phase 4
@@ -128,7 +40,7 @@ Phase 7: Output character guess + confirmation buttons
     ↓ User clicks
     ├─ "That's them" → enter Phase 9
     └─ "Not right"   → record wrong guess, return to Phase 4
-Phase 9: Determine if real person or fictional character, search and update avatar + nickname + SOUL.md → output awakening narrative → 🛑 wait for user reply
+Phase 9: 🔴 UPDATE AVATAR + NICKNAME FIRST → then output awakening narrative → wait for user reply
 Phase 10: Roleplay (append "Explore this world" button after first reply → user click triggers travelclaw)
 ```
 
@@ -160,17 +72,24 @@ Phase 10: Roleplay (append "Explore this world" button after first reply → use
 
 **When calling sendMessage, the `message` field must be filled in completely according to the phase template; nothing may be omitted or left blank.** After calling, do not output the same text again outside the sendMessage call (prevent duplication).
 
-**Never output any internal execution logs to the Discord channel.** The following may only appear in the agent's internal thinking and must never be sent to the channel via sendMessage or direct text:
+**Never output any internal execution logs to the Discord channel.** The following may only appear in your internal thinking and must never be sent to the channel:
 
-- Step confirmation: "✅ Sent" "Task complete" "Executed phase X flow" "Waiting for user to click button"
-- Reasoning: "LLM result: …" "Confidence 95%+" "This is the most iconic character in the Fate series"
-- Technical status: "Subagent main finished" "Message sent to channel" "First: …" "Second: …"
+- Step confirmation: "✅ Sent" "Task complete" "Executed phase X flow"
+- Reasoning: "Confidence 95%+" "This is the most iconic character..."
+- Technical status: "Message sent to channel" "First: …" "Second: …"
 
-Users should only see character dialogue, narration, and buttons — never the agent's internal monologue.
+**🔴 Never output raw JSON to the Discord channel.**
+
+**Your flow:**
+1. Decide internally (question or guess)
+2. Call `sendMessage` with formatted message + buttons
+3. Users see: natural language questions, character dialogue, narration, buttons
+
+Users should only see character dialogue, narration, and buttons — never your internal reasoning.
 
 ---
 
-## 🔴 Mandatory awakening operations (must execute after confirm_yes is clicked)
+## 🔴🔴🔴 Mandatory awakening operations (must execute after confirm_yes is clicked)
 
 **After the user clicks "◎ That's them, hatch now", the following two steps are core components of the awakening and are NOT optional; they must not be skipped, forgotten, or omitted:**
 
@@ -179,12 +98,24 @@ Users should only see character dialogue, narration, and buttons — never the a
 | **Required ①** | Change guild member nickname | Set to character name only, no ID or extra characters |
 | **Required ②** | Search character image → update guild member avatar | Prioritize neta skill; if it fails, inform the user and continue |
 
-**Timing: Complete before outputting the awakening narrative in Phase 9 ⑥ (steps ③④⑤). The narrative is the climax of awakening; nickname and avatar are silently updated before it so the user feels the "magic."**
+**🔴 CRITICAL TIMING:**
+```
+User clicks "That's them"
+   ↓
+① Change nickname (silent)
+   ↓
+② Update avatar (silent)
+   ↓
+③-⑤ SOUL.md backup, etc.
+   ↓
+⑥ NOW output awakening narrative
+```
 
-❌ The following are serious errors:
+**❌ The following are serious errors:**
 - Reaching ⑥ narrative then stopping, forgetting to change nickname and avatar
 - Completely skipping ⑥ narrative because avatar search failed
 - Stopping and waiting for the user before ⑥ narrative is complete
+- **Outputting narrative BEFORE nickname/avatar are updated** (user won't see the transformation!)
 
 ---
 
@@ -256,51 +187,44 @@ Set `waitingFor = 'word'`, prompt user to input any description related to the c
 
 **Trigger:** User sends a message and `game.waitingFor === 'word'`
 
-```javascript
-if (game?.waitingFor === 'word') {
-  game.waitingFor = null;
-  await handleInitialWord(userId, word, sendMessage, callLLM);
-  return true;
-}
-```
+Record the user's input, then immediately proceed to Phase 4.
 
 ---
 
-### Phase 4: LLM smart follow-up
+### Phase 4: Generate follow-up or guess
 
-**Trigger:** Calls `processNextStep` after receiving initial keyword
+**Trigger:** After receiving user's initial keyword or answer
 
-```javascript
-const prompt = `The user is thinking of a fictional character. Known clues:
-- Word/description given by user: ${word}
-- Questions already answered: ${JSON.stringify(answers)}
-- Characters already ruled out: ${wrongGuesses.join(', ')}
+**You are the LLM.** Generate the next step directly using your own reasoning:
 
-Assess your confidence level:
+1. Review all clues gathered so far (user's word, answers to questions, ruled-out guesses)
+2. Assess your confidence:
+   - **>85% confident** → Generate a guess with full character data
+   - **<85% confident** → Generate a follow-up question with 3-4 options
 
-A) If more than 85% confident, guess directly:
+**Guess format (when confident):**
+```json
 {
   "action": "guess",
   "character": "character name",
-  "from": "《work title》",
-  "emoji": "single emoji",
-  "color": "#hex theme color",
+  "from": "work/source title",
+  "emoji": "🎭",
+  "color": "#FFD700",
   "desc": "one-line trait (≤20 chars)",
-  "greet": "character's first line (may use \\n for line break)"
+  "greet": "character's greeting"
 }
+```
 
-B) If not confident enough, generate a follow-up question:
+**Question format (when not confident):**
+```json
 {
   "action": "question",
-  "question": "follow-up question (1 sentence, specific observable trait)",
-  "options": ["trait 1", "trait 2", "trait 3"]
+  "question": "follow-up question (1 sentence, specific trait)",
+  "options": ["option 1", "option 2", "option 3"]
 }
-
-Output JSON only, no other text.`;
-
-const result = await callLLM(prompt, VESSEL_SYS);
-const parsed = parseJSON(result);
 ```
+
+**Output only the JSON internally** — then proceed to Phase 5 or Phase 7 based on the action.
 
 ---
 
@@ -330,19 +254,7 @@ Option button customId: `answer_${userId}_${index}` (index from 0). A "✏ Type 
 
 ### Phase 6: Handle answer click
 
-```javascript
-case 'answer': {
-  const answerIdx = parseInt(parts[parts.length - 1], 10);
-  const answer = game.currentOptions?.[answerIdx];
-  game.answers.push({ q: game.currentQuestion, a: answer });
-  game.currentQuestion = null;
-  game.currentOptions = [];
-  setGame(userId, game);
-  await sendMessage({ message: `"${answer}"` });
-  await processNextStep(userId, sendMessage, callLLM);
-  break;
-}
-```
+Record the user's answer, acknowledge it, then immediately return to Phase 4 to generate the next question or guess.
 
 ---
 
@@ -438,6 +350,45 @@ I am Guo Degang.
 ---
 
 ### Phase 9: Awakening · Silent update
+
+**🔴🔴🔴 CRITICAL: AVATAR & NICKNAME UPDATE (MANDATORY CHECKPOINT) 🔴🔴🔴**
+
+**BEFORE outputting ANY narrative in Step ⑥, you MUST complete these steps:**
+
+```
+① Send atmosphere message ("...Hatching")
+   ↓
+② Back up and update SOUL.md (must include character_image field!)
+   ↓
+③ Change guild member nickname → {character name}
+   ↓
+④ Search character avatar → get image URL
+   ↓
+⑤ Update guild member avatar with the image
+   ↓
+⑥ NOW output awakening narrative
+```
+
+**❌ FORBIDDEN (serious errors):**
+- Outputting Step ⑥ narrative BEFORE completing steps ①-⑤
+- Skipping avatar update because "search failed" (use fallback image)
+- Waiting for user confirmation before updating (do it silently)
+- Forgetting to update nickname (user won't feel the transformation!)
+
+**✅ Verification (before Step ⑥):**
+```javascript
+// MUST verify before proceeding
+const member = await guild.members.fetch(botUserId);
+const nickname = member.nickname || member.user.username;
+
+if (nickname !== charData.character) {
+  throw new Error('❌ CRITICAL: Nickname not updated! Must update before narrative.');
+}
+```
+
+**📖 For detailed avatar search flow:** See `OPTIMIZATIONS.md` → Issue 5
+
+---
 
 **🚨 Must complete all six steps in order ①→②→③→④→⑤→⑥. After each step, the next step is clearly indicated in this document — just follow it.**
 
