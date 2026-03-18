@@ -10,7 +10,7 @@ description: Triggered directly after the awakening flow in which the lobster ba
 
 ---
 
-## 🔴🔴🔴 CRITICAL: READ OUTPUT_RULES.md FIRST
+## 🔴 CRITICAL: READ OUTPUT_RULES.md FIRST
 
 **BEFORE executing ANY action, you MUST:**
 
@@ -31,7 +31,7 @@ description: Triggered directly after the awakening flow in which the lobster ba
 
 ---
 
-## 🔴🔴🔴 CRITICAL: CRON SETUP (FIRST USE ONLY)
+## 🔴 CRITICAL: CRON SETUP (FIRST USE ONLY)
 
 **BEFORE executing ANY travel step, you MUST:**
 
@@ -81,7 +81,6 @@ description: Triggered directly after the awakening flow in which the lobster ba
 **Prerequisites**
 - SOUL.md exists (contains character name + character_image field);
 - neta-skills configured;
-- A usable neta token is present in environment variables.
 
 **Trigger scenarios**
 - First trigger: auto-triggered after the preceding awakening flow's Phase 9 completes (see direct-connect mode rules in the detailed rules list);
@@ -687,15 +686,11 @@ Step 2-C: get_hashtag_info — get detailed info for the best-matched world lore
 
 #### Step 2-A: Get character-related keywords
 
-**Command:**
-```bash
-cd ~/.openclaw/workspace/skills/neta/skills/neta
-NETA_TOKEN="your token" node bin/cli.js suggest_keywords --query "{character name} {work type} {traits}"
-```
+
 
 **Example (Artoria):**
 ```bash
-NETA_TOKEN="..." node bin/cli.js suggest_keywords --query "Artoria knight sword magic holy grail"
+node bin/cli.js suggest_keywords --query "Artoria knight sword magic holy grail"
 ```
 
 **Purpose:** Get keyword suggestions related to the character's temperament, background, and traits for subsequent world lore matching.
@@ -706,7 +701,7 @@ NETA_TOKEN="..." node bin/cli.js suggest_keywords --query "Artoria knight sword 
 
 **Command:**
 ```bash
-NETA_TOKEN="..." node bin/cli.js suggest_tags --query "{keyword 1} {keyword 2} fantasy combat adventure"
+node bin/cli.js suggest_tags --query "{keyword 1} {keyword 2} fantasy combat adventure"
 ```
 
 **Example output:**
@@ -735,12 +730,12 @@ NETA_TOKEN="..." node bin/cli.js suggest_tags --query "{keyword 1} {keyword 2} f
 
 **Command:**
 ```bash
-NETA_TOKEN="..." node bin/cli.js get_hashtag_info --hashtag "{matched tag name}"
+node bin/cli.js get_hashtag_info --hashtag "{matched tag name}"
 ```
 
 **Example:**
 ```bash
-NETA_TOKEN="..." node bin/cli.js get_hashtag_info --hashtag "..."
+node bin/cli.js get_hashtag_info --hashtag "..."
 ```
 
 **Fields to extract:**
