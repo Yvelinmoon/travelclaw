@@ -1,8 +1,9 @@
 /**
- * Travelclaw - Discord 频道事件监听器 (完整版)
- * 
- * 监听频道创建、按钮点击、消息事件
- * 直接调用 LLM API 进行追问/猜测
+ * Travelclaw - Discord Channel Event Listener
+ *
+ * Listens for channel creation events.
+ * Sends initial guide message via direct-handler.
+ * Button interactions and regular messages are handled by the OpenClaw main agent.
  */
 
 require('dotenv').config();
@@ -18,7 +19,7 @@ const LITELLM_API_KEY = process.env.LITELLM_API_KEY;
 const MODEL = process.env.LLM_MODEL || 'litellm/qwen3.5-plus';
 
 if (!TOKEN) {
-  console.error('❌ 缺少 DISCORD_TOKEN');
+  console.error('Missing DISCORD_TOKEN');
   process.exit(1);
 }
 
@@ -32,18 +33,18 @@ const client = new Client({
 });
 
 client.once(Events.ClientReady, (c) => {
-  console.log(`✅ 监听器已启动：${c.user.tag}`);
-  console.log(`   监听服务器：${GUILD_ID || '所有服务器'}`);
-  console.log('\n💡 监听：频道创建 (仅用于发送初始引导消息)');
-  console.log('💡 消息和按钮交互由 OpenClaw 主 agent 处理');
+  console.log(`Listener started: ${c.user.tag}`);
+  console.log(`  Watching guild: ${GUILD_ID || 'all guilds'}`);
+  console.log('\n  Listening: channel creation (initial guide message only)');
+  console.log('  Messages and button interactions are handled by the OpenClaw main agent');
 });
 
-// ─── LLM 调用 ──────────────────────────────────────────────────────────
+// ─── LLM Call ─────────────────────────────────────────────────────────
 async function callLLM(prompt, systemPrompt) {
   if (!LITELLM_API_KEY) {
-    throw new Error('缺少 LITELLM_API_KEY 环境变量');
+    throw new Error('Missing LITELLM_API_KEY environment variable');
   }
-  
+
   const response = await fetch(`${LITELLM_BASE_URL}/chat/completions`, {
     method: 'POST',
     headers: {
@@ -60,24 +61,24 @@ async function callLLM(prompt, systemPrompt) {
       max_tokens: 500,
     }),
   });
-  
+
   if (!response.ok) {
     const error = await response.text();
-    throw new Error(`LLM API 错误：${response.status} ${error}`);
+    throw new Error(`LLM API error: ${response.status} ${error}`);
   }
-  
+
   const data = await response.json();
   return data.choices[0].message.content;
 }
 
-// ─── 消息发送适配器 ───────────────────────────────────────────────────
+// ─── Message Sender Adapter ───────────────────────────────────────────
 function createSendMessage(channel) {
   return async (payload) => {
     try {
       const discordPayload = {
         content: payload.message || '',
       };
-      
+
       if (payload.components?.blocks) {
         const actionRows = payload.components.blocks.map(block => {
           if (block.type === 'actions' && block.buttons) {
@@ -94,58 +95,58 @@ function createSendMessage(channel) {
           }
           return null;
         }).filter(r => r !== null);
-        
+
         if (actionRows.length > 0) {
           discordPayload.components = actionRows;
         }
       }
-      
+
       const msg = await channel.send(discordPayload);
-      console.log('[发送成功]', (payload.message || '[components]').substring(0, 50));
+      console.log('[Send OK]', (payload.message || '[components]').substring(0, 50));
       return msg;
     } catch (error) {
-      console.error('[发送失败]', error.message);
+      console.error('[Send Failed]', error.message);
       throw error;
     }
   };
 }
 
-// ─── 频道创建自动触发 ─────────────────────────────────────────────────
+// ─── Channel Creation Auto-Trigger ────────────────────────────────────
 client.on(Events.ChannelCreate, async (channel) => {
   if (channel.type !== 0 && channel.type !== 5) return;
-  
+
   const isPrivate = channel.permissionOverwrites.cache.size > 0;
   if (!isPrivate) {
-    console.log('[跳过] 公开频道:', channel.id);
+    console.log('[Skip] Public channel:', channel.id);
     return;
   }
-  
-  // 🔴 检查是否已经处理过这个频道（防止多个监听器实例重复发送）
+
+  // Prevent duplicate triggers across multiple listener instances
   if (handler.hasSeenChannel(channel.id)) {
-    console.log('[跳过] 已处理过的频道:', channel.id);
+    console.log('[Skip] Already processed channel:', channel.id);
     return;
   }
-  
-  console.log('[频道创建]', channel.id, channel.name || 'unnamed');
-  
+
+  console.log('[Channel Created]', channel.id, channel.name || 'unnamed');
+
   await sleep(2000);
-  
+
   try {
     const botMember = await channel.guild.members.fetch(client.user.id);
     const botPermissions = channel.permissionsFor(botMember);
-    
+
     if (!botPermissions.has('ViewChannel') || !botPermissions.has('SendMessages')) {
-      console.log('[跳过] Bot 无权限:', channel.id);
+      console.log('[Skip] Bot lacks permissions:', channel.id);
       return;
     }
   } catch (err) {
-    console.log('[权限检查] ❌', err.message);
+    console.log('[Permission Check] Failed:', err.message);
     return;
   }
-  
+
   const sendMessage = createSendMessage(channel);
 
-  // ─── 从 permissionOverwrites 中找到频道内第一个普通用户 ──────────
+  // Find the first regular user from permissionOverwrites (non-bot, non-owner, non-admin)
   let targetUserId = null;
   try {
     const adminRoleIds = new Set();
@@ -154,7 +155,7 @@ client.on(Events.ChannelCreate, async (channel) => {
     }
 
     for (const [id, overwrite] of channel.permissionOverwrites.cache) {
-      // 只看用户类型的 overwrite（type 1），跳过角色类型（type 0）
+      // Only check user-type overwrites (type 1), skip role-type (type 0)
       if (overwrite.type !== 1) continue;
 
       const member = await channel.guild.members.fetch(id).catch(() => null);
@@ -164,11 +165,11 @@ client.on(Events.ChannelCreate, async (channel) => {
       if (member.roles.cache.some(role => adminRoleIds.has(role.id))) continue;
 
       targetUserId = member.id;
-      console.log('[目标用户]', targetUserId, member.user.tag);
+      console.log('[Target User]', targetUserId, member.user.tag);
       break;
     }
   } catch (err) {
-    console.log('[用户查找] ⚠️', err.message);
+    console.log('[User Lookup] Failed:', err.message);
   }
 
   await handler.handleChannelCreate({
@@ -179,7 +180,7 @@ client.on(Events.ChannelCreate, async (channel) => {
   }, sendMessage);
 });
 
-// 🔴 移除按钮交互和普通消息监听 - 这些由 OpenClaw 主 agent 处理
-// 只保留频道创建时的自动触发
+// Button interactions and regular messages are handled by the OpenClaw main agent.
+// This listener only handles channel creation auto-trigger.
 
 client.login(TOKEN);
