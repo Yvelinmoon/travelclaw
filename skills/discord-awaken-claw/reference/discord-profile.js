@@ -346,19 +346,29 @@ async function searchCharacterImage(characterName, from) {
   return null;
 }
 
+const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+
 /**
- * 发起 HTTPS GET 请求并返回 JSON
+ * 发起 HTTPS GET 请求并返回 JSON（含 429 自动重试）
  * @param {string} url - 完整 URL
+ * @param {number} retries - 剩余重试次数
  * @returns {Promise<Object>}
  */
-function httpsGetJson(url) {
+function httpsGetJson(url, retries = 2) {
   return new Promise((resolve, reject) => {
     https.get(url, {
       headers: { 'User-Agent': 'OpenClaw-Bot/1.0 (https://github.com/talesofai/travelclaw)' },
       timeout: 8000,
     }, res => {
       if (res.statusCode === 301 || res.statusCode === 302) {
-        httpsGetJson(res.headers.location).then(resolve).catch(reject);
+        httpsGetJson(res.headers.location, retries).then(resolve).catch(reject);
+        return;
+      }
+      if (res.statusCode === 429 && retries > 0) {
+        const retryAfter = parseInt(res.headers['retry-after'] || '3', 10);
+        console.log(`[Wiki] 429 rate limited, waiting ${retryAfter}s before retry...`);
+        res.resume(); // drain response
+        sleep(retryAfter * 1000).then(() => httpsGetJson(url, retries - 1).then(resolve).catch(reject));
         return;
       }
       let data = '';
@@ -411,6 +421,7 @@ async function searchWikiImage(characterName, from) {
           // Wikipedia thumbnail URL 格式：.../thumb/x/xx/Filename.jpg/500px-Filename.jpg
           // 去掉最后的尺寸前缀可以获取更大图片
           const largerUrl = imageUrl.replace(/\/\d+px-/, '/800px-');
+          await sleep(1500); // 请求间隔，避免 429
           const isLargerValid = await isValidImageUrl(largerUrl);
           if (isLargerValid) imageUrl = largerUrl;
 
@@ -421,6 +432,8 @@ async function searchWikiImage(characterName, from) {
     } catch (err) {
       console.log(`[Wiki] 策略1 英文维基失败 (${name}): ${err.message}`);
     }
+
+    await sleep(2000); // 英文→中文维基之间间隔
 
     try {
       // 尝试中文维基百科
@@ -434,6 +447,7 @@ async function searchWikiImage(characterName, from) {
         if (page && page.thumbnail && page.thumbnail.source) {
           let imageUrl = page.thumbnail.source;
           const largerUrl = imageUrl.replace(/\/\d+px-/, '/800px-');
+          await sleep(1500); // 请求间隔，避免 429
           const isLargerValid = await isValidImageUrl(largerUrl);
           if (isLargerValid) imageUrl = largerUrl;
 
@@ -444,7 +458,11 @@ async function searchWikiImage(characterName, from) {
     } catch (err) {
       console.log(`[Wiki] 策略1 中文维基失败 (${name}): ${err.message}`);
     }
+
+    await sleep(2000); // 不同名称变体之间间隔
   }
+
+  await sleep(2000); // 策略1→策略2之间间隔
 
   // ─── 策略 2: Wikimedia Commons search API ─────────────────────────
   // 在 Wikimedia Commons 图片库中搜索（适合名人肖像等）
@@ -461,6 +479,7 @@ async function searchWikiImage(characterName, from) {
         // 遍历搜索结果，获取每个文件的实际图片 URL
         for (const hit of hits) {
           try {
+            await sleep(1500); // 每个 Commons 结果之间间隔
             const fileTitle = encodeURIComponent(hit.title);
             const infoUrl = `https://commons.wikimedia.org/w/api.php?action=query&titles=${fileTitle}&prop=imageinfo&iiprop=url|size&format=json`;
 
