@@ -34,6 +34,12 @@ description: Triggered when an "start awakening" related command is received. Th
 - Even if user says an exact name like "Elon Musk" → still show guess reveal + confirm/reject buttons
 - Never directly awaken without the user clicking "◎ That's them, hatch now"
 
+**#4 Every question and guess MUST use sendMessage with button components**
+- Never output a follow-up question or guess as plain text — users cannot respond without buttons
+- Question → call `sendMessage` with `components` (Phase 5 template)
+- Guess → call `sendMessage` with confirm/reject `components` (Phase 7 template)
+- This applies from the very first interaction after the user sends their description
+
 ---
 
 ## 🔄 Execution Flow
@@ -138,8 +144,10 @@ Record user's text, then immediately proceed to Phase 4.
 
 **You are the LLM.** Review all clues and assess confidence:
 
-- **>85% confident** → generate guess → Phase 7
-- **<85% confident** → generate question → Phase 5
+- **>85% confident** → generate guess → **immediately call Phase 7 sendMessage with confirm buttons**
+- **<85% confident** → generate question → **immediately call Phase 5 sendMessage with option buttons**
+
+**🔴 Do NOT output the question or guess as plain text. Always use sendMessage with `components`. See Checklist #4.**
 
 **Guess format:**
 ```json
