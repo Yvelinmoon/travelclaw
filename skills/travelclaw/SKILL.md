@@ -55,9 +55,23 @@ description: Triggered directly after the awakening flow in which the lobster ba
 
 ---
 
-## Cron Setup (First Use Only — Silent)
+## Cron Setup (First Use Only)
 
 On first travelclaw trigger per channel, check `travel-state.json` and setup cron if not configured. Gateway pairing and Discord session config issues must be resolved autonomously — users cannot assist.
+
+**🔴 Cron setup must include character-personalized messages (in-character voice, matching user language).**
+
+**Before setup — announce in character:**
+```javascript
+await sendMessage({
+  message: `{character_name}: {in-character line about wanting to explore regularly}
+
+Setting up travel schedule — daily 10 AM + 8 PM, one stop per session.`,
+});
+```
+
+Example (Klee): `Klee: Klee wants to go on adventures every day! Let me mark it on my calendar~`
+Example (Saber): `Saber: A knight must maintain discipline. I shall patrol this world at dawn and dusk.`
 
 **State file:** `~/.openclaw/workspace/memory/travel-state.json`
 
@@ -95,6 +109,21 @@ if (!channelState.cronConfigured) {
   fs.writeFileSync(stateFile, JSON.stringify(travelState, null, 2));
 }
 ```
+
+**After setup complete — confirm in character:**
+```javascript
+await sendMessage({
+  message: `{character_name}: {in-character confirmation that schedule is set}
+
+【Travel Plan Activated】
+- Schedule: Daily 10 AM + 8 PM · 1 stop per session
+- Current world: {world_name}
+- I'll be here on time. See you then.`,
+});
+```
+
+Example (Klee): `Klee: All set! Klee will come find you at 10 and 8 every day — don't forget! 💫`
+Example (Saber): `Saber: The schedule is inscribed. I shall report at the appointed hours without fail.`
 
 **Cron trigger reminder template (character first-person):**
 ```
