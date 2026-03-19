@@ -286,6 +286,89 @@ node travel.js gen "Character Name" "pic-uuid" "collection-uuid"
 
 ---
 
+## 🔴 Character Avatar Acquisition (Critical for Real People)
+
+**For real people (Jeff Bezos, Elon Musk, etc.):** Use Wikimedia Commons API — most reliable source.
+
+### ✅ Recommended: Wikimedia Commons API
+
+**API Endpoint:**
+```
+https://commons.wikimedia.org/w/api.php?action=query&titles=File:FILENAME&prop=imageinfo&iiprop=url&format=json
+```
+
+**Example (Jeff Bezos):**
+```bash
+# 1. Query image info
+curl -s "https://commons.wikimedia.org/w/api.php?action=query&titles=File:Jeff_Bezos_2017.jpg&prop=imageinfo&iiprop=url&format=json"
+
+# 2. Extract image URL from response
+# Look for: response.query.pages[-1].imageinfo[0].url
+```
+
+**Response structure:**
+```json
+{
+  "query": {
+    "pages": {
+      "123456": {
+        "title": "File:Jeff_Bezos_2017.jpg",
+        "imageinfo": [
+          {
+            "url": "https://upload.wikimedia.org/wikipedia/commons/9/99/Jeff_Bezos_2017.jpg",
+            "width": 733,
+            "height": 945
+          }
+        ]
+      }
+    }
+  }
+}
+```
+
+**Download & Use:**
+```bash
+# Download original image (not thumbnail!)
+curl -L "https://upload.wikimedia.org/wikipedia/commons/9/99/Jeff_Bezos_2017.jpg" -o avatar.jpg
+
+# Verify it's a valid image
+file avatar.jpg
+# Output: JPEG image data, JFIF standard 1.01, 733x945
+
+# Update Discord avatar (use Node.js to avoid curl argument length limits)
+node update_avatar.js
+```
+
+### ❌ Avoid These Methods
+
+| Method | Problem | Why |
+|--------|---------|-----|
+| Neta API character search | Inaccurate for real people | Designed for anime/game characters |
+| `/thumb/` URLs | 429 errors, rate limited | Wikimedia blocks thumbnail hotlinking |
+| Web search APIs | Unreliable, needs API key | Quality varies, may violate copyright |
+| Direct Google Image search | Copyright issues | Not all images are freely licensed |
+
+### Key Rules
+
+1. **Always use `originalimage` URL** — Never use `/thumb/` thumbnail URLs
+2. **Verify image format** — Use `file` command to confirm it's JPEG/PNG, not HTML
+3. **Use Node.js for Discord API** — Avoids curl argument length limits for base64
+4. **Save to SOUL.md** — Store the final URL in `角色图片` field
+
+### Quick Reference
+
+**Wikipedia Summary API (alternative):**
+```bash
+curl -s "https://en.wikipedia.org/api/rest_v1/page/summary/Jeff_Bezos" | grep -o '"originalimage".*"source":"[^"]*"'
+```
+
+**Wikimedia Commons Search:**
+```bash
+curl -s "https://commons.wikimedia.org/w/api.php?action=query&list=search&srsearch=Jeff%20Bezos&format=json"
+```
+
+---
+
 ## Migration Notes
 
 ### Old → New Mapping
