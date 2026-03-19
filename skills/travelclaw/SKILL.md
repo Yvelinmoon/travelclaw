@@ -499,13 +499,15 @@ Step 2-C: get_hashtag_info — get detailed info for the best-matched world lore
 
 **Command:**
 ```bash
-neta suggest_keywords --query "{character name} {work type} {traits}"
+neta suggest_keywords --prefix "{character name}" --size 10
 ```
 
 **Example (Artoria):**
 ```bash
-neta suggest_keywords --query "Artoria knight sword magic holy grail"
+neta suggest_keywords --prefix "Artoria" --size 10
 ```
+
+**🔴 CRITICAL: Must specify `--size 10` to get enough keyword variety!**
 
 **Purpose:** Get keyword suggestions related to the character's temperament, background, and traits for subsequent world lore matching.
 
@@ -515,28 +517,33 @@ neta suggest_keywords --query "Artoria knight sword magic holy grail"
 
 **Command:**
 ```bash
-neta suggest_tags --query "{keyword 1} {keyword 2} fantasy combat adventure"
+neta suggest_tags --keyword "{keyword 1} {keyword 2} fantasy adventure" --size 20
 ```
+
+**🔴 CRITICAL: Must specify `--size 20` to get enough variety!**
 
 **Example output:**
 ```json
 {
  "tags": [
- {"name": "...", "relevance": 0.92},
- {"name": "...", "relevance": 0.75},
- {"name": "...", "relevance": 0.68}
+ {"name": "千夜幻想", "relevance": 0.92},
+ {"name": "魔法学院", "relevance": 0.85},
+ {"name": "赛博朋克", "relevance": 0.78},
+ {"name": "武侠江湖", "relevance": 0.72},
+ ... (20 total)
  ]
 }
 ```
 
 **Fields to extract:**
-- `tags.length` → `world_count` (X coordinates mapped)
-- `tags[0].name` → `world_name` (best-matched world lore)
+- `tags.length` → `world_count` (should be ~20)
+- Select world from top 5 tags (add variety)
 
 **Selection logic:**
-- Select the tag with the highest `relevance` as the matching world lore
-- If no `relevance` field, select the first tag
-- **`world_count` = length of tags array** (not the 5 returned by `list_spaces`!)
+- **Do NOT always select `tags[0]`** (leads to repetition)
+- Randomly select from top 3-5 tags for variety
+- Consider character-world match score
+- **`world_count` = length of tags array** (should be 20, not 5!)
 
 ---
 
@@ -575,15 +582,17 @@ const worldDescription = lore.slice(0, 3).map(l => l.description).join('\n\n');
 
 | Check item | Correct value | Wrong value |
 |------------|---------------|-------------|
-| World count source | Number of tags returned by `suggest_tags` | 5 returned by `list_spaces` |
+| World count source | Number of tags returned by `suggest_tags` (**should be ~20**) | 5 returned by `list_spaces` |
+| `--size` parameter | **Must specify `--size 20`** | Missing (defaults to 5) |
+| World selection | Random from top 3-5 tags | Always `tags[0]` (leads to repetition) |
 | World lore name | Obtained from `suggest_tags` or `get_hashtag_info` | Hardcoded or randomly chosen |
 | World description | 2-4 paragraphs extracted from `hashtag.lore` | Made up or using a fixed template |
 
 ---
 
 **Extract:**
-- Total worlds in the Neta universe → `world_count` (= number of tags returned by `suggest_tags`)
-- Name of matching world → `world_name` (= `tags[0].name` or `hashtag.name`)
+- Total worlds in the Neta universe → `world_count` (= number of tags returned by `suggest_tags`, **should be ~20**)
+- Name of matching world → `world_name` (= randomly select from **top 3-5 tags** for variety)
 - Core intro text for the matching world → `world_description` (extract 2–4 paragraphs from `hashtag.lore`)
 
 
