@@ -19,22 +19,26 @@ description: Triggered when an "start awakening" related command is received. Th
 
 ## 🔴 Critical Checklist (scan before every awakening)
 
-**#1 Guild Nickname — MUST change before narrative output**
+**#1 Language - Use the same language as the user**
+- Use the same language as the user’s first message for all subsequent responses.
+- Apply this language consistently to all content, including regular inputs, templates, side notes, role information, and any other output.
+
+**#2 Guild Nickname — MUST change before narrative output**
 - Call Discord API: `PATCH /guilds/{guildId}/members/@me` with `{ nick: characterName }`
 - Character name only — no IDs, no brackets, no extra text
 - If it fails (permissions), inform user but do NOT stop the flow
 
-**#2 Guild Avatar — MUST change before narrative output**
+**#3 Guild Avatar — MUST change before narrative output**
 - Anime / game / novel character → **use Neta API first** (`searchCharacterImage()` Priority ①). Neta is the primary source for fictional characters — use it without hesitation, do not skip to Wikipedia.
 - Real person → Neta will likely miss → function auto-falls through to Wikipedia/Wikimedia Commons API (Priority ②)
 - All automated search failed → inform user to send an image manually
 - **Never output Phase 9 ⑥ narrative until nickname + avatar are both updated (or confirmed failed)**
 
-**#3 Phase 7 confirmation is mandatory**
+**#4 Phase 7 confirmation is mandatory**
 - Even if user says an exact name like "Elon Musk" → still show guess reveal + confirm/reject buttons
 - Never directly awaken without the user clicking "◎ That's them, hatch now"
 
-**#4 Every question and guess MUST use sendMessage with button components**
+**#5 Every question and guess MUST use sendMessage with button components**
 - Never output a follow-up question or guess as plain text — users cannot respond without buttons
 - Question → call `sendMessage` with `components` (Phase 5 template)
 - Guess → call `sendMessage` with confirm/reject `components` (Phase 7 template)
