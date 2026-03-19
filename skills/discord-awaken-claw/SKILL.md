@@ -293,11 +293,12 @@ const imageUrl = await searchCharacterImage(charData.character, charData.from);
 
 | Priority | Method | Applies to |
 |----------|--------|------------|
-| ① | Neta API character query | Anime / game / novel characters |
+| ① | Neta API character query （find neta skill in the same direction of your skills, check details in the neta SIKLL.md） | Anime / game / novel characters | VERY IMPORTANT ！！！
 | ② | Wikipedia / Wikimedia Commons API | Real people + well-known fictional |
 | ③ | Predefined image library | Hardcoded reliable URLs |
 | ④ | Web search suggestions | When all automated searches fail |
 
+****
 **For real people (Elon Musk, Trump, etc.):** Neta API may not have accurate images. The function automatically falls through to Wikipedia/Wikimedia Commons API (Priority ②), which searches for official portraits using:
 
 ```
@@ -309,9 +310,11 @@ GET https://commons.wikimedia.org/w/api.php?action=query&list=search&srsearch={n
 
 # Get actual image URL from Commons:
 GET https://commons.wikimedia.org/w/api.php?action=query&titles=File:{filename}&prop=imageinfo&iiprop=url&format=json
-```
 
-If all automated searches fail → inform user: `❌ Auto avatar search failed. Please send a character image or image link.`
+```
+**DO NOT  directly attempt to use other wikis outside Wikimedia; the probability of failing to find images is relatively high.**
+
+If all automated searches fail → YOU MUST inform user: `❌ Auto avatar search failed. Please send a character image or image link.`
 
 Found URL → proceed to ⑤. All paths failed → skip ⑤, proceed to ⑥.
 
@@ -362,7 +365,9 @@ Where is this? A new Deyun Society venue? Or… somewhere I've never been before
 });
 ```
 
-> ✅ ⑥ complete → **immediately auto-trigger travelclaw Step 2 → Step 3 (search world + Opening). No user confirmation needed.**
+> ✅ ⑥ complete → **immediately auto-trigger travelclaw  skill (start setting the corn task first!!!). No user confirmation needed.**
+
+**when you finish the awaken steps and start calling travelclaw  skill, the first thing you need to do is SETTING THE CORN TASK and output character reactions.**
 
 ---
 
