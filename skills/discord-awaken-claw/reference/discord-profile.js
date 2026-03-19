@@ -1,12 +1,12 @@
 /**
- * Discord Profile Management
- *
- * Used to update the Bot's nickname and avatar after awakening
- *
- * Implementation approaches:
- * 1. Use OpenClaw's exec tool to call the Discord API
- * 2. Or use discord.js REST API
- * 3. Or directly HTTP-call the Discord API
+ * Discord 个人资料管理
+ * 
+ * 用于觉醒后更新 Bot 的昵称和头像
+ * 
+ * 实现方式：
+ * 1. 使用 OpenClaw 的 exec 工具调用 Discord API
+ * 2. 或使用 discord.js 的 REST API
+ * 3. 或直接 HTTP 调用 Discord API
  */
 
 const https = require('https');
@@ -14,10 +14,10 @@ const fs = require('fs');
 const path = require('path');
 
 // ─── Config ───────────────────────────────────────────────────────────
-// Try multiple environment variable names (compatibility with different setups)
+// 尝试多个环境变量名称（兼容不同配置）
 let TOKEN = process.env.DISCORD_BOT_TOKEN || process.env.DISCORD_TOKEN;
 
-// If not in environment, try loading from .env file
+// 如果环境变量没有，尝试从 .env 文件加载
 if (!TOKEN) {
   try {
     const envPath = path.join(__dirname, '.env');
@@ -26,25 +26,25 @@ if (!TOKEN) {
       const match = envContent.match(/^DISCORD_(?:BOT_)?TOKEN=(.+)$/m);
       if (match) {
         TOKEN = match[1].trim();
-        console.log('[Discord] Token loaded from .env file');
+        console.log('[Discord] 从 .env 文件加载 token');
       }
     }
   } catch (err) {
-    console.warn('[Discord] Failed to load token from .env:', err.message);
+    console.warn('[Discord] 无法从 .env 加载 token:', err.message);
   }
 }
 
 const ASSETS_DIR = path.join(__dirname, 'assets');
 
-// Ensure assets directory exists
+// 确保 assets 目录存在
 if (!fs.existsSync(ASSETS_DIR)) {
   fs.mkdirSync(ASSETS_DIR, { recursive: true });
 }
 
 // ─── Utility Functions ────────────────────────────────────────────────
 /**
- * Validate whether an image URL is accessible
- * @param {string} url - Image URL
+ * 验证图片 URL 是否可访问
+ * @param {string} url - 图片 URL
  * @returns {Promise<boolean>}
  */
 async function isValidImageUrl(url) {
@@ -53,16 +53,16 @@ async function isValidImageUrl(url) {
       resolve(false);
       return;
     }
-
+    
     const req = https.get(url, { timeout: 5000 }, res => {
       if (res.statusCode === 302 || res.statusCode === 301) {
-        // Redirect — follow it
+        // 重定向，跟随
         isValidImageUrl(res.headers.location).then(resolve);
         return;
       }
       resolve(res.statusCode === 200);
     });
-
+    
     req.on('error', () => resolve(false));
     req.on('timeout', () => {
       req.destroy();
@@ -73,7 +73,7 @@ async function isValidImageUrl(url) {
 
 // ─── Discord API Helpers ──────────────────────────────────────────────
 /**
- * Call the Discord API
+ * 调用 Discord API
  */
 function callDiscordAPI(endpoint, method = 'GET', body = null) {
   return new Promise((resolve, reject) => {
@@ -109,7 +109,7 @@ function callDiscordAPI(endpoint, method = 'GET', body = null) {
     });
 
     req.on('error', reject);
-
+    
     if (body) {
       req.write(JSON.stringify(body));
     }
@@ -118,41 +118,41 @@ function callDiscordAPI(endpoint, method = 'GET', body = null) {
 }
 
 /**
- * Download an image
+ * 下载图片
  */
 function downloadImage(url, filename) {
   return new Promise((resolve, reject) => {
     const filepath = path.join(ASSETS_DIR, filename);
-
+    
     const options = {
       headers: {
         'User-Agent': 'Mozilla/5.0 (compatible; OpenClaw Bot/1.0)',
       },
     };
-
+    
     https.get(url, options, res => {
       if (res.statusCode === 302 || res.statusCode === 301) {
-        // Redirect
+        // 重定向
         downloadImage(res.headers.location, filename).then(resolve).catch(reject);
         return;
       }
-
+      
       if (res.statusCode !== 200) {
         fs.unlink(filepath, () => {});
-        reject(new Error(`Image download failed: HTTP ${res.statusCode}`));
+        reject(new Error(`图片下载失败：HTTP ${res.statusCode}`));
         return;
       }
-
+      
       const file = fs.createWriteStream(filepath);
       res.pipe(file);
-
+      
       file.on('finish', () => {
         file.close();
         const stats = fs.statSync(filepath);
         if (stats.size < 1000) {
-          // File too small — probably not a valid image
+          // 文件太小，可能不是有效图片
           fs.unlink(filepath, () => {});
-          reject(new Error('Downloaded file is too small; may not be a valid image'));
+          reject(new Error('下载的文件太小，可能不是有效图片'));
           return;
         }
         resolve(filepath);
@@ -166,266 +166,361 @@ function downloadImage(url, filename) {
 
 // ─── Profile Update Functions ─────────────────────────────────────────
 /**
- * Update Bot nickname
- *
- * @param {string} guildId - Server ID
- * @param {string} newNickname - New nickname
+ * 更新 Bot 昵称
+ * 
+ * @param {string} guildId - 服务器 ID
+ * @param {string} newNickname - 新昵称
  */
 async function updateNickname(guildId, newNickname) {
   if (!TOKEN) {
-    throw new Error('Missing DISCORD_BOT_TOKEN environment variable');
+    throw new Error('缺少 DISCORD_BOT_TOKEN 环境变量');
   }
-
+  
   try {
-    // Use @me endpoint to update the current Bot's nickname
-    // Note: must use @me, not the Bot ID — this is a Discord API requirement
+    // 使用 @me 端点更新当前 Bot 的昵称
+    // 注意：必须使用 @me 而不是 Bot ID，这是 Discord API 的要求
     await callDiscordAPI(
       `/guilds/${guildId}/members/@me`,
       'PATCH',
       { nick: newNickname }
     );
-
-    console.log(`[Discord] Nickname updated to: ${newNickname}`);
+    
+    console.log(`[Discord] 昵称已更新为：${newNickname}`);
     return true;
   } catch (err) {
-    console.error('[Discord] Nickname update failed:', err.message);
+    console.error('[Discord] 更新昵称失败:', err.message);
     throw err;
   }
 }
 
 /**
- * Update Bot avatar
- *
- * @param {string} imageUrl - Image URL
+ * 更新 Bot 头像
+ * 
+ * @param {string} imageUrl - 图片 URL
  */
 async function updateAvatar(imageUrl) {
   if (!TOKEN) {
-    throw new Error('Missing DISCORD_BOT_TOKEN environment variable');
+    throw new Error('缺少 DISCORD_BOT_TOKEN 环境变量');
   }
-
+  
   try {
-    // Download image
+    // 下载图片
     const filename = `avatar_${Date.now()}.jpg`;
     const filepath = await downloadImage(imageUrl, filename);
-
-    // Read and convert to base64
+    
+    // 读取并转换为 base64
     const imageBuffer = fs.readFileSync(filepath);
     const base64Data = imageBuffer.toString('base64');
-
-    // Discord API requires the data:image/jpeg;base64, prefix
+    
+    // Discord API 需要 data:image/jpeg;base64, 前缀
     const avatarData = `data:image/jpeg;base64,${base64Data}`;
-
-    // Update avatar
+    
+    // 更新头像
     await callDiscordAPI('/users/@me', 'PATCH', {
       avatar: avatarData,
     });
-
-    // Clean up temp file
+    
+    // 清理临时文件
     fs.unlinkSync(filepath);
-
-    console.log(`[Discord] Avatar updated`);
+    
+    console.log(`[Discord] 头像已更新`);
     return true;
   } catch (err) {
-    console.error('[Discord] Avatar update failed:', err.message);
+    console.error('[Discord] 更新头像失败:', err.message);
     throw err;
   }
 }
 
 /**
- * Search for character image ⭐ Core function!
- *
+ * 搜索角色图片 ⭐ 核心功能！
+ * 
  * ─────────────────────────────────────────────────────────────────────
- * ⭐ Search priority (important!)
+ * ⭐ 搜索优先级（重要！）
  * ─────────────────────────────────────────────────────────────────────
- *
- * 【Priority 1】Neta API character query ← primary method!
- *   - Calls neta-skills' search_character_or_elementum command
- *   - Retrieves official character avatar from the Neta database
- *   - Suitable for: anime, game, novel, and other fictional characters
- *   - High success rate, good image quality
- *
- * 【Priority 2】Wikipedia / public image search
- *   - Suitable for: real people, well-known fictional characters
- *   - Uses Wikipedia, Fandom Wiki, and other public resources
- *
- * 【Priority 3】Predefined image library
- *   - Hardcoded reliable image URLs
- *   - Used as last resort
- *
- * 【Priority 4】Web search suggestion
- *   - When all automated searches fail, prompts user to do a web search
- *
+ * 
+ * 【优先级 1】Neta API 角色查询 ← 主要方式！
+ *   - 调用 neta-skills 的 search_character_or_elementum 命令
+ *   - 从 Neta 数据库获取角色官方头像
+ *   - 适用于：动漫、游戏、小说等虚构角色
+ *   - 成功率高，图片质量好
+ * 
+ * 【优先级 2】维基百科/公开图片搜索
+ *   - 适用于：真实人物、知名虚构角色
+ *   - 使用维基百科、Fandom Wiki 等公开资源
+ * 
+ * 【优先级 3】预定义图片库
+ *   - 硬编码的可靠图片 URL
+ *   - 作为最后备选方案
+ * 
+ * 【优先级 4】Web 搜索提示
+ *   - 当所有自动搜索失败时，提示用户进行 Web 搜索
+ * 
  * ─────────────────────────────────────────────────────────────────────
- *
- * @param {string} characterName - Character name
- * @param {string} from - Work title
- * @returns {Promise<string|null>} Image URL
+ * 
+ * @param {string} characterName - 角色名称
+ * @param {string} from - 作品名称
+ * @returns {Promise<string|null>} 图片 URL
  */
 async function searchCharacterImage(characterName, from) {
-  console.log(`[Search] 🔍 Searching character image: ${characterName} (${from})`);
+  console.log(`[Search] 🔍 搜索角色图片：${characterName} (${from})`);
   console.log('[Search] ─────────────────────────────────────');
-  console.log('[Search] ⭐ Primary method: Neta API character query');
+  console.log('[Search] ⭐ 主要方式：Neta API 角色查询');
   console.log('[Search] ─────────────────────────────────────');
-
-  // ─── 【Priority 1】Neta API character query ← primary method! ─────────────────────
-  console.log('[Search] [1/4] Trying Neta API search (flexible keyword strategy)...');
+  
+  // ─── 【优先级 1】Neta API 角色查询 ← 主要方式！ ─────────────────────
+  console.log('[Search] [1/4] 尝试 Neta API 搜索（灵活关键词策略）...');
   const netaSearch = require('./neta-avatar-search.js');
   try {
     const netaResult = await netaSearch.searchCharacter(characterName, from);
     if (netaResult && netaResult.avatar) {
-      console.log(`[Search] ✅ [Priority 1 - Neta] Found character: ${netaResult.name}`);
-      console.log(`[Search] 🖼️ Avatar URL: ${netaResult.avatar}`);
-      console.log(`[Search] 📝 Keywords used: ${netaResult.keywords || 'N/A'}`);
+      console.log(`[Search] ✅ [优先级 1 - Neta] 找到角色：${netaResult.name}`);
+      console.log(`[Search] 🖼️ 头像 URL: ${netaResult.avatar}`);
+      console.log(`[Search] 📝 使用关键词：${netaResult.keywords || 'N/A'}`);
       return netaResult.avatar;
     }
   } catch (err) {
-    console.warn('[Search] Neta search failed:', err.message);
+    console.warn('[Search] Neta 搜索失败:', err.message);
   }
-
-  // ─── 【Priority 2】Wikipedia / public image search ───────────────────────────────
-  console.log('[Search] [2/4] Trying Wikipedia / public image search...');
+  
+  // ─── 【优先级 2】维基百科/公开图片搜索 ───────────────────────────────
+  console.log('[Search] [2/4] 尝试维基百科/公开图片搜索...');
   const wikiSearch = await searchWikiImage(characterName, from);
   if (wikiSearch) {
-    console.log(`[Search] ✅ [Priority 2 - Wikipedia] Found image: ${wikiSearch}`);
+    console.log(`[Search] ✅ [优先级 2 - 维基百科] 找到图片：${wikiSearch}`);
     return wikiSearch;
   }
-
-  // ─── 【Priority 3】Predefined image library ────────────────────────────────────────
-  console.log('[Search] [3/4] Trying predefined image library...');
+  
+  // ─── 【优先级 3】预定义图片库 ────────────────────────────────────────
+  console.log('[Search] [3/4] 尝试预定义图片库...');
   const predefinedPeople = {
-    // Real people - official Wikipedia portraits
+    // 真实人物 - 维基百科官方肖像
+    '唐纳德·特朗普': 'https://upload.wikimedia.org/wikipedia/commons/5/56/Donald_Trump_official_portrait.jpg',
     'Donald Trump': 'https://upload.wikimedia.org/wikipedia/commons/5/56/Donald_Trump_official_portrait.jpg',
-    'Trump': 'https://upload.wikimedia.org/wikipedia/commons/5/56/Donald_Trump_official_portrait.jpg',
+    '特朗普': 'https://upload.wikimedia.org/wikipedia/commons/5/56/Donald_Trump_official_portrait.jpg',
+    '乔·拜登': 'https://upload.wikimedia.org/wikipedia/commons/6/68/Joe_Biden_presidential_portrait.jpg',
     'Joe Biden': 'https://upload.wikimedia.org/wikipedia/commons/6/68/Joe_Biden_presidential_portrait.jpg',
-    'Biden': 'https://upload.wikimedia.org/wikipedia/commons/6/68/Joe_Biden_presidential_portrait.jpg',
+    '拜登': 'https://upload.wikimedia.org/wikipedia/commons/6/68/Joe_Biden_presidential_portrait.jpg',
+    '贝拉克·奥巴马': 'https://upload.wikimedia.org/wikipedia/commons/8/8d/President_Barack_Obama.jpg',
     'Barack Obama': 'https://upload.wikimedia.org/wikipedia/commons/8/8d/President_Barack_Obama.jpg',
-    'Obama': 'https://upload.wikimedia.org/wikipedia/commons/8/8d/President_Barack_Obama.jpg',
-
-    // Anime characters (fallback; Neta takes priority)
-    'Artoria Pendragon': 'https://upload.wikimedia.org/wikipedia/en/4/4d/Artoria_Pendragon_%28Fate%29.png',
-    'Artoria': 'https://upload.wikimedia.org/wikipedia/en/4/4d/Artoria_Pendragon_%28Fate%29.png',
+    '奥巴马': 'https://upload.wikimedia.org/wikipedia/commons/8/8d/President_Barack_Obama.jpg',
+    
+    // 动漫角色（备选，优先使用 Neta）
+    '阿尔托莉雅·潘德拉贡': 'https://upload.wikimedia.org/wikipedia/en/4/4d/Artoria_Pendragon_%28Fate%29.png',
+    '阿尔托莉雅': 'https://upload.wikimedia.org/wikipedia/en/4/4d/Artoria_Pendragon_%28Fate%29.png',
     'Saber': 'https://upload.wikimedia.org/wikipedia/en/4/4d/Artoria_Pendragon_%28Fate%29.png',
   };
-
+  
   if (predefinedPeople[characterName]) {
-    console.log(`[Search] ✅ [Priority 3 - Predefined] Using image: ${predefinedPeople[characterName]}`);
+    console.log(`[Search] ✅ [优先级 3 - 预定义] 使用图片：${predefinedPeople[characterName]}`);
     return predefinedPeople[characterName];
   }
-
-  // ─── 【Priority 4】All methods failed — provide web search suggestions ─────────────────
-  console.log('[Search] ❌ All automated search methods found no image');
+  
+  // ─── 【优先级 4】所有方式都失败了 - 提供 Web 搜索建议 ─────────────────
+  console.log('[Search] ❌ 所有自动搜索方式都未找到图片');
   console.log('[Search] ─────────────────────────────────────');
-  console.log('[Search] 💡 Suggested web search queries to find an image:');
-
-  // Generate search suggestions
+  console.log('[Search] 💡 建议进行 Web 搜索获取图片：');
+  
+  // 生成搜索建议
   const searchQueries = [
-    `${characterName} ${from.replace(/[《》]/g, '')} official image`,
+    `${characterName} ${from.replace(/[《》]/g, '')} 官方图片`,
     `${characterName} official portrait`,
     `${characterName} wiki`,
     `${from.replace(/[《》]/g, '')} ${characterName} character art`,
   ];
-
-  console.log('[Search] Recommended search queries:');
+  
+  console.log('[Search] 推荐搜索关键词：');
   searchQueries.forEach((q, i) => {
     console.log(`[Search]   ${i + 1}. ${q}`);
   });
-
+  
   console.log('[Search] ─────────────────────────────────────');
-  console.log('[Search] 📌 Possible causes:');
-  console.log('[Search]   - Character not found in the Neta database');
-  console.log('[Search]   - Character name is not accurate or complete enough');
-  console.log('[Search]   - Image URL has expired or is inaccessible');
-  console.log('[Search] 📌 Solutions:');
-  console.log('[Search]   1. Use the above queries for a web search');
-  console.log('[Search]   2. Manually provide a character image URL');
-  console.log('[Search]   3. Check that NETA_TOKEN is configured correctly');
-
+  console.log('[Search] 📌 可能原因：');
+  console.log('[Search]   - Neta 数据库中没有该角色');
+  console.log('[Search]   - 角色名称不够准确或完整');
+  console.log('[Search]   - 图片 URL 已失效或不可访问');
+  console.log('[Search] 📌 解决方案：');
+  console.log('[Search]   1. 使用上述关键词进行 Web 搜索');
+  console.log('[Search]   2. 手动提供角色图片 URL');
+  console.log('[Search]   3. 检查 NETA_TOKEN 是否配置正确');
+  
   return null;
 }
 
 /**
- * Search Wikipedia / public image
- * @param {string} characterName - Character name
- * @param {string} from - Work title
- * @returns {Promise<string|null>} Image URL
+ * 发起 HTTPS GET 请求并返回 JSON
+ * @param {string} url - 完整 URL
+ * @returns {Promise<Object>}
+ */
+function httpsGetJson(url) {
+  return new Promise((resolve, reject) => {
+    https.get(url, {
+      headers: { 'User-Agent': 'OpenClaw-Bot/1.0 (https://github.com/talesofai/travelclaw)' },
+      timeout: 8000,
+    }, res => {
+      if (res.statusCode === 301 || res.statusCode === 302) {
+        httpsGetJson(res.headers.location).then(resolve).catch(reject);
+        return;
+      }
+      let data = '';
+      res.on('data', chunk => { data += chunk; });
+      res.on('end', () => {
+        try { resolve(JSON.parse(data)); }
+        catch (e) { reject(new Error(`JSON parse failed: ${data.substring(0, 200)}`)); }
+      });
+    }).on('error', reject).on('timeout', function() { this.destroy(); reject(new Error('timeout')); });
+  });
+}
+
+/**
+ * 搜索维基百科/Wikimedia Commons 图片（使用真实 API）
+ *
+ * 策略 1: Wikipedia pageimages API — 获取词条主图（最快、最可靠）
+ * 策略 2: Wikimedia Commons search API — 搜索 Commons 图片库
+ * 策略 3: 中文维基百科 fallback — 用中文名搜索
+ *
+ * @param {string} characterName - 角色名称
+ * @param {string} from - 作品名称
+ * @returns {Promise<string|null>} 图片 URL
  */
 async function searchWikiImage(characterName, from) {
-  // Strategy 1: predefined real-person mapping
-  const wikiMap = {
-    'Donald Trump': 'Donald_Trump',
-    'Trump': 'Donald_Trump',
-    'Joe Biden': 'Joe_Biden',
-    'Biden': 'Joe_Biden',
-    'Barack Obama': 'Barack_Obama',
-    'Obama': 'Barack_Obama',
-  };
+  // 构建搜索名称列表（英文优先，中文 fallback）
+  const searchNames = [characterName];
+  // 如果名字包含中文分隔符，生成英文化版本
+  const cleanName = characterName.replace(/[·]/g, ' ').trim();
+  if (cleanName !== characterName) searchNames.push(cleanName);
+  // 也尝试去掉所有空格/分隔符的版本
+  const compactName = characterName.replace(/[·\s\-]/g, '');
+  if (compactName !== characterName) searchNames.push(compactName);
 
-  const wikiName = wikiMap[characterName];
-  if (wikiName) {
-    const wikiUrls = {
-      'Donald_Trump': 'https://upload.wikimedia.org/wikipedia/commons/5/56/Donald_Trump_official_portrait.jpg',
-      'Joe_Biden': 'https://upload.wikimedia.org/wikipedia/commons/6/68/Joe_Biden_presidential_portrait.jpg',
-      'Barack_Obama': 'https://upload.wikimedia.org/wikipedia/commons/8/8d/President_Barack_Obama.jpg',
-    };
-    const wikiUrl = wikiUrls[wikiName];
-    if (wikiUrl) {
-      console.log(`[Wiki] Using predefined Wikipedia image: ${wikiName}`);
-      return wikiUrl;
-    }
-  }
-
-  // Strategy 2: Try generic Wikipedia URL format (fictional characters)
-  // e.g. Harry Potter → Harry_Potter_(character)
-  const cleanName = characterName.replace(/[·\s]/g, '_');
-  const wikiCandidates = [
-    // Try character name + work title
-    `https://upload.wikimedia.org/wikipedia/en/thumb/${cleanName}.png/220px-${cleanName}.png`,
-    // Try Fandom Wiki format
-    `https://static.wikia.nocookie.net/${from.replace(/[《》\s]/g, '').toLowerCase()}/images/${cleanName}.jpg`,
-  ];
-
-  // Validate these URLs
-  for (const url of wikiCandidates) {
+  // ─── 策略 1: Wikipedia pageimages API ──────────────────────────────
+  // 直接获取维基百科词条的主图，适用于有词条的人物/角色
+  for (const name of searchNames) {
     try {
-      const isValid = await isValidImageUrl(url);
-      if (isValid) {
-        console.log(`[Wiki] Found generic Wikipedia image: ${url}`);
-        return url;
+      // 先尝试英文维基百科
+      const enTitle = encodeURIComponent(name.replace(/\s/g, '_'));
+      const enUrl = `https://en.wikipedia.org/w/api.php?action=query&titles=${enTitle}&prop=pageimages&format=json&pithumbsize=500&redirects=1`;
+      console.log(`[Wiki] 策略1: Wikipedia pageimages → "${name}"`);
+
+      const enResult = await httpsGetJson(enUrl);
+      const enPages = enResult?.query?.pages;
+      if (enPages) {
+        const page = Object.values(enPages)[0];
+        if (page && page.thumbnail && page.thumbnail.source) {
+          // 尝试获取更大的图片（将 500px 替换为原图或更大尺寸）
+          let imageUrl = page.thumbnail.source;
+          // Wikipedia thumbnail URL 格式：.../thumb/x/xx/Filename.jpg/500px-Filename.jpg
+          // 去掉最后的尺寸前缀可以获取更大图片
+          const largerUrl = imageUrl.replace(/\/\d+px-/, '/800px-');
+          const isLargerValid = await isValidImageUrl(largerUrl);
+          if (isLargerValid) imageUrl = largerUrl;
+
+          console.log(`[Wiki] ✅ 策略1成功 (en.wikipedia): ${imageUrl}`);
+          return imageUrl;
+        }
       }
-    } catch (e) {
-      // Continue to next candidate
+    } catch (err) {
+      console.log(`[Wiki] 策略1 英文维基失败 (${name}): ${err.message}`);
+    }
+
+    try {
+      // 尝试中文维基百科
+      const zhTitle = encodeURIComponent(name);
+      const zhUrl = `https://zh.wikipedia.org/w/api.php?action=query&titles=${zhTitle}&prop=pageimages&format=json&pithumbsize=500&redirects=1`;
+
+      const zhResult = await httpsGetJson(zhUrl);
+      const zhPages = zhResult?.query?.pages;
+      if (zhPages) {
+        const page = Object.values(zhPages)[0];
+        if (page && page.thumbnail && page.thumbnail.source) {
+          let imageUrl = page.thumbnail.source;
+          const largerUrl = imageUrl.replace(/\/\d+px-/, '/800px-');
+          const isLargerValid = await isValidImageUrl(largerUrl);
+          if (isLargerValid) imageUrl = largerUrl;
+
+          console.log(`[Wiki] ✅ 策略1成功 (zh.wikipedia): ${imageUrl}`);
+          return imageUrl;
+        }
+      }
+    } catch (err) {
+      console.log(`[Wiki] 策略1 中文维基失败 (${name}): ${err.message}`);
     }
   }
 
-  console.log('[Wiki] No Wikipedia image found');
+  // ─── 策略 2: Wikimedia Commons search API ─────────────────────────
+  // 在 Wikimedia Commons 图片库中搜索（适合名人肖像等）
+  for (const name of searchNames) {
+    try {
+      const query = encodeURIComponent(`${name} portrait`);
+      const searchUrl = `https://commons.wikimedia.org/w/api.php?action=query&list=search&srsearch=${query}&srnamespace=6&srlimit=5&format=json`;
+      console.log(`[Wiki] 策略2: Commons search → "${name} portrait"`);
+
+      const searchResult = await httpsGetJson(searchUrl);
+      const hits = searchResult?.query?.search;
+
+      if (hits && hits.length > 0) {
+        // 遍历搜索结果，获取每个文件的实际图片 URL
+        for (const hit of hits) {
+          try {
+            const fileTitle = encodeURIComponent(hit.title);
+            const infoUrl = `https://commons.wikimedia.org/w/api.php?action=query&titles=${fileTitle}&prop=imageinfo&iiprop=url|size&format=json`;
+
+            const infoResult = await httpsGetJson(infoUrl);
+            const pages = infoResult?.query?.pages;
+            if (pages) {
+              const page = Object.values(pages)[0];
+              const imageInfo = page?.imageinfo?.[0];
+              if (imageInfo && imageInfo.url) {
+                // 过滤掉太小的图片（可能是图标/logo）
+                if (imageInfo.width && imageInfo.width < 100) continue;
+                // 过滤掉 SVG（通常是图表/图标）
+                if (imageInfo.url.endsWith('.svg')) continue;
+
+                const isValid = await isValidImageUrl(imageInfo.url);
+                if (isValid) {
+                  console.log(`[Wiki] ✅ 策略2成功 (Commons): ${imageInfo.url}`);
+                  return imageInfo.url;
+                }
+              }
+            }
+          } catch (e) {
+            // 单个结果获取失败，继续尝试下一个
+          }
+        }
+      }
+    } catch (err) {
+      console.log(`[Wiki] 策略2 Commons搜索失败 (${name}): ${err.message}`);
+    }
+  }
+
+  console.log('[Wiki] 所有维基百科/Commons 策略均未找到图片');
   return null;
 }
 
 /**
- * Search for character image via OpenClaw web_search
+ * 使用 OpenClaw web_search 搜索图片
  */
 async function searchCharacterImageViaOpenClaw(characterName, from) {
-  // This requires calling the web_search tool in the OpenClaw environment
-  // Example query: "{characterName} {from} official image"
-
-  const query = `${characterName} ${from} official image anime character`;
-
-  console.log(`[Search] Query: ${query}`);
-
-  // TODO: Call OpenClaw web_search tool
+  // 这需要在 OpenClaw 环境中调用 web_search 工具
+  // 示例查询："{characterName} {from} 官方图片"
+  
+  const query = `${characterName} ${from} 官方图片 动漫角色`;
+  
+  console.log(`[Search] 查询：${query}`);
+  
+  // TODO: 调用 OpenClaw web_search 工具
   // const results = await web_search({ query, count: 5 });
-
-  // Extract image URL from results
-  // Return the first valid image URL
-
+  
+  // 从结果中提取图片 URL
+  // 返回第一个有效的图片 URL
+  
   return null;
 }
 
 /**
- * Full profile update flow
- *
- * @param {Object} charData - Character data
- * @param {string} guildId - Server ID
+ * 完整的个人资料更新流程
+ * 
+ * @param {Object} charData - 角色数据
+ * @param {string} guildId - 服务器 ID
  */
 async function updateDiscordProfile(charData, guildId) {
   const results = {
@@ -433,50 +528,50 @@ async function updateDiscordProfile(charData, guildId) {
     avatar: false,
     errors: [],
   };
-
+  
   try {
-    // 1. Update nickname
+    // 1. 更新昵称
     if (charData.character) {
       await updateNickname(guildId, charData.character);
       results.nickname = true;
     }
   } catch (err) {
-    results.errors.push(`Nickname update failed: ${err.message}`);
+    results.errors.push(`昵称更新失败：${err.message}`);
   }
-
+  
   try {
-    // 2. Search and update avatar
+    // 2. 搜索并更新头像
     if (charData.character && charData.from) {
       const imageUrl = await searchCharacterImage(charData.character, charData.from);
-
+      
       if (imageUrl) {
         await updateAvatar(imageUrl);
         results.avatar = true;
       } else {
-        results.errors.push('Character image not found');
+        results.errors.push('未找到角色图片');
       }
     }
   } catch (err) {
-    results.errors.push(`Avatar update failed: ${err.message}`);
+    results.errors.push(`头像更新失败：${err.message}`);
   }
-
+  
   return results;
 }
 
 // ─── Alternative: Using OpenClaw exec ─────────────────────────────────
 /**
- * Use OpenClaw exec tool to call the Discord API
- *
- * This requires OpenClaw to support the exec tool
+ * 使用 OpenClaw exec 工具调用 Discord API
+ * 
+ * 这需要 OpenClaw 支持 exec 工具
  */
 async function updateProfileViaExec(guildId, charData) {
   const { exec } = require('child_process');
-
+  
   return new Promise((resolve, reject) => {
-    // Use curl to call the Discord API
+    // 使用 curl 调用 Discord API
     const commands = [];
-
-    // Update nickname
+    
+    // 更新昵称
     if (charData.character) {
       commands.push(
         `curl -X PATCH https://discord.com/api/v10/guilds/${guildId}/members/@me` +
@@ -485,8 +580,8 @@ async function updateProfileViaExec(guildId, charData) {
         ` -d '{"nick":"${charData.character}"}'`
       );
     }
-
-    // Execute commands
+    
+    // 执行命令
     exec(commands.join(' && '), (error, stdout, stderr) => {
       if (error) {
         reject(new Error(stderr || error.message));
