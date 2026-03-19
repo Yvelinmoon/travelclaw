@@ -1,16 +1,18 @@
 /**
- * Neta API Character Avatar Search - Enhanced Version
+ * Neta API Character Avatar Search - Enhanced
  *
- * Uses the Neta API to search for characters and retrieve official avatars
- * Supports flexible keyword strategies and image URL validation
+ * Searches characters via Neta API and retrieves official avatars.
+ * Supports flexible keyword strategies and image URL validation.
  */
 
 const { exec } = require('child_process');
 const https = require('https');
 
+const NETA_CLI_DIR = '/home/node/.openclaw/workspace/neta-skills';
+
 /**
  * Validate whether an image URL is accessible
- * @param {string} url - Image URL
+ * @param {string} url
  * @returns {Promise<boolean>}
  */
 async function isValidImageUrl(url) {
@@ -22,7 +24,6 @@ async function isValidImageUrl(url) {
 
     const req = https.get(url, { timeout: 5000 }, res => {
       if (res.statusCode === 302 || res.statusCode === 301) {
-        // Redirect — follow it
         isValidImageUrl(res.headers.location).then(resolve);
         return;
       }
@@ -39,12 +40,18 @@ async function isValidImageUrl(url) {
 
 /**
  * Execute a Neta search command
- * @param {string} keywords - Search keywords
+ * @param {string} keywords
  * @returns {Promise<Array>}
  */
 function runNetaSearch(keywords) {
   return new Promise((resolve, reject) => {
-    const command = `cd ~/.openclaw/workspace/skills/neta/skills/neta && NETA_TOKEN="" node bin/cli.js search_character_or_elementum --keywords "${keywords}" --parent_type "character" 2>/dev/null`;
+    const token = process.env.NETA_TOKEN;
+    if (!token) {
+      reject(new Error('NETA_TOKEN environment variable is not set'));
+      return;
+    }
+    const safeKeywords = keywords.replace(/["`$\\]/g, '\\$&');
+    const command = `cd ${NETA_CLI_DIR} && NETA_TOKEN="${token}" node bin/cli.js search_character_or_elementum --keywords "${safeKeywords}" --parent_type "character" 2>/dev/null`;
 
     exec(command, { encoding: 'utf8', timeout: 10000 }, (error, stdout, stderr) => {
       if (error) {
@@ -53,10 +60,10 @@ function runNetaSearch(keywords) {
       }
 
       try {
-        // Extract JSON part (pnpm may output extra logs)
+        // Extract JSON portion (pnpm may output extra logs)
         const jsonMatch = stdout.match(/\{[\s\S]*\}/);
         if (!jsonMatch) {
-          console.log(`[Neta] No JSON output found, stdout: ${stdout.substring(0, 200)}`);
+          console.log(`[Neta] No JSON found in stdout: ${stdout.substring(0, 200)}`);
           resolve([]);
           return;
         }
@@ -73,17 +80,23 @@ function runNetaSearch(keywords) {
 }
 
 /**
- * Get character details (by UUID)
- * @param {string} uuid - Character UUID
+ * Get character details by UUID
+ * @param {string} uuid
  * @returns {Promise<Object|null>}
  */
 function getCharacterDetails(uuid) {
   return new Promise((resolve, reject) => {
-    const command = `cd ~/.openclaw/workspace/skills/neta/skills/neta && NETA_TOKEN="" node bin/cli.js request_character_or_elementum --uuid "${uuid}"`;
+    const token = process.env.NETA_TOKEN;
+    if (!token) {
+      reject(new Error('NETA_TOKEN environment variable is not set'));
+      return;
+    }
+    const safeUuid = uuid.replace(/["`$\\]/g, '\\$&');
+    const command = `cd ${NETA_CLI_DIR} && NETA_TOKEN="${token}" node bin/cli.js request_character_or_elementum --uuid "${safeUuid}"`;
 
     exec(command, { encoding: 'utf8', timeout: 10000 }, (error, stdout, stderr) => {
       if (error) {
-        reject(new Error(`Neta API detail fetch failed: ${error.message}`));
+        reject(new Error(`Neta API details fetch failed: ${error.message}`));
         return;
       }
 
@@ -98,9 +111,9 @@ function getCharacterDetails(uuid) {
 }
 
 /**
- * Generate a flexible list of keywords
- * @param {string} characterName - Character name
- * @param {string} from - Work title
+ * Generate a flexible list of keyword variants
+ * @param {string} characterName
+ * @param {string} from - Source work title
  * @returns {string[]}
  */
 function generateKeywordsList(characterName, from) {
@@ -115,13 +128,13 @@ function generateKeywordsList(characterName, from) {
     keywordsList.push(noSeparator);
   }
 
-  // Strategy 3: Use only the last part of the name (e.g. "Albus·Dumbledore" → "Dumbledore")
+  // Strategy 3: Last part only (e.g. "Albus·Dumbledore" → "Dumbledore")
   const lastName = characterName.split('·').pop();
   if (lastName && lastName !== characterName) {
     keywordsList.push(lastName);
   }
 
-  // Strategy 4: Use only the first part of the name
+  // Strategy 4: First part only
   const firstName = characterName.split('·')[0];
   if (firstName && firstName !== characterName) {
     keywordsList.push(firstName);
@@ -136,9 +149,8 @@ function generateKeywordsList(characterName, from) {
   // Strategy 6: Character + work combination
   keywordsList.push(`${characterName} ${cleanFrom}`);
 
-  // Strategy 7: If name contains a separator, try last name + work
+  // Strategy 7: Try last name + work (useful for CJK names with separators)
   if (characterName.includes('·')) {
-    // May be a transliterated name; try surname only
     keywordsList.push(lastName + ' ' + cleanFrom);
   }
 
@@ -147,24 +159,23 @@ function generateKeywordsList(characterName, from) {
 }
 
 /**
- * Search for a character - Enhanced Version
+ * Search for a character avatar - Enhanced
  *
- * Uses multiple keyword strategies until a valid avatar is found
+ * Tries multiple keyword strategies until a valid avatar is found.
  *
- * @param {string} characterName - Character name
- * @param {string} from - Work title
- * @returns {Promise<{name: string, avatar: string, source: string}|null>}
+ * @param {string} characterName
+ * @param {string} from - Source work title
+ * @returns {Promise<{name: string, avatar: string, source: string, keywords: string}|null>}
  */
 async function searchCharacter(characterName, from) {
   const keywordsList = generateKeywordsList(characterName, from);
 
-  console.log(`[Neta] Starting search: ${characterName} (${from})`);
+  console.log(`[Neta] Searching: ${characterName} (${from})`);
   console.log(`[Neta] Keyword strategies: ${keywordsList.join(' | ')}`);
 
-  // Try each keyword in turn
   for (const keywords of keywordsList) {
     try {
-      console.log(`[Neta] Trying keyword: "${keywords}"`);
+      console.log(`[Neta] Trying keywords: "${keywords}"`);
       const results = await runNetaSearch(keywords);
 
       if (results && results.length > 0) {
@@ -172,11 +183,10 @@ async function searchCharacter(characterName, from) {
         const avatarUrl = character.avatar_img || character.avatar || character.image || character.header_img;
 
         if (avatarUrl) {
-          // Validate URL
           const isValid = await isValidImageUrl(avatarUrl);
           if (isValid) {
-            console.log(`[Neta] ✅ Found valid avatar: ${character.name || characterName}`);
-            console.log(`[Neta] 🖼️ URL: ${avatarUrl}`);
+            console.log(`[Neta] Found valid avatar: ${character.name || characterName}`);
+            console.log(`[Neta] URL: ${avatarUrl}`);
             return {
               name: character.name || characterName,
               avatar: avatarUrl,
@@ -184,11 +194,11 @@ async function searchCharacter(characterName, from) {
               keywords: keywords,
             };
           } else {
-            console.log(`[Neta] ⚠️ URL invalid, continuing: ${avatarUrl}`);
+            console.log(`[Neta] Invalid URL, continuing: ${avatarUrl}`);
           }
         }
 
-        // If UUID is available, try fetching details (may contain more images)
+        // If UUID available, try fetching details (may contain more images)
         if (character.uuid) {
           try {
             const details = await getCharacterDetails(character.uuid);
@@ -197,8 +207,8 @@ async function searchCharacter(characterName, from) {
               if (detailAvatar) {
                 const isValid = await isValidImageUrl(detailAvatar);
                 if (isValid) {
-                  console.log(`[Neta] ✅ Found valid avatar from details: ${character.name || characterName}`);
-                  console.log(`[Neta] 🖼️ URL: ${detailAvatar}`);
+                  console.log(`[Neta] Found valid avatar from details: ${character.name || characterName}`);
+                  console.log(`[Neta] URL: ${detailAvatar}`);
                   return {
                     name: details.name || character.name || characterName,
                     avatar: detailAvatar,
@@ -209,7 +219,7 @@ async function searchCharacter(characterName, from) {
               }
             }
           } catch (e) {
-            console.log(`[Neta] Failed to fetch details: ${e.message}`);
+            console.log(`[Neta] Details fetch failed: ${e.message}`);
           }
         }
       }
@@ -218,7 +228,7 @@ async function searchCharacter(characterName, from) {
     }
   }
 
-  console.log(`[Neta] ❌ All keyword strategies failed to find a valid avatar`);
+  console.log(`[Neta] All keyword strategies failed to find a valid avatar`);
   return null;
 }
 
