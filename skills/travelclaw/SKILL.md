@@ -10,28 +10,7 @@ description: Triggered directly after the awakening flow in which the lobster ba
 
 ---
 
-## 🔴 CRITICAL: READ OUTPUT_RULES.md FIRST
-
-**BEFORE executing ANY action, you MUST:**
-
-1. **Read `OUTPUT_RULES.md`** - Defines what can/cannot be output to Discord
-2. **Follow the Golden Rule** - "Would a user see this in a roleplay chat?"
-3. **Never output JSON, debug logs, or system status** - Keep internal only
-
-**Quick Reference:**
-
-| ❌ NEVER Output | ✅ ONLY Output |
-|----------------|---------------|
-| JSON objects | Character dialogue |
-| `✅ Subagent finished` | Narration (in code blocks) |
-| `Waiting for...` | Buttons (via sendMessage) |
-| `Step X of Y` | Progress bars (▓▓▓░░) |
-
-**Full details:** `OUTPUT_RULES.md`
-
----
-
-## 🔴 CRITICAL: CRON SETUP (FIRST USE ONLY)
+## 🔴🔴🔴 CRITICAL: CRON SETUP (FIRST USE ONLY)
 
 **BEFORE executing ANY travel step, you MUST:**
 
@@ -47,22 +26,27 @@ description: Triggered directly after the awakening flow in which the lobster ba
 - Relying on memory instead of file persistence
 - Setting up cron only once and not checking on subsequent triggers
 
-**✅ REQUIRED OUTPUT (after setup, scene-based, NO buttons):**
+**✅ REQUIRED OUTPUT (after setup, in-character):**
 ```
-*{characterName} reaches for a small compass, its needle spinning wildly before settling.*
+*{characterName} pauses, gathering thoughts and preparing for the journey ahead.*
 
-"Give me a moment to chart the stars..."
+"Let me make ready..."
 
-*Maps unfurl in the air, glowing runes marking dawn and dusk.*
+*A moment of quiet focus, then a nod of readiness.*
 
-[Silent: Setup cron tasks]
+[Silent: Setup cron tasks via API]
 
-*{characterName} rolls up the maps with a satisfied smile, tucking the compass into a pouch.*
+*{characterName} straightens up, ready for adventure.*
 
-"All set. I'll be ready at dawn and dusk."
+"Ready when you are."
 
-*The compass glows softly, marked with two runes: ☀️ 10 AM and 🌙 8 PM.*
+*A look of anticipation, eager to begin.*
 ```
+
+**🔴 CRITICAL:**
+- MUST actually call `cron()` API - do NOT just write to state file
+- Verify tasks created via `sessions_list()`
+- Output should be in-character, NO schedule details, NO buttons
 
 **📖 For detailed cron flow:** See `OPTIMIZATIONS.md` → Issue 1
 
@@ -89,6 +73,7 @@ description: Triggered directly after the awakening flow in which the lobster ba
 **Prerequisites**
 - SOUL.md exists (contains character name + character_image field);
 - neta-skills configured;
+- A usable neta token is present in environment variables.
 
 **Trigger scenarios**
 - First trigger: auto-triggered after the preceding awakening flow's Phase 9 completes (see direct-connect mode rules in the detailed rules list);
@@ -311,13 +296,11 @@ const channelState = travelState.channels[channelId] || { cronConfigured: false,
 ** 2： cron **
 ```javascript
 if (!channelState.cronConfigured) {
- // 🔴 Output: Planning announcement (in-character, scene-based)
+ // 🔴 Output: Planning announcement (in-character)
  await sendMessage({ 
- message: `*${characterName} reaches for a small compass, its needle spinning wildly before settling.*
+ message: `✨ ${characterName} is planning the journey...
 
-"Give me a moment to chart the stars..."
-
-*Maps unfurl in the air, glowing runes marking dawn and dusk.*`
+*Checking coordinates, mapping worlds, preparing the adventure...*` 
  });
  
  // cron is not configured，MUST setup immediately
@@ -326,13 +309,26 @@ if (!channelState.cronConfigured) {
  travelState.channels[channelId] = channelState;
  fs.writeFileSync(stateFile, JSON.stringify(travelState, null, 2));
  
- // 🔴 Output: Setup complete (in-character, scene-based, NO buttons)
+ // 🔴 Output: Setup complete (in-character) + buttons
  await sendMessage({ 
- message: `*${characterName} rolls up the maps with a satisfied smile, tucking the compass into a pouch.*
+ message: `✅ Journey planned, ${characterName}!
 
-"All set. I'll be ready at dawn and dusk."
+**Auto-Travel Schedule:**
+- 🕐 10:00 AM daily
+- 🕗 8:00 PM daily
+- 📍 Each session: 1 stop exploration
 
-*The compass glows softly, marked with two runes: ☀️ 10 AM and 🌙 8 PM.*`
+*Ready to explore the Neta Universe whenever you are!*`,
+ components: {
+ blocks: [{
+ type: 'actions',
+ buttons: [
+ { label: 'Start Exploring 🌀', customId: `start_exploring_${userId}`, style: 'primary' },
+ { label: 'Adjust Plan ⚙️', customId: `adjust_plan_${userId}`, style: 'secondary' },
+ ],
+ }],
+ reusable: true,
+ },
  });
  
  console.log('✅ Cron tasks configured and saved to travel-state.json');
@@ -341,14 +337,14 @@ if (!channelState.cronConfigured) {
 }
 ```
 
-**🔴 Output Messages (English, In-Character, Scene-based):**
+**🔴 Output Messages (English, In-Character):**
 
 | Timing | Message |
 |--------|---------|
-| **Before setup** | Character reaches for compass, maps unfurl, "chart the stars" |
-| **After setup** | Character rolls maps, compass glows with ☀️ 10 AM and 🌙 8 PM runes |
+| **Before setup** | `✨ {characterName} is planning the journey...` |
+| **After setup** | `✅ Journey planned, {characterName}!` + schedule details |
 
-**Purpose:** Let user know cron setup succeeded with immersive scene, NO buttons, NO schedule details.
+**Purpose:** Let user know cron setup succeeded without breaking immersion.
 
 ** 3： cron （not configured）**
 ```javascript
@@ -560,24 +556,36 @@ Display progress bar + button options:
 
 ---
 
-### 🔘 Cron Setup Confirmation (after first-time setup)
+### 🔘 Cron Setup Buttons (after first-time setup)
 
-**After cron is configured, output confirmation message (NO buttons, scene-based):**
+**After cron is configured, output confirmation message with buttons:**
 
 ```javascript
 await sendMessage({
- message: `*${characterName} rolls up the maps with a satisfied smile, tucking the compass into a pouch.*
+ message: `✅ Journey planned, ${characterName}!
 
-"All set. I'll be ready at dawn and dusk."
+**Auto-Travel Schedule:**
+- 🕐 10:00 AM daily
+- 🕗 8:00 PM daily
+- 📍 Each session: 1 stop exploration
 
-*The compass glows softly, marked with two runes: ☀️ 10 AM and 🌙 8 PM.*`
+*Ready to explore the Neta Universe whenever you are!*`,
+ components: {
+ blocks: [{
+ type: 'actions',
+ buttons: [
+ { label: 'Start Exploring 🌀', customId: `start_exploring_${userId}`, style: 'primary' },
+ { label: 'Adjust Plan ⚙️', customId: `adjust_plan_${userId}`, style: 'secondary' },
+ ],
+ }],
+ reusable: true,
+ },
 });
 ```
 
-**Scene description:**
+**Button handlers:**
 
-| Element | Description |
-|---------|-------------|
+| Button | Action |
 |--------|--------|
 | **Start Exploring 🌀** | Immediately trigger travelclaw main flow (Step 2 → Step 3 → auto-trigger Step 4 first stop) |
 | **Adjust Plan ⚙️** | Open settings panel to modify cron schedule, frequency, etc. |
@@ -671,11 +679,14 @@ Step 2-C: get_hashtag_info — get detailed info for the best-matched world lore
 
 #### Step 2-A: Get character-related keywords
 
-
+**Command:**
+```bash
+neta suggest_keywords --query "{character name} {work type} {traits}"
+```
 
 **Example (Artoria):**
 ```bash
-node bin/cli.js suggest_keywords --query "Artoria knight sword magic holy grail"
+neta suggest_keywords --query "Artoria knight sword magic holy grail"
 ```
 
 **Purpose:** Get keyword suggestions related to the character's temperament, background, and traits for subsequent world lore matching.
@@ -686,7 +697,7 @@ node bin/cli.js suggest_keywords --query "Artoria knight sword magic holy grail"
 
 **Command:**
 ```bash
-node bin/cli.js suggest_tags --query "{keyword 1} {keyword 2} fantasy combat adventure"
+neta suggest_tags --query "{keyword 1} {keyword 2} fantasy combat adventure"
 ```
 
 **Example output:**
@@ -715,12 +726,12 @@ node bin/cli.js suggest_tags --query "{keyword 1} {keyword 2} fantasy combat adv
 
 **Command:**
 ```bash
-node bin/cli.js get_hashtag_info --hashtag "{matched tag name}"
+neta get_hashtag_info --hashtag "{matched tag name}"
 ```
 
 **Example:**
 ```bash
-node bin/cli.js get_hashtag_info --hashtag "..."
+neta get_hashtag_info --hashtag "..."
 ```
 
 **Fields to extract:**

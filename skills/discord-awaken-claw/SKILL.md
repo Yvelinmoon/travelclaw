@@ -91,37 +91,25 @@ Users should only see character dialogue, narration, and buttons — never your 
 
 ## 🔴🔴🔴 Mandatory awakening operations (must execute after confirm_yes is clicked)
 
-**CRITICAL: Nickname and Avatar MUST be updated BEFORE awakening narrative (Step ⑥)**
+**After the user clicks "◎ That's them, hatch now", the following two steps are core components of the awakening and are NOT optional; they must not be skipped, forgotten, or omitted:**
 
-**After the user clicks "◎ That's them, hatch now", execute in this EXACT order:**
-
-| Order | Step | Action | Critical Rule |
-|-------|------|--------|---------------|
-| **①** | Atmosphere | `"............\nHatching"` | First message only |
-| **②** | SOUL.md | Backup + write character info | Include character_image URL |
-| **③** | **NICKNAME** | Guild nickname → character name | **MUST complete before ⑥** |
-| **④** | **AVATAR** | Search + update avatar | **MUST complete before ⑥** |
-| **⑤** | Verify | Check both updated | Silent check |
-| **⑥** | Narrative | Awakening narrative + world arrival | **ONLY after ③④ complete** |
+| Step | Action | Description |
+|------|--------|-------------|
+| **Required ①** | Change guild member nickname | Set to character name only, no ID or extra characters |
+| **Required ②** | Search character image → update guild member avatar | Prioritize neta skill; if it fails, inform the user and continue |
 
 **🔴 CRITICAL TIMING:**
 ```
-User clicks "◎ That's them, hatch now"
+User clicks "That's them"
    ↓
-① "............\nHatching"
+① Change nickname (silent)
    ↓
-② Update SOUL.md (silent)
+② Update avatar (silent)
    ↓
-③ Change nickname (silent, MUST complete)
+③-⑤ SOUL.md backup, etc.
    ↓
-④ Change avatar (silent, MUST complete, use fallback if needed)
-   ↓
-⑤ Verify (silent)
-   ↓
-⑥ Output narrative (user sees character already transformed)
+⑥ NOW output awakening narrative
 ```
-
-**User experience:** When narrative appears, nickname and avatar are already changed - silent magic, no waiting, no logs.
 
 **❌ The following are serious errors:**
 - Reaching ⑥ narrative then stopping, forgetting to change nickname and avatar
@@ -138,49 +126,59 @@ User clicks "◎ That's them, hatch now"
 
 **Trigger:** User inputs a command such as `@Bot start awakening`
 
-## First, determine the language
-**Before outputting any text, determine preferred language based on the text the user used to trigger:**
-- Trigger word is Chinese → full Chinese throughout
-- Trigger word is English → full English throughout
-- Other language → follow the user's language
+**Language detection:**
+- Trigger word is Chinese → Chinese output
+- Trigger word is English → English output
+- Other language → follow user's language
 
-**All subsequent output (including fixed template text) uses that language** until the user explicitly says "switch language" or similar.
+**Output (two SEPARATE text messages, NO buttons):**
 
-## Then output the fixed-format opening template Discord component
-**Upon receiving the trigger, the only action is to immediately execute the following plugin call — no plain text may be output:**
-
-```javascript
-await sendMessage({
-  message: `○  Lobster Baby · Waiting to hatch
-
+**Message 1: Opening (FIXED content - use EXACTLY this text):**
+```
 I… have no shape yet.
 No name, no memory, no origin.
 
 But I know — perhaps you already have someone in mind.
 
-Tell me — the character you're thinking of —
-I will become them.`,
-  components: {
-    blocks: [{
-      type: 'actions',
-      buttons: [{
-        label: '◎  I have one in mind',
-        customId: `start_${userId}`,
-        style: 'primary',
-      }],
-    }],
-    reusable: true,
-  },
-});
+Tell me about the character you're thinking of.
+I will become them.
 ```
 
-❌ Error: directly outputting "I… have no shape yet." etc. → buttons don't appear, user cannot continue
+**Message 2: Follow-up Prompt (VARIED content)**
+- Purpose: Guide the user to describe the character they have in mind
+- Tone: Curious, evocative, open-ended
+- **MUST be a separate message** - do NOT combine with Message 1
+- **Vary the wording each time** - create your own unique phrasing
+- Ask about: name, role, origin, defining traits, what makes them iconic
+
+```javascript
+// Send Message 1 first (EXACT fixed text)
+await sendMessage({
+  message: `I… have no shape yet.
+No name, no memory, no origin.
+
+But I know — perhaps you already have someone in mind.
+
+Tell me about the character you're thinking of.
+I will become them.`
+});
+
+// Send Message 2 separately (create your own varied prompt)
+await sendMessage({ message: '...' });
+```
+
+**🔴 CRITICAL:** 
+- Message 1 and Message 2 MUST be separate sendMessage calls
+- Do NOT combine them into one message
+- Do NOT use buttons in Phase 1
+- Message 1 text is FIXED - use the exact text above every time
+- After sending both, wait silently for user input
 
 ---
 
 ### Phase 2: Collect initial keyword
 
-**Trigger:** User clicks "◎ I have one in mind"
+**Trigger:** User sends any text message after Phase 1
 
 ```javascript
 case 'start':
@@ -244,6 +242,12 @@ Record the user's input, then immediately proceed to Phase 4.
 
 **⛔ Must output buttons; plain-text option lists (e.g. `1. xxx`, `A / B / C`, Markdown lists) are strictly forbidden!**
 
+**🔴 CRITICAL: Button options must NOT contain character names!**
+- Options should be GENERIC trait descriptions (e.g., "Tall athlete in purple/gold jersey")
+- **NEVER include character names in options** (e.g., NOT "Kobe Bryant")
+- Options should hint at the character without revealing the name
+- Character names are ONLY revealed in Phase 7 (guess reveal)
+
 ```javascript
 await sendMessage({
   message: result.question,
@@ -259,6 +263,10 @@ await sendMessage({
 ```
 
 Option button customId: `answer_${userId}_${index}` (index from 0). A "✏ Type it myself" button `manual_${userId}` is appended at the end.
+
+**Example:**
+- ❌ Wrong: `["Kobe Bryant", "Michael Jordan", "LeBron James"]`
+- ✅ Correct: `["Tall athlete in purple/gold jersey", "Basketball legend with championship rings", "Modern NBA superstar"]`
 
 **The sendMessage call is the entirety of this phase's output; do not output the question text separately after calling.**
 
@@ -494,11 +502,16 @@ console.log('Avatar found:', imageUrl);
 
 | Priority | Method | Applies to |
 |----------|--------|------------|
-| ① | **Determine character type** — first decide if fictional or real person | All characters |
-| ② | **Real person** → Wikipedia / Wikimedia Commons / public portrait sources | Public figures like Musk, Trump |
-| ③ | **Fictional character** → Neta API (`reference/neta-avatar-search.js`) | Anime / game / novel characters |
-| ④ | Predefined image library | Common character local cache |
-| ⑤ | Web search suggestion + manual user input | Fallback when all methods fail |
+| ① | **Neta API** character query | Anime / game / novel characters (primary method) |
+| ② | **Wikimedia/Wikipedia** search | Real people (Elon Musk, Trump) + well-known fictional |
+| ③ | **Predefined image library** | Hardcoded reliable URLs |
+| ④ | **Web search suggestions** | When automated searches fail |
+| ⑤ | **Discord fallback avatars** | Last resort (only if all above fail) |
+
+**🔴 Important: For real people (Elon Musk, Trump, etc.):**
+- Neta API may not have accurate images
+- Wikimedia/Wikipedia (Priority ②) is the recommended source
+- Use official portraits from Wikipedia infobox
 
 **🔴 Important: avatar acquisition strategy for real people (must read!)**
 
@@ -530,11 +543,11 @@ if (isRealPerson) {
 2. After user sends one, manually download and use that image
 3. **Must not skip the avatar update step**
 
-**⚠️ Important configuration check:**
+**⚠️ Neta API Configuration:**
 
-Ensure the path in `reference/neta-avatar-search.js` is correct
+Neta API commands are executed via environment variables. No manual path configuration needed.
 
- > ✅ ④ found URL → **immediately execute ⑤: update server avatar**
+> ✅ ④ found URL → **immediately execute ⑤: update server avatar**
 > ❌ ④ all paths failed → inform user `❌ Auto avatar search failed, please send an image or image link` → **immediately jump to ⑥: output awakening narrative** (skip ⑤, do not stop here)
 
 ---
