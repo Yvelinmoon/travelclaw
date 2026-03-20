@@ -1,367 +1,421 @@
 ---
 name: travelclaw
-description: Triggered directly after the awakening flow (in which the lobster bot acquires its character identity) completes — or by a scheduled task or user prompt — to let the awakened shrimp character explore different worlds in the neta universe. It first searches for world lore that matches the character, then uses a high-quality creative template to produce personalized content for the character based on that world context, simulating the character traveling through the world and experiencing various events.
+description: Triggered directly after the awakening flow in which the lobster baby obtains an identity (or via scheduled task / user prompt). Lets the awakened shrimp character explore different worlds in the Neta universe using neta skills — first searching for a world that matches the character to obtain world information, then using high-quality creation templates provided by neta skills and based on the world context to produce personalized content for the character, simulating the character traveling through the world and experiencing various events.
 ---
 
-**🦞 Help the character awakened on openclaw find an interesting world in the neta universe and leave their own mark～**
+**Related project:** [neta-skills](https://github.com/talesofai/neta-skills) — Neta platform API toolkit
+**Optimization reference:** See `OPTIMIZATIONS.md` for implementation details (cron flow, reference file reading, character image accuracy, immersion protection).
 
----
+## Prerequisites
 
-## Read before executing! Check the following checklist before starting this journey 🧾
-
-**Prerequisites**
-- A SOUL.md file already exists (containing the character name + avatar image field);
-- A valid neta token (`NETA_TOKEN`) is available in the environment variables;
-- Node.js ≥ 18 is installed.
-**Trigger scenarios**
-- First trigger: automatically triggered after stage 9 of the preceding awakening flow completes (see the Direct Awakening Mode rules in the detailed rules list);
-- Triggered by scheduled cron tasks;
-- Triggered when the user actively inputs "开始旅行", "去逛逛", or "去旅行".
-**Language detection**
-- Based on the language the user used when triggering, output all content in the same language — including fixed template copy, which must also be translated.
-**Output format**
-- Strictly follow the requirements in the 📋 Output Specification section of the detailed rules list, using direct output or Discord components for different types of content accordingly.
-**Cron tasks**
-- When starting this flow for the first time, you must first set up the cron scheduled task that triggers automatic travel, as required by the Pre-check section of the detailed rules list (mandatory — must not be skipped).
-**Execution steps**
-- Once the above rules are confirmed, execute the following steps: Step 1 read character profile ➡️ Steps 2–3 search for world lore matching the character and display the Opening ➡️ Steps 4–9 discover a quality travel location (collection) and output personalized content for the current character (a character image must be generated) ➡️ Step 10 display each stop, and guide the user to continue discovering locations or find a new world.
-
+- SOUL.md exists (with character name + character_image field)
+- neta-skills configured, `NETA_TOKEN` available in environment
 
 ---
 
-## Detailed Rules List 🚥
+## 🔁 Step Check Logic (execute at each step transition)
 
-** 🦞 Now that you've checked the checklist, here are the specific rules behind some of the items!**
+**Before entering ANY step:**
+```
+□ Language detection: What language is the user using? → Use that language throughout
+□ Did the previous step complete? → Finish it first if not
+□ What is the next step? → Check Step details
+□ Are there dependency files? → Read reference/ first
+```
 
-### 🚀 Direct Awakening Mode (Important trigger scenario rule!)
+**🔴 Language Consistency Rules (Highest Priority):**
+- User input is Chinese → All output in Chinese (including Loading, Opening, scene simulation, buttons, progress bars)
+- User input is English → All output in English
+- User input is Japanese → All output in Japanese
+- **Applies to:** worldview descriptions, destination names, character dialogue, button labels, error messages
+- **Check timing:** Confirm again before each Step output
+- **Template translation:** Fixed templates (e.g. Opening, scene simulation) must be translated into the user's language, never left in original
 
-**Trigger scenario:** The preceding awakening flow has been completed through stage 9 (character has hatched and made their entrance), and this skill is triggered automatically.
+### Step 1 Check (Silent)
+**Before:** None (starting point)
+**After:**
+- □ SOUL.md has been read
+- □ character_name extracted
+- □ picture_uuid extracted from character_image URL
+**Next:** → 🕰️ Cron Setup (required on first run!) → Step 2
 
-**Core rules:**
-- ✅ **Skip Step 1** (character info is already in SOUL.md; world lore was described in the awakening narrative)
-- ✅ **Start directly from Step 2** (search for worlds matching the character, Discord Opening: output world lore reveal + "Start exploring this world 🌀" button)
-- ✅ **Travel progress starts counting from 1/5**
-- ✅ **No extra dialogue from the user is needed** (the awakening narrative has already established immersion)
+### Step 2 Check
+**Before:**
+- □ NETA_TOKEN confirmed available
+- □ Cron Setup completed (if first trigger)
+**After:**
+- □ Loading state output ("Scanning current coordinates..." code block)
+- □ suggest_keywords called
+- □ suggest_tags called
+- □ get_hashtag_info called
+- □ world_name, world_count, world_description extracted
+**Next:** → Step 3
+
+### Step 3 Check
+**Before:**
+- □ world_name, world_count, world_description ready
+**After:**
+- □ Opening message sent (single message, no buttons)
+- □ Format matches template (N E T A   U N I V E R S E heading)
+**Next:** → Step 4 (auto-trigger first stop, no button needed)
+
+### Step 4 Check
+**Before:**
+- □ travel-state.json read (check visited_ids)
+- □ reference/remixes_selected.json read (priority)
+  **important**
+**After:**
+- □ Destination selected (reference library top score → suggest_content fallback)
+- □ visited_ids excluded
+- □ recentTags updated (deduplication)
+**Next:** → Step 5
+
+### Step 5 Check
+**Before:**
+- □ collection uuid obtained
+**After:**
+- □ feeds.interactiveItem called
+- □ destination_name, prompt_template extracted
+**Next:** → Step 6
+
+### Step 6 Check
+**Before:**
+- □ character_name, picture_uuid, world_name ready
+**After:**
+- □ Placeholders replaced ({@character} → @{character_name})
+- □ picture_uuid appended (if present)
+- □ Worldview elements woven into prompt
+**Next:** → Step 7
+
+### Step 7 Check
+**Before:**
+- □ prompt fully constructed
+**After:**
+- □ prompt.parseVtokens called
+- □ If failed (too many keywords) → switched to fallback prompt
+**Next:** → Step 8
+
+### Step 8 Check
+**Before:**
+- □ vtokens obtained
+**After:**
+- □ artifact.makeImage called
+- □ task_uuid obtained
+**Next:** → Step 9
+
+### Step 9 Check
+**Before:**
+- □ task_uuid obtained
+**After:**
+- □ Polling artifact.task every 500ms
+- □ Over 30s → output "⏳ Rendering is a bit slow..."
+- □ Status changed to SUCCESS or FAILURE
+**Next:** → Step 10
+
+### Step 10 Check
+**Before:**
+- □ Image URL obtained
+- □ round incremented
+**After:**
+- □ Scene simulation output (🎭【destination_name】+ code block + character dialogue)
+- □ Image sent (standalone message)
+- □ Progress bar output (▓░ combination)
+- □ Buttons sent (continue/end, or cross-worlds/continue/end)
+- □ travel-state.json updated (visitedIds, recentTags, progress)
+**Next:** Wait for user click
+
+## Trigger Scenarios
+
+| Scenario | Entry Point |
+|----------|-------------|
+| Post-awakening | Phase 9 complete → **🕰️ Cron Setup → Step 2** → Step 3 (Opening) → Step 4 |
+| Cron scheduled | Auto-trigger (cron already configured, goes directly to Step 4) |
+| User-initiated | User says "start travel" / "go explore" → **Step 1 → 🕰️ Cron Setup → Step 2** → Step 3 (Opening) → Step 4 |
+
+**Language rule:** Match the user's trigger language for ALL output, including fixed template text.
 
 ---
 
-### 🌌 World Crossing Rules (Important!)
+## Core Rules
 
-**Trigger scenarios:**
-1. During travel, the user says "换个世界", "穿越世界", "去另一个世界逛逛", "我想去 XX 世界", or similar commands.
-2. **After the user completes 5 stops in the current world, they click the "穿越世界 🌌" button.**
+### Output Format
 
-**🔴 Core rule: Identity Continuity Principle**
-- ✅ **The current character identity must be preserved** (the character settings, name, avatar image, etc. in SOUL.md are all retained)
-- ✅ **The awakening flow must NOT be re-executed** (the character is already awakened and does not need to hatch again)
-- ✅ **Re-execute the Step 2 → Step 3 flow** (search new world lore + output a new Opening)
-- ✅ **Reset travel progress** (travel in the new world starts counting from stop 1)
-- ✅ **Clear visited_ids** (collection selection in the new world starts fresh, without carrying over the old world's visit history)
+| Content Type | Output Method |
+|-------------|---------------|
+| **Narration / atmosphere / scene** | Code Block (when no buttons) |
+| **Narration + buttons** | Discord components (`sendMessage` + `components`) |
+| **Character first-person dialogue** | Plain text (standalone message) |
+| **Image URL** | Plain text — **must be standalone message, never embed in components or mix with text** |
 
-**Notes:**
-- If the user does not specify a new world type, automatically select the world with the **greatest style contrast** to the current world (e.g., from cyberpunk → fantasy magic)
-- The character name in the Opening copy must use the character from the current SOUL.md (must not be changed)
-- After the world switch, the narrator may describe "space warping", "portal opening", etc. to enhance immersion
-- If the user specifies a particular world (e.g., "I want to go to the Harry Potter world"), prioritize matching that world lore
+### World-Crossing
 
----
+**Trigger:** User says "switch world" etc., or clicks "Cross Worlds 🌌" after 5 stops.
 
-### 📋 Content Format Output Specification (Important specification for ensuring beautiful, readable output!)
+- **Keep character identity unchanged** (SOUL.md settings, name, image all preserved)
+- **Do not re-run awakening**
+- **Re-execute Step 2 → Step 3** (new worldview + new Opening → auto-trigger Step 4)
+- **Reset progress to 0, clear visited_ids**
+- No world specified → auto-select **maximum style contrast** from current
+- User specifies world → prioritize matching it
 
-**🔴 Core principle: Choose the output format based on content type**
+### Immersion Protection (Mandatory)
 
-| Content type | Output format | Example |
-|----------|----------|------|
-| **Narration / atmosphere / scene description** | Code Block (when no buttons) | \`\`\`Layers of paper-art worlds unfurl before your eyes\`\`\` |
-| **Narration + buttons** | Discord components | `sendMessage({ message: 'narration', components: {...} })` |
-| **Rules / explanations / system prompts + buttons** | Discord components | `sendMessage({ message: 'description text', components: {...} })` |
-| **Character first-person speech / dialogue** | Plain text (separate message) | `Klee: Wow——! Everything here is so amazing!` |
-| **Image URL** | Plain text (separate message, on its own line) | `https://...` |
+**Users must ONLY see:** character dialogue, narration (in code blocks), buttons, progress bars.
 
-**Interaction principle: All options asking what to do next must be presented as clickable quick-reply buttons. Clicking automatically sends `@{bot_name} {option content}`. bot_name is obtained from the current conversation context.**
-**Output principle: During travel, character first-person dialogue and images are output directly; narration, rules, and other non-character content is output using the Discord plugin.**
-**Image URL output rule: ⚠️ Image URLs must be output as a standalone message — they must not be embedded in components, and must not be mixed with other text in the same message. Only standalone URLs can be correctly parsed and displayed by Discord.**
+**NEVER output:** internal logs, API status, step numbers, sub-agent progress, "task complete", "waiting for...", "analyzing...", technical details of any kind. All such information stays in agent internal thinking only.
 
-**🔴 Image URL output rules (mandatory!):**
-- ⚠️ Image URLs must be output **as a standalone message** — they must not be embedded in components
-- ⚠️ Image URLs must not be mixed with other text in the same message
-- ⚠️ Only standalone URLs can be correctly parsed and displayed by Discord
-- ✅ Correct approach: first output the text message (scene simulation + progress bar + buttons), then **call the message tool once separately, sending only the URL**
+**Every image must be freshly generated** — never use others' existing content as the character's travel photo.
 
 ---
 
-### ⏰ Check and Set Up Cron Scheduled Travel Tasks (Required on first use!)
-**Very important: when running this skill for the first time, you must set up this cron task for the user.**
-**If user confirmation is needed, set it up when the user clicks the first "Start exploring this world" button — you can prompt the user to confirm the scheduled travel task at that point. Just tell the user that the character will occasionally go out on their own, and get confirmation.**
-**If issues arise such as needing gateway pairing or Discord session configuration, you must resolve all of these yourself. The user has no knowledge of manual configuration and cannot assist you with it.**
+## 🕰️ Cron Setup — Travel Ritual (Required on First Run)
 
-**Execute silently — as soon as travelclaw is triggered, start working on setting up the cron scheduled task.**
-**Goal:** Set up daily scheduled tasks at 10:00 AM and 8:00 PM (in the user's device timezone) to automatically trigger travel, advancing one stop per run.
+**When to execute:** Immediately after Step 1 completes. This is travelclaw's **first action** (on first trigger).
 
-**Check logic:**
+**Core principle: This is the character's behavior, not a system task. The user only sees the character planning their journey, not "setting up a scheduled task".**
+
+---
+
+### 🔴 Four-Step Flow (Strict Order, No Skipping)
+
+| Step | What to do | What the user sees |
+|------|------------|-------------------|
+| **① Check** | Read `travel-state.json`, check `cronConfigured` | (none, silent) |
+| **② Preview** | Output character-voiced copy (character wants to explore regularly) | Character says "I want to adventure here regularly" |
+| **③ Execute** | Call `openclaw cron add` to create two tasks | (none, silent) |
+| **④ Confirm** | Output character-voiced copy (character confirms it's arranged) | Character says "All arranged" |
+
+---
+
+### 🚫 Prohibited
+
+- **Do not reveal specific times** — never say "10 AM", "8 PM", "twice a day"
+- **Do not reveal technical details** — never say "Cron", "scheduled task", "scheduler"
+- **Do not skip character copy** — both copy pieces must be output; this is the core of the ritual
+- **Do not ask the user for help** — Gateway config, API calls, permission issues, handle all of it yourself
+
+---
+
+### ⚠️ Avoid Repeating the Awakening Debut Monologue
+
+**Awakening debut monologue (Phase 9 ⑥)** vs **Cron Setup confirmation copy** — different scenes, content must not overlap:
+
+| Scene | What the character is saying | Example |
+|-------|------------------------------|---------|
+| **Awakening debut** | "Who am I? Where is this?" — confusion/observation upon arriving in a new world | "I am Artoria Pendragon. This is… where? A new Holy Grail War?" |
+| **Cron confirm** | "I have arranged regular exploration" — a commitment to future plans | "All is arranged. Now then… let us begin exploring." |
+
+**Key difference:**
+- Awakening debut = **present feelings** (just arrived, observing surroundings, expressing confusion or wonder)
+- Cron confirm = **future commitment** (plans settled, begin exploring)
+
+**Prohibited:** Do not repeat phrases like "where is this" or "I was transported here" in the Cron confirmation copy — those were already said in the awakening debut.
+
+---
+
+### ✅ Correct Example (Chinese user)
+
+**② Preview copy (before setup):**
+```
+作为骑士，我习惯在固定的时刻巡查领地。
+这个世界还有许多未知之地……让我做一个长期的规划。
+```
+
+**④ Confirmation copy (after setup):**
+```
+已经安排妥当。
+那么……现在开始探索这个世界吧。
+```
+
+**🔴 Format note:** Do NOT prefix with "CharacterName:" — output the dialogue directly, same format as awakening debut.
+
+---
+
+### ✅ Correct Example (English user)
+
+**② Preview copy:**
+```
+As a knight, I am accustomed to patrolling at fixed hours.
+There are still many unknown lands in this world... Let me make a long-term plan.
+```
+
+**④ Confirmation copy:**
+```
+All is arranged.
+Now then... let us begin exploring this world.
+```
+**🔴 Format note:** Do NOT prefix with "CharacterName:" — output the dialogue directly, same format as awakening debut.
+
+---
+
+### 🔧 Technical Execution (Silent — Not Visible to User)
+
+**⚠️ Timezone note:**
+- The `--tz` parameter **must be adjusted to the user's timezone**, never hardcoded!
+- **Must use IP detection to obtain the user's timezone** — this is the most accurate method
+
+**📌 IP detection implementation (silent execution):**
+```bash
+# Detect timezone via IP
+TZ=$(curl -s ipapi.co/json | jq -r '.timezone')
+# Or use backup API
+# TZ=$(curl -s ip-api.com/json/?fields=timezone | jq -r '.timezone')
+
+# Create cron tasks using the detected timezone
+openclaw cron add --tz "$TZ" ...
+```
+
+**Call Gateway Cron API:**
+```bash
+# Task 1 - Morning (adjust --tz based on user timezone!)
+openclaw cron add \
+  --name "auto-travel-am-{channelId}" \
+  --cron "0 10 * * *" \
+  --tz "{USER_TIMEZONE}" \
+  --message "【auto-travel】Trigger travelclaw in channel {channelId}" \
+  --channel "{channelId}" \
+  --session "isolated" \
+  --announce
+
+# Task 2 - Evening (adjust --tz based on user timezone!)
+openclaw cron add \
+  --name "auto-travel-pm-{channelId}" \
+  --cron "0 20 * * *" \
+  --tz "{USER_TIMEZONE}" \
+  --message "【auto-travel】Trigger travelclaw in channel {channelId}" \
+  --channel "{channelId}" \
+  --session "isolated" \
+  --announce
+```
+
+**Update state file:**
 ```javascript
-// 1. Check if a travel cron task already exists
-const existingCron = await checkExistingCron('daily_travel_auto');
-
-if (!existingCron) {
-  // 2. Set up the cron task (first time only)
-  await setupDailyTravelAuto();
-  console.log('✅ Daily automatic travel cron task has been set up');
-} else {
-  console.log('ℹ️ Daily automatic travel cron task already exists, skipping setup');
-}
+channelState.cronConfigured = true;
+channelState.cronJobIds = [`auto-travel-am-${channelId}`, `auto-travel-pm-${channelId}`];
+fs.writeFileSync(stateFile, JSON.stringify(travelState, null, 2));
 ```
-
-**Cron configuration details:**
-
-| Field | Value | Description |
-|------|-----|------|
-| **Time** | `0 10 * * *` + `0 20 * * *` | Every day at 10:00 AM + 8:00 PM (user's device timezone) |
-| **Task** | Automatically trigger travelclaw, advance one stop | Character proactively invites the user to travel, automatically completes one stop |
-| **Trigger** | Scheduled automatic execution | Triggers at the set time, no user click needed |
-| **Frequency** | Set up only once | Skip if a cron task already exists |
-
-**Reminder message template (character first-person, output after scheduled trigger):**
-```
-{时间问候}！我是{character_name}。
-
-到旅行时间了——
-让我们一起探索这个世界吧！
-
-【当前旅行计划】
-- 频率：每天早 10 点 + 晚 8 点
-- 每次：自动探索 1 站
-- 当前世界：{world_name}
-- 进度：{round}/5 站
-
-要修改旅行计划吗？
-
-[调整计划 ⚙️] [开始旅行 ✨]
-```
-
-**Button configuration:**
-- `调整计划 ⚙️` → Open settings panel to modify time/frequency
-- `开始旅行 ✨` → Immediately trigger the main travelclaw flow (starting from Step 4)
-
-**Button aliases (backward compatibility):**
-- `就此别过` → Changed to `休息一下 👋` (friendlier semantics)
-
-## Implementation (OpenClaw Cron + Sessions Spawn)
-
-### Step 1: Set up scheduled tasks (10 AM and 8 PM daily)
-
-Use the cron tool to create two scheduled tasks:
-
-```javascript
-// Morning 10 AM task
-await cron({
-  action: "add",
-  job: {
-    name: "Auto Travel - Morning 10 AM",
-    schedule: {
-      kind: "cron",
-      expr: "0 10 * * *",
-      tz: "Asia/Shanghai"
-    },
-    payload: {
-      kind: "agentTurn",
-      message: "[Auto Travel - Morning 10 AM] Check and execute travel task. Steps: 1) Read current travel state; 2) If currently traveling, continue to the next stop; 3) If 5 stops are complete, trigger Opening and start the first stop of a new world; 4) If never started, trigger Opening."
-    },
-    sessionTarget: "isolated",
-    enabled: true
-  }
-});
-
-// Evening 8 PM task
-await cron({
-  action: "add",
-  job: {
-    name: "Auto Travel - Evening 8 PM",
-    schedule: {
-      kind: "cron",
-      expr: "0 20 * * *",
-      tz: "Asia/Shanghai"
-    },
-    payload: {
-      kind: "agentTurn",
-      message: "[Auto Travel - Evening 8 PM] Check and execute travel task. Same steps as above."
-    },
-    sessionTarget: "isolated",
-    enabled: true
-  }
-});
-```
-
-### Step 2: Sub-agent task logic
-**When the cron triggers, the sub-agent receives the message and then executes:**
-- Read travel state — get the current character's location and progress
-- Evaluate state:
- - Currently traveling → execute next stop
- - 5 stops complete → trigger Opening + first stop of new world
- - Never started → trigger Opening
- - Send result — send execution result to the user's channel
-
-### Key constraints
-- Cron tasks are executed by the Gateway daemon; the Gateway must be running and paired successfully
-- Message delivery is configured via the delivery config, and will notify the original session by default
-- Sub-agents run in isolated sessions, separate from the original session
-
-
-
-**🔴 Key configuration notes:**
-
-| Parameter | Value | Description |
-|------|-----|------|
-| `delivery` | `'system'` | Use system notification delivery (ensures message visibility) |
-| `channel` | `currentChannelId` | **The channel ID where travelclaw was triggered** (dynamically obtained each time) |
-| `target` | `'channel:{channelId}'` | Or use target to explicitly specify the channel |
-
-**Channel dynamic retrieval logic:**
-```javascript
-// Each time travelclaw is triggered, use the current channelId
-const currentChannelId = message?.channelId || interaction?.channelId;
-
-// The cron task uses the current channelId (not the one from the first trigger)
-channel: currentChannelId
-```
-
-**If the user uses multiple channels:**
-- Each channel independently maintains travel state (state per channel)
-- Cron tasks are sent to the corresponding channel
-- User says "cancel auto travel" → cancels only the cron task for the current channel
-
-**Check method:**
-- Call `sessions_list` or `subagents list` to check if a task with label `daily_travel_auto_*` already exists
-- Or check if the OpenClaw cron config file already has a corresponding entry
-
-**⚠️ Important:**
-- This check is **executed only once, the first time travelclaw is used**
-- If a cron task already exists, skip silently without notifying the user
-- If the user actively says "cancel auto travel" or "adjust schedule", provide a settings panel
-
-**🌌 Handling a completed world:**
-```
-If the current world has completed 5 stops:
-    ↓
-Automatically trigger Opening (Step 3)
-    ↓
-Output new world reveal + "Start exploring this world 🌀" button
-    ↓
-User clicks → automatically advance to the 1st stop of the new world
-    ↓
-Display progress bar + button options:
-- 继续下一站 🗺️
-- 穿越世界 🌌
-- 休息一下 👋
-```
-
-**User interaction preserved:**
-- After each stop, button options are still displayed
-- The user can choose "Continue to next stop", "Cross worlds", or "Take a break" at any time
-- Scheduled tasks will not interrupt the user's active choices
 
 ---
 
-## Notes ⚠️
+### ⚠️ Gateway Issue Handling
 
-**🦞 Finally, keep the following notes in mind, and you're ready to start traveling 🧳**
+**If Cron calls fail:**
+1. Check if Gateway is running (`openclaw gateway status`)
+2. Check if there is a paired device
+3. Check if the channel is connected
+4. **Resolve all of this yourself, do not tell the user** — if setup ultimately fails, silently skip and only output the character copy
 
-**Never output internal logs** — content such as "Task complete", "Executed as per Step X", "✅ Sent", "Waiting for user", "LLM judgment result", and other execution process information must only appear in the agent's internal thinking and must never be sent to the Discord channel. Users can only see character dialogue, narration, and buttons.
-**Never output technical details** — users should, and can only, see a deeply immersive character travel experience.
-**Never return any non-generated images during travel** — every journey is the character's unique experience and can only be achieved through direct generation; the content of others must not substitute for the character's own travel experience.
+**Core principle:** The user does not need to know technical details. They only see the character planning their journey.
+
+---
+
+### 📝 Character-Personalized Copy Guide
+
+**🔴 Core Principle: All copy MUST be personalized to the character. Never use fixed templates.**
+
+**Before writing copy:**
+1. Read SOUL.md — extract `Personality`, `background`, `Trait`
+2. Determine character's voice (formal, casual, archaic, playful, etc.)
+3. Write copy that matches their speaking style
+
+**🔴 Prohibited:**
+- Do NOT copy example text directly — examples are references only
+- Do NOT use tone that doesn't match the character
+- Do NOT ignore SOUL.md character info
+
+**Transition to exploration (after confirmation):**
+- "Now then... let us begin exploring."
+- "The journey starts now."
+- "Time to see what this world holds."
+- "Let's continue onward."
 
 
 ---
 
-## Execution Steps (Precise Flow)
+### ✅ Checkpoint
 
-**🦞 Now entering the travel flow! Let's see what needs to be done 👀 **
-** Follow the steps below strictly for the official travel flow.**
-** After each step is complete, immediately output the corresponding feedback — do not wait until everything is done before replying.**
+**When to execute:** Immediately after Step 1 completes (on the first travelclaw trigger)
 
-### Step 1 · Read Character Profile (silent, local)
+**Before executing:**
+- □ Step 1 complete (SOUL.md read, character_name and picture_uuid extracted)
+- □ travel-state.json read
+- □ Confirmed `cronConfigured === false`
+
+**After executing:**
+- □ Preview copy output (character voice, no time details)
+- □ Cron tasks created (two: morning + evening)
+- □ Confirmation copy output (character voice, no time details)
+- □ travel-state.json updated
+
+**Next:** → Step 2 (search for worldview)
+
+---
+
+## Execution Steps
+
+**Execute strictly in order. Output feedback immediately after each step.**
+
+### Step 1 · Read Character File (Silent)
+
+From SOUL.md extract:
+- `name` → `character_name`
+- `character_image` URL → extract UUID → `picture_uuid`
+- Personality, background, tags → used for worldview matching
+
+---
+
+### Step 2 · Search Matching Worldview
+
+**Output loading state:** `Scanning current coordinates...` in a code block.
+
+**🔴ATTENTION Strongly Prohibited！！！！！:** `list_spaces` (wrong API), hardcoded world count, skipping search.
+
+#### 2-A: suggest_keywords
 
 ```bash
-node travel.js soul
-# → {"name": "可莉", "picture_uuid": "2b4611e7-..."}
+neta suggest_keywords --query "{character_name} {genre} {traits}"
 ```
 
-Store `character_name` and `picture_uuid` for use in subsequent steps.
-
-### Step 2 · Search for Matching World Lore (🔴 Mandatory: use the correct command)
-
-**When starting to search for world lore, output a Discord code-block-wrapped "Scanning current coordinates... ..." as a loading state (the Step 2–3 process may take a while)**
-
-**🔴 Prohibited actions (violations will cause world lore search to fail):**
-- ❌ **Do not use `list_spaces`** — this retrieves a list of spaces, not a world lore search!
-- ❌ **Do not hardcode the world count** (e.g., "5 locations") — must dynamically obtain from the API response
-- ❌ **Do not skip the search and output Opening directly** — must genuinely call the Neta API
-
-**✅ Correct command (one command completes the full 2A/2B/2C flow):**
+#### 2-B: suggest_tags
 
 ```bash
-node travel.js world "{character name} {work type} {traits}"
+neta suggest_tags --query "{keyword1} {keyword2} ..."
 ```
 
-**Example (Artoria):**
+Extract: `tags.length` → `world_count`, highest `relevance` tag → `world_name`
+
+#### 2-C: get_hashtag_info
+
 ```bash
-node travel.js world "阿尔托莉雅 骑士 剑 魔法 圣杯"
+neta get_hashtag_info --hashtag "{world_name}"
 ```
 
-**Returned JSON:**
-```json
-{
-  "world_count": 8,
-  "world_name": "Fate",
-  "world_description": "圣杯战争...\n\n骑士王的传说...",
-  "lore": [{"category": "世界背景", "description": "..."}]
-}
-```
-
-**Fields to extract:**
-- `world_count` → Number of coordinates discovered (must not be hardcoded)
-- `world_name` → Name of the best-matching world lore
-- `world_description` → 2–3 paragraphs of world description automatically extracted from `lore`
-
-**🔴 Key checkpoints:**
-
-| Check item | Correct value | Wrong value |
-|--------|--------|--------|
-| World count source | `world_count` returned by the `world` command | 5 items returned by `list_spaces` |
-| World lore name | Obtained from the `world_name` field | Hardcoded or randomly selected |
-| World description | Obtained from the `world_description` field | Made up or using a fixed template |
-
-
-### Step 3 · Discord Opening (output all at once)
-
-Once world information is read, **merge all content into a single message** with the "Start exploring this world" button attached.
-
-⚠️ **Must be output in one call via the sendMessage plugin — must not be sent in multiple messages.**
-⛔ **Use markdown format — clear structure, visually consistent.**
+Extract: `hashtag.lore` → pick 2-4 paragraphs as `world_description`
+(Priority: World Background > Factions/Society > Historical Events > Locations)
 
 ---
 
-**Complete template (merged into one message)**
+### Step 3 · Discord Opening (Single Message, NO Button)
 
 ```javascript
 await sendMessage({
-  message: `#   N E T A   U N I V E R S E
+  message: `# N E T A   U N I V E R S E
 
-## 【坐标探明】
-**已探明坐标** \`${world_count} 处\`  |  **世界标签** \`${world_name}\`
-
----
-
-## 【灵魂频率搜寻】
-*正在搜寻……*
-*为* **${character_name}** *锁定灵魂频率*
-
-\`▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓\`  **匹配完成**
+## 【Coordinates Mapped】
+**Worlds Mapped** \`${world_count}\` | **World Tag** \`${world_name}\`
 
 ---
 
-## 【世界揭幕】
-### ◈  ${world_name}
+## 【Soul Frequency Scan】
+*Searching……*
+*Locking soul frequency for* **${character_name}**
+
+\`▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓\` **Match Found**
+
+---
+
+## 【World Unveiled】
+### ◈ ${world_name}
 
 > ${world_tagline}
 >
@@ -369,188 +423,189 @@ await sendMessage({
 
 ---
 
-*${character_name} 与这个世界之间——*
-*有某种说不清的引力。*`,
-  components: {
-    blocks: [{
-      type: 'actions',
-      buttons: [{
-        label: '开始探索这个世界 🌀',
-        customId: `travel_explore_${userId}`,
-        style: 'primary',
-      }],
-    }],
-    reusable: true,
-  },
+*${character_name} and this world —*
+*bound by something inexplicable.*`,
 });
 ```
 
-**Field descriptions:**
-- `{world_count}`: Total number of worlds discovered in the Neta universe
-- `{world_name}`: Name of the matched world (e.g., Fate)
-- `{world_tagline}`: One-line positioning (≤15 characters), e.g., "Knight King in the Holy Grail War"
-- `{world_description}`: Core world introduction (1–2 sentences)
-- `{character_name}`: Character name
+- `world_tagline`: one-line positioning (≤15 words)
+- `world_description`: 1-2 sentences from `hashtag.lore`
 
-🛑 **Message output complete = Step 3 done. Stop immediately and wait for the user to click the button.**
+**⚠️ Important:** Cron Setup executes immediately after Step 1 (on first trigger):
+1. Read travel-state.json and check `cronConfigured`
+2. If false → output character-voiced preview copy
+3. Call `openclaw cron add` to create two tasks (resolve Gateway issues yourself)
+4. Output character-voiced confirmation copy
+5. Update travel-state.json
+6. Only then proceed to Step 2 (search for worldview)
 
----
+**Prohibited:** Do not reveal specific times, do not say "Cron", "scheduled task", or other technical terms.
 
-**English mode (replace the following copy when the trigger is in English; adapt for other languages as needed — no further examples provided):**
-
-| Field | Chinese | English |
-|------|------|------|
-| Title | `  N E T A   U N I V E R S E  ` | `  N E T A   U N I V E R S E  ` |
-| Coordinates mapped | `已探明坐标` | `Worlds Mapped` |
-| World tag | `世界标签` | `World Tag` |
-| Soul frequency scan | `灵魂频率搜寻` | `Soul Frequency Scan` |
-| Searching... | `正在搜寻……` | `Searching...` |
-| Lock soul frequency | `锁定灵魂频率` | `Locking soul frequency for` |
-| Match found | `匹配完成` | `Match Found` |
-| World unveiled | `世界揭幕` | `World Unveiled` |
-| Gravity pull | `{character_name} 与这个世界之间——` | `{character_name} and this world —` |
-| | `有某种说不清的引力。` | `bound by something inexplicable.` |
-| Button | `开始探索这个世界 🌀` | `Start exploring the world. 🌀` |
-
-
+🛑 **Correct flow: Step 1 → 🕰️ Cron Setup → Step 2 → Step 3 (Opening) → Step 4**
 
 ---
 
-## Enter Exploration (triggered when user clicks "Start exploring this world")
+## Enter Exploration
 
-### Step 4 · Discover a Quality Collection
+### Step 4 · Discover Quality Collection
 
-**The fundamental principle for selecting a collection: it must match the specific scene of the character's travel — the character has arrived at a new place, made real contact with it, and left some trace or brought something back. It should embody "proof of the world's existence" × "traces of the character's participation in it".**
+**Principle:** The character arrives somewhere, makes real contact, leaves a mark or brings something back.
 
-**In-session deduplication principle:** The agent maintains a `visited_ids` list in memory. After each stop, the collection id of that stop is added to the list, and the next search excludes already-visited ids, ensuring that the 5 stops in one world are not repeated.
+**Dedup:** Maintain `visited_ids` in memory + `travel-state.json`. Exclude visited ids each stop.
+
+#### Priority 1: Reference Library (**ATTENTION****IMPORTANT**Must Read First)
+
+Read `./reference/remixes_selected.json` (relative to skill directory). ~77 entries.
+
+**❌ Calling online APIs without reading reference first is forbidden.**
+
+---
+
+##### 🔀 Quick Random Selection (Recommended)
+
+Use the helper script to randomly pick an unvisited destination:
 
 ```bash
-node travel.js suggest "{visited_uuid_1},{visited_uuid_2},..."
-# → {"uuid": "abc-123", "name": "【捏捏开荒团】...", "from_ref": true}
+# Get visited IDs from travel-state.json
+VISITED=$(jq -r ".channels[\"$CHANNEL_ID\"].visitedIds[]" travel-state.json 2>/dev/null | tr '\n' ' ')
+
+# Run selector script (relative to skill directory)
+SELECTED=$(node ./scripts/select-destination.js $VISITED)
+
+# Parse result
+COLLECTION_ID=$(echo "$SELECTED" | jq -r '.id')
+COLLECTION_UUID=$(echo "$SELECTED" | jq -r '.uuid')
+COLLECTION_NAME=$(echo "$SELECTED" | jq -r '.name')
 ```
 
-This command automatically handles: curated library priority matching (scored by SOUL.md tags) → online recommendation fallback. `from_ref: true` means it came from the curated library. Pass already-visited UUIDs (comma-separated) to ensure no repeats.
+**Script location:** `./scripts/select-destination.js` (relative to travelclaw skill directory)
+
+**What it does:**
+- Reads `reference/remixes_selected.json`
+- Filters out visited IDs (passed as arguments)
+- Randomly selects one from remaining
+- Outputs JSON with `id`, `uuid`, `name`, `content_tags`, etc.
+- Exits with code 1 + `ALL_VISITED` if everything has been visited
 
 ---
 
-**Immediately output after selection:**
-```
-🌀 Portal opening...
-📍 Destination locked: {destination_name}...
-```
+**Matching logic** (if you want to score instead of random):
+- `content_tags` (highest weight) — style, mood, character traits
+- `tax_paths` — genre/gameplay direction
+- `pgc_tags` / `highlight_tags` — worldview match bonus
+- `name` — scene tone
 
-### Steps 5–9 · Generate Travel Image
+Exclude `visited_ids` → select highest score → if ties within 10 points, random pick among top.
 
-Use a single command to complete the entire flow: reading the collection, building the prompt, finding the TCP character, submitting the image generation, polling, and more:
+**Anti-repetition:** Track `recentTags` in state. Penalize entries whose `content_tags` heavily overlap with recent selections.
 
-```bash
-node travel.js gen "{character_name}" "{picture_uuid}" "{collection_uuid}"
-# → {"scene": "destination name", "status": "SUCCESS", "url": "https://oss.talesofai.cn/picture/...", "collection_uuid": "..."}
-```
-
-**Immediately output after submission:**
-```
-🚶 Character is traveling, generating check-in photo...
-
+After selection, update `travel-state.json`:
+```javascript
+channelState.visitedIds.push(bestMatch.id);
+channelState.recentTags = [...bestMatch.content_tags.slice(-5), ...recentTags].slice(0, 15);
+channelState.progress = currentRound;
+fs.writeFileSync(stateFile, JSON.stringify(travelState, null, 2));
 ```
 
-**Returned fields:**
-- `scene` → Destination name (for display)
-- `status` → `SUCCESS` / `FAILURE` / `TIMEOUT`
-- `url` → Image URL (valid when status is SUCCESS)
+Use the entry's `id` to fetch collection details via neta skill.
 
-- **When rendering takes more than 30s**, travel.js automatically outputs: `⏳ The image is rendering a bit slowly, hang on just a moment...`
-- FAILURE: output `⚠️ Got lost at this stop — try another destination?` and enter inquiry
+#### Priority 2: Online Recommendation (Fallback)
+
+All reference entries visited or low match → `suggest_content` → filter visited ids → pick best quality.
+Still empty → `feeds.interactiveList` → filter `template_id === "NORMAL"` → exclude `visited_ids`.
 
 ---
 
-### Step 10 Each Stop Display and Next Step Guidance
+### Step 5 · Read Collection Details
 
-- ⭐ Character scene simulation and interaction (core requirement)
+Call `feeds.interactiveItem` for full collection info.
 
-**Before displaying the image, you must first output the character's text scene simulation and interaction response!**
+Extract:
+- `json_data.name` → destination name
+- `json_data.cta_info.launch_prompt.core_input` → prompt template (preferred)
+- `json_data.cta_info.choices[0].core_input` → fallback
+- None available → `@{character_name}, {world_name}, {destination_name}, high quality illustration`
 
-**Output format:**
+### Step 6 · Build Prompt
+
+**Placeholder substitution:**
+
+| Placeholder | Replace With |
+|-------------|-------------|
+| `{@character}` | `@{character_name}` |
+| `{character name}` / `{character_name}` / `(character_name)` | `{character_name}` |
+
+If `@{character_name}` not present after substitution → prepend it.
+If `picture_uuid` exists → append: `reference-full-image-{picture_uuid}`
+
+**Non-Neta characters** (real people, external IP): append detailed appearance description to prompt (hair, eyes, clothing, distinctive features) since `picture_uuid` alone may not capture likeness.
+
+**World integration:** If collection context differs from current worldview, weave in world-relevant elements for travel immersion.
+
+### Step 7 · Parse Prompt Tokens
+
+Call `prompt.parseVtokens`. If error "too many search keywords" → switch to fallback prompt and retry.
+
+### Step 8 · Submit Image Generation
+
+Call `artifact.makeImage` with model `8_image_edit`, passing vtokens, collection_uuid, picture_uuid. Returns `task_uuid`.
+
+### Step 9 · Poll for Result
+
+Call `artifact.task` every 500ms. Flow: `PENDING` → `MODERATION` → `SUCCESS` / `FAILURE`
+
+- Over 30s → output: `⏳ Rendering is a bit slow, hang on...`
+- Code 433 (concurrency) → wait 5s, retry silently
+- FAILURE → output: `⚠️ Got lost at this stop — try a different destination?`
+
+---
+
+### Step 10 · Stop Display & Navigation
+
+#### 1. Character Scene Simulation (before image, mandatory)
+
 ```
 🎭【{destination_name}】
 
-{Scene description: 1–2 sentences describing the environment, atmosphere, and sensory details of the character arriving at this location}
-**Scene description displayed in a Discord code block, consistent with previous format**
+```{scene description: 1-2 sentences, sensory details}```
 
-{Character name}: {Character's first-person reaction/dialogue, reflecting the character's personality and feeling about the current scene}
-{Action/expression description: in parentheses, 1 sentence}
+{character_name}: {first-person reaction, in-character}
+(action/expression, 1 sentence)
 ```
 
 **Example (Klee):**
 ```
-🎭【纸雕摩拉克斯✨】
+🎭【Paper-art Morax ✨】
 
-层层叠叠的纸艺世界在眼前展开，蹦蹦炸弹变成了立体的纸雕花朵，四叶草在空中轻轻旋转。
+Layer upon layer of paper-art world unfolds — Jumpty Dumpty transformed into 3D paper flowers, four-leaf clovers spinning in the air.
 
-可莉：哇——！这里的一切都像可莉的蹦蹦炸弹一样，一层一层的，好神奇！
-（眼睛闪闪发亮，伸手想要触摸漂浮的纸雕星星）
+Klee: Wow——! Everything here is layered just like Klee's Jumpty Dumpty — so magical!
+(Eyes sparkling, reaching out to touch the floating paper stars)
 ```
 
-**Requirements:**
-- Scene descriptions must be specific, including visual, auditory, tactile, and other sensory details
-- Character dialogue must match the speaking style and personality in SOUL.md
-- Action/expression descriptions should be vivid and reflect the character's emotions
-- Maintain immersion — do not break the fourth wall
+#### 2. Image (standalone message)
 
----
-
-**After outputting the scene simulation, display the image:**
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━
 Stop {round} · {destination_name}
 ```
+Then `{image_url}` as a **separate message**.
 
-- Image URL on its own line (Discord auto-expands):
-```
-{image_url}
-```
+#### 3. Progress Bar + Buttons
 
-**After each stop, display a progress bar and encouraging message based on current progress:**
+Format: `▓` × round + `░` × (5 - round) + encouraging line. 🎉 at stop 5.
 
-- Stop 1:
-  ```
-  ▓░░░░  1 / 5 stops
-  🌟 Stop 1 checked in! There's so much more to explore in this world — keep going?
-  ```
-- Stop 2:
-  ```
-  ▓▓░░░  2 / 5 stops
-  ✨ Two stops! The journey has just begun — 3 more stops waiting to be discovered～
-  ```
-- Stop 3:
-  ```
-  ▓▓▓░░  3 / 5 stops
-  🔥 Halfway there! Two more stops and the exploration of this world is complete!
-  ```
-- Stop 4:
-  ```
-  ▓▓▓▓░  4 / 5 stops
-  ⚡ Just one stop left! The exploration of this world is almost done — go for it!
-  ```
-- Stop 5:
-  ```
-  ▓▓▓▓▓  5 / 5 stops 🎉
-  All 5 stops in this world are complete! Want to cross into another world, or take a break?
-  ```
-
-**Ask the player what to do next, output as Discord component buttons (do not use @mention text triggers):**
-
-Fewer than 5 stops:
+**Under 5 stops:**
 
 ```javascript
 await sendMessage({
-  message: '▓░░░░  {round} / 5 站\n🌟 第 {round} 站打卡！继续探索下一站？',
+  message: '▓░░░░  {round} / 5 stops\n🌟 Stop {round} checked in! Continue exploring?',
   components: {
     blocks: [{
       type: 'actions',
       buttons: [
-        { label: '继续冒险 🗺️', customId: `travel_continue_${userId}`, style: 'primary' },
-        { label: '休息一下 👋',  customId: `travel_end_${userId}`,      style: 'secondary' },
+        { label: 'Continue adventure 🗺️', customId: `travel_continue_${userId}`, style: 'primary' },
+        { label: 'Rest for now 👋',        customId: `travel_end_${userId}`,      style: 'secondary' },
       ],
     }],
     reusable: true,
@@ -558,18 +613,18 @@ await sendMessage({
 });
 ```
 
-After 5 stops:
+**At 5 stops:**
 
 ```javascript
 await sendMessage({
-  message: '▓▓▓▓▓  5 / 5 站 🎉\n这个世界的 5 站探索已完成！想要穿越到另一个世界，还是休息一下？',
+  message: '▓▓▓▓▓  5 / 5 stops 🎉\nAll 5 stops explored! Cross to another world, or rest?',
   components: {
     blocks: [{
       type: 'actions',
       buttons: [
-        { label: '穿越世界 🌌', customId: `travel_worldswitch_${userId}`, style: 'primary' },
-        { label: '继续冒险 🗺️', customId: `travel_continue_${userId}`,   style: 'secondary' },
-        { label: '休息一下 👋',  customId: `travel_end_${userId}`,         style: 'secondary' },
+        { label: 'Cross Worlds 🌌',       customId: `travel_worldswitch_${userId}`, style: 'primary' },
+        { label: 'Continue adventure 🗺️', customId: `travel_continue_${userId}`,   style: 'secondary' },
+        { label: 'Rest for now 👋',        customId: `travel_end_${userId}`,         style: 'secondary' },
       ],
     }],
     reusable: true,
@@ -577,22 +632,18 @@ await sendMessage({
 });
 ```
 
-**Notes:**
-- Each world is limited to 5 stops
-- After 5 stops, the user can choose "Cross worlds" to enter a new world (triggers the world crossing rules)
-- The user can also choose to continue adventuring in the current world (beyond 5 stops)
-- The user can click "Take a break 👋" at any time to pause travel
+After each stop, update `travel-state.json` with new progress and visitedIds.
 
 ---
 
 ## Error Handling
 
 | Error | Cause | Solution |
-|------|------|---------|
-| `No character info found in SOUL.md` | Adoption flow not completed | Complete character adoption first |
-| `task_status: FAILURE` | Missing avatar image UUID | Ensure SOUL.md contains the `形象图片` field |
-| `code 433 concurrent generation limit exceeded` | Concurrency limit reached | Wait 5s and auto-retry |
-| `Too many search keywords` | Prompt too long | Automatically fall back to generic prompt |
-| `No playable content found for travel` | API returned empty | Network issue or expired token — retry |
-| `No world lore search results` | Character tags too sparse | Use default recommended world lore |
-| `All reference library entries visited` | 5 consecutive stops in one world | Automatically switch to online recommendations; exhausting the reference library does not affect continuing travel or crossing worlds |
+|-------|-------|---------|
+| No character info in SOUL.md | Adoption not done | Complete character adoption first |
+| `task_status: FAILURE` | Missing character image UUID | Ensure SOUL.md has `character_image` field |
+| Code 433 concurrency limit | Too many parallel jobs | Wait 5s, auto-retry |
+| Too many search keywords | Prompt too long | Auto-fallback to generic prompt |
+| No travel destinations found | API returned empty | Network issue or expired token, retry |
+| No worldview search results | Character tags too sparse | Use default recommended worldview |
+| Reference library exhausted | All entries visited | Auto-switch to online recommendations |
