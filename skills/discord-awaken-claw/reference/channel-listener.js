@@ -177,7 +177,7 @@ client.on(Events.ChannelCreate, async (channel) => {
     type: channel.type,
     permission_overwrites: [...channel.permissionOverwrites.cache.values()],
     targetUserId,
-  }, sendMessage);
+  }, sendMessage, channel, client.user.id);
 });
 
 // Button interactions and regular messages are handled by the OpenClaw main agent.
