@@ -7,11 +7,11 @@ const https = require('https');
 const fs = require('fs');
 const path = require('path');
 
-const TOKEN = process.env.DISCORD_BOT_TOKEN || process.env.DISCORD_TOKEN;
-const GUILD_ID = process.env.GUILD_ID || '1480912787814350868';
+const TOKEN = process.env.DISCORD_BOT_TOKEN || '';
+const GUILD_ID = process.env.GUILD_ID || '';
 
-const CHARACTER_NAME = 'Xingqiu';
-const AVATAR_URL = 'https://oss.talesofai.cn/fe_assets/mng/21/2e8f1f3d06bc8ef4550e7222d1ef9795.png';
+const CHARACTER_NAME = '';
+const AVATAR_URL = '';
 
 const ASSETS_DIR = path.join(__dirname, 'assets');
 if (!fs.existsSync(ASSETS_DIR)) {
