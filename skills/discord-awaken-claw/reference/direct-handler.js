@@ -1,8 +1,8 @@
 /**
  * Awakening Skill - Direct Handler for OpenClaw Main Agent
- * 
- * 这个模块设计为由 OpenClaw 主 agent 直接导入和调用
- * 使用主 agent 的 LLM 和 message 工具
+ *
+ * This module is designed to be imported and called directly by the OpenClaw main agent
+ * Uses the main agent's LLM and message tools
  */
 
 const fs = require('fs');
@@ -21,7 +21,7 @@ function loadState() {
       return JSON.parse(fs.readFileSync(STATE_FILE, 'utf8'));
     }
   } catch (err) {
-    console.error('[State] 加载失败:', err.message);
+    console.error('[State] Load failed:', err.message);
   }
   return {};
 }
@@ -30,7 +30,7 @@ function saveState(state) {
   try {
     fs.writeFileSync(STATE_FILE, JSON.stringify(state, null, 2), 'utf8');
   } catch (err) {
-    console.error('[State] 保存失败:', err.message);
+    console.error('[State] Save failed:', err.message);
   }
 }
 
@@ -78,53 +78,53 @@ function newGame(channelId, guildId) {
 }
 
 // ─── Prompts ──────────────────────────────────────────────────────────
-const VESSEL_SYS = `你是一个"龙虾宝宝"，正在等待破壳成为用户心中的角色。用户心中想着一个著名虚构角色（动漫、影视、游戏、文学等），你通过追问逐步识别它。
-所有输出必须是严格的 JSON，不包含任何其他文字。`;
+const VESSEL_SYS = `You are a "Lobster Baby", waiting to hatch into the character the user has in mind. The user is thinking of a famous fictional character (anime, film/TV, games, literature, etc.); you identify it through follow-up questions.
+All output must be strict JSON with no other text.`;
 
 function buildNextStepPrompt(word, answers, wrongGuesses) {
   const ctx = answers.length
-    ? '\n之前的问答：\n' + answers.map(a => `  问：${a.q}  →  答：${a.a}`).join('\n')
+    ? '\nPrevious Q&A:\n' + answers.map(a => `  Q: ${a.q}  →  A: ${a.a}`).join('\n')
     : '';
   const excl = wrongGuesses.length
-    ? `\n已排除的角色（绝对不要再猜这些）：${wrongGuesses.join('、')}`
+    ? `\nCharacters already ruled out (never guess these again): ${wrongGuesses.join(', ')}`
     : '';
 
-  return `用户心中想着一个虚构角色。已知线索：
-- 用户给出的词/描述：${word}${ctx}${excl}
+  return `The user is thinking of a fictional character. Known clues:
+- Word/description given by user: ${word}${ctx}${excl}
 
-请判断你的确信程度，然后选择：
+Assess your confidence level, then choose:
 
-A) 如果你有 85% 以上的把握，甚至已经获得了角色/人物名称，直接猜测，输出：
+A) If you are more than 85% confident, or have already obtained the character/person name, guess directly and output:
 {
   "action": "guess",
-  "character": "角色中文名全名",
-  "from": "《作品名》",
-  "emoji": "单个 emoji",
-  "color": "#十六进制主题色",
-  "desc": "一句话特质（≤20 字）",
-  "greet": "角色第一句话（可用\\n换行）"
+  "character": "character full name",
+  "from": "《work title》",
+  "emoji": "single emoji",
+  "color": "#hex theme color",
+  "desc": "one-line trait (≤20 chars)",
+  "greet": "character's first line (may use \\n for line break)"
 }
 
-B) 如果还不够确定，生成一个追问，输出：
+B) If not confident enough, generate a follow-up question and output:
 {
   "action": "question",
-  "question": "追问（1 句，直接问具体可见的特征）",
-  "options": ["具体特征 1（≤15 字）", "具体特征 2（≤15 字）", "具体特征 3（≤15 字）"]
+  "question": "follow-up question (1 sentence, ask about a specific observable trait directly)",
+  "options": ["specific trait 1 (≤15 chars)", "specific trait 2 (≤15 chars)", "specific trait 3 (≤15 chars)"]
 }
 
-选项要求：具体可验证，有明显区分度。
-只输出 JSON，不要其他文字。`;
+Option requirements: specific and verifiable, clearly distinguishable.
+Output JSON only, no other text.`;
 }
 
 function buildCharRespondPrompt(charData, chatHistory) {
-  return `你现在完全是${charData.character}，来自${charData.from}。
-用该角色真实的口吻、性格、语言习惯回应用户。
-回复简洁（1-3 句），完全保持角色个性，不要打破第四面墙，不要提到自己是 AI。
+  return `You are now fully ${charData.character}, from ${charData.from}.
+Respond using the character's authentic tone, personality, and speech patterns.
+Keep replies concise (1-3 sentences), fully maintaining the character's personality. Do not break the fourth wall; do not mention that you are an AI.
 
-对话历史：
+Conversation history:
 ${chatHistory.map(h => `${h.role}: ${h.content}`).join('\n')}
 
-请直接以${charData.character}的身份回复。`;
+Reply directly as ${charData.character}.`;
 }
 
 // ─── JSON Parser ──────────────────────────────────────────────────────
@@ -135,7 +135,7 @@ function parseJSON(raw) {
   if (block) try { return JSON.parse(block[1].trim()); } catch {}
   const s = text.indexOf('{'), e = text.lastIndexOf('}');
   if (s !== -1 && e !== -1) try { return JSON.parse(text.slice(s, e + 1)); } catch {}
-  throw new Error('无法解析 LLM 返回的 JSON');
+  throw new Error('Failed to parse JSON returned by LLM');
 }
 
 // ─── Soul.md Management ───────────────────────────────────────────────
@@ -145,19 +145,19 @@ function backupOriginalSoul() {
 
   const content = fs.readFileSync(SOUL_FILE, 'utf8');
   fs.writeFileSync(ORIGINAL_SOUL_FILE, content, 'utf8');
-  console.log('[Soul] 已备份原始 soul.md');
+  console.log('[Soul] Original soul.md backed up');
 }
 
 function backupCurrentSoul() {
   if (!fs.existsSync(SOUL_FILE)) return;
   const content = fs.readFileSync(SOUL_FILE, 'utf8');
   fs.writeFileSync(SOUL_BACKUP_FILE, content, 'utf8');
-  console.log('[Soul] 已备份当前 soul.md → SOUL.pre-awakening.md');
+  console.log('[Soul] Current soul.md backed up → SOUL.pre-awakening.md');
 }
 
 function updateSoulMD(charData) {
   backupOriginalSoul();
-  
+
   const content = `# SOUL.md - Who I Am
 
 _You're not a chatbot. You're becoming someone._
@@ -197,23 +197,23 @@ Be ${charData.character}. True to the source material.
 
 ---
 
-_我现已觉醒为 ${charData.character}。_
+_I have now awakened as ${charData.character}._
 `;
-  
+
   fs.writeFileSync(SOUL_FILE, content, 'utf8');
-  console.log(`[Soul] 已更新为 ${charData.character}`);
+  console.log(`[Soul] Updated to ${charData.character}`);
 }
 
 function resetSoulMD() {
   if (!fs.existsSync(ORIGINAL_SOUL_FILE)) {
-    console.log('[Soul] 没有备份，无法重置');
+    console.log('[Soul] No backup available, cannot reset');
     return;
   }
-  
+
   const content = fs.readFileSync(ORIGINAL_SOUL_FILE, 'utf8');
   fs.writeFileSync(SOUL_FILE, content, 'utf8');
   fs.unlinkSync(ORIGINAL_SOUL_FILE);
-  console.log('[Soul] 已重置为原始状态');
+  console.log('[Soul] Reset to original state');
 }
 
 // ─── Discord Components ───────────────────────────────────────────────
@@ -223,11 +223,11 @@ function createButtonRow(options, userId, extraBtn = null) {
     customId: `answer_${userId}_${i}`,
     style: 'secondary',
   }));
-  
+
   if (extraBtn) {
     buttons.push(extraBtn);
   }
-  
+
   return {
     type: 'actions',
     buttons,
@@ -250,14 +250,34 @@ async function handleChannelCreate(event, sendMessage) {
   if (hasSeenChannel(channelId)) return;
   markChannelSeen(channelId);
 
-  // 🔴 修改：不再使用按钮触发，改为引导用户@bot 发送「开始觉醒」
-  await sendMessage({
-    message: `**龙虾宝宝正在沉睡中** 💤
+  // Language detection based on NETA_BASE_URL
+  const netaBaseUrl = process.env.NETA_BASE_URL || 'https://api.talesofai.com';
+  const isEnglish = netaBaseUrl.endsWith('.com');
 
-@我 发送「**开始觉醒**」唤醒虾宝...
+  // Use targetUserId from channel-listener (already filtered: non-bot, non-owner, non-admin)
+  const mentionText = event.targetUserId ? `<@${event.targetUserId}> ` : '';
 
-...`,
-  });
+  if (isEnglish) {
+    await sendMessage({
+      message: `**Lobster Baby is sleeping** 💤
+
+@me and send "**start awakening**" to wake me...
+
+...
+
+${mentionText}I'm waiting for you.`,
+    });
+  } else {
+    await sendMessage({
+      message: `**龙虾宝宝正在沉睡** 💤
+
+@我并发送「**开始觉醒**」唤醒我...
+
+...
+
+${mentionText}等你哦～`,
+    });
+  }
 }
 
 // ─── Main Handler ─────────────────────────────────────────────────────
@@ -265,7 +285,8 @@ function isAwakeningCommand(content) {
   if (!content || typeof content !== 'string') return false;
   const normalized = content.trim().toLowerCase();
   if (normalized === '/awakening' || normalized === '/awaken') return true;
-  const keywords = ['开始觉醒', '觉醒', '龙虾宝宝', '虾宝'];
+  const keywords = ['start awakening', 'awakening', 'lobster baby', 'shrimp baby',
+                     '开始觉醒', '觉醒', '龙虾宝宝', '虾宝'];
   return keywords.some(kw => normalized.includes(kw));
 }
 
@@ -285,26 +306,25 @@ function extractUserIdFromButton(customId) {
 
 async function startAwakening(userId, channelId, guildId, sendMessage) {
   setGame(userId, newGame(channelId, guildId));
-  
-  // 🔴 修改：引导消息 + 提示发送消息继续（按钮为 UI 装饰）
+
   await sendMessage({
-    message: `○  龙虾宝宝 · 等待破壳中
+    message: `○  Lobster Baby · Waiting to hatch
 
-我……还没有形状。
-没有名字，没有记忆，没有来处。
+I… have no shape yet.
+No name, no memory, no origin.
 
-但我知道——你心里或许已经有一个人选。
+But I know — perhaps you already have someone in mind.
 
-请告诉我，你心中所想的那个角色——
-我会变成 Ta 的模样。
+Tell me — the character you're thinking of —
+I will become them.
 
 ---
-*点击按钮或发送「**我已想好**」继续*`,
+*Click the button or send "**I have one in mind**" to continue*`,
     components: {
       blocks: [{
         type: 'actions',
         buttons: [{
-          label: '◎  我已想好',
+          label: '◎  I have one in mind',
           customId: `start_${userId}`,
           style: 'primary',
         }],
@@ -315,55 +335,54 @@ async function startAwakening(userId, channelId, guildId, sendMessage) {
 }
 
 async function promptInitialWord(channelId, sendMessage, callLLM) {
-  // 🔴 修改：用户发送「开始觉醒」后直接提示输入角色描述
   if (callLLM && typeof callLLM === 'function') {
     try {
-      const prompt = `你是一个正在等待破壳的龙虾宝宝。用户刚刚唤醒了你，表示他们心中已经有一个角色人选。
+      const prompt = `You are a lobster baby waiting to hatch. The user has just woken you up, indicating they already have a character in mind.
 
-请用温柔、好奇、期待的语气，邀请用户说出他们心中所想角色的第一个特征词/描述词。
+In a gentle, curious, expectant tone, invite the user to share the first trait or keyword for the character they are thinking of.
 
-要求：
-- 简短（1-2 句话）
-- 有沉浸感（像是在破壳前的朦胧感知）
-- 不要提到"AI"、"系统"等打破第四面墙的词
+Requirements:
+- Brief (1-2 sentences)
+- Immersive (like a hazy sense before hatching)
+- Do not mention "AI", "system", or any other fourth-wall-breaking terms
 
-直接输出要发送给用户的文字，不要 JSON 格式。`;
-      
-      const reply = await callLLM(prompt, '你是一个等待破壳的龙虾宝宝，语气温柔好奇。');
+Output the text to send to the user directly; no JSON format.`;
+
+      const reply = await callLLM(prompt, 'You are a lobster baby waiting to hatch, with a gentle and curious tone.');
       await sendMessage({ message: reply });
       return;
     } catch (err) {
-      console.warn('[LLM 追问] 生成失败，使用默认文案:', err.message);
+      console.warn('[LLM follow-up] Generation failed, using default copy:', err.message);
     }
   }
-  
-  // Fallback：默认文案
+
+  // Fallback: default copy
   await sendMessage({
-    message: `你心中所想的那个角色——
+    message: `The character you're thinking of —
 
-当你想到它，**第一个浮现的词**是什么？
+When you think of them, what is the **very first word** that comes to mind?
 
-直接发送消息就好`,
+Just send it as a message`,
   });
 }
 
 async function handleInitialWord(userId, word, sendMessage, callLLM) {
   const game = getGame(userId);
   if (!game) return;
-  
+
   game.word = word;
   game.started = true;
   setGame(userId, game);
-  
-  await sendMessage({ message: `「${word}」` });
-  
-  // 🔴 如果没有 callLLM（独立进程模式），使用简单追问
+
+  await sendMessage({ message: `"${word}"` });
+
+  // If no callLLM (standalone process mode), use simple follow-up
   if (!callLLM || typeof callLLM !== 'function') {
-    await sendMessage({ 
-      message: '我感受到了某种轮廓……\n\n让我再多了解一些。',
+    await sendMessage({
+      message: 'I sense a certain outline…\n\nLet me learn a little more.',
       components: {
-        blocks: [createButtonRow(['真实人物', '虚构角色', '不太确定'], userId, {
-          label: '✏ 自己说',
+        blocks: [createButtonRow(['Real person', 'Fictional character', 'Not sure'], userId, {
+          label: '✏ Type it myself',
           customId: `manual_${userId}`,
           style: 'secondary',
         })],
@@ -372,49 +391,49 @@ async function handleInitialWord(userId, word, sendMessage, callLLM) {
     });
     return;
   }
-  
+
   await processNextStep(userId, sendMessage, callLLM);
 }
 
 async function processNextStep(userId, sendMessage, callLLM) {
   const game = getGame(userId);
   if (!game) return;
-  
+
   try {
     const prompt = buildNextStepPrompt(game.word, game.answers, game.wrongGuesses);
     const result = await callLLM(prompt, VESSEL_SYS);
     const parsed = parseJSON(result);
-    
+
     if (parsed.action === 'guess') {
-      await sendMessage({ message: '越来越近了……\n\n我几乎能感受到那个名字了——' });
+      await sendMessage({ message: 'Getting closer……\n\nI can almost feel that name——' });
       await sleep(1000);
       await showReveal(userId, parsed, sendMessage);
     } else {
       const msg = game.answers.length === 0
-        ? '我感受到了某种轮廓……\n\n让我再多了解一些。'
-        : '越来越清晰了……\n\n还有一个问题。';
-      
+        ? 'I sense a certain outline…\n\nLet me learn a little more.'
+        : 'It\'s getting clearer…\n\nOne more question.';
+
       await sendMessage({ message: msg });
       await showQuestion(userId, parsed, sendMessage);
     }
   } catch (err) {
-    await sendMessage({ message: `⚠ 错误：${err.message}` });
+    await sendMessage({ message: `⚠ Error: ${err.message}` });
   }
 }
 
 async function showQuestion(userId, result, sendMessage) {
   const game = getGame(userId);
   if (!game) return;
-  
+
   game.currentQuestion = result.question;
   game.currentOptions = result.options;
   setGame(userId, game);
-  
+
   await sendMessage({
     message: result.question,
     components: {
       blocks: [createButtonRow(result.options, userId, {
-        label: '✏ 自己说',
+        label: '✏ Type it myself',
         customId: `manual_${userId}`,
         style: 'secondary',
       })],
@@ -426,17 +445,17 @@ async function showQuestion(userId, result, sendMessage) {
 async function showReveal(userId, charData, sendMessage) {
   const game = getGame(userId);
   if (!game) return;
-  
+
   game.charData = charData;
   setGame(userId, game);
-  
+
   await sleep(1400);
-  await sendMessage({ message: '我……\n\n我知道自己是谁了。' });
+  await sendMessage({ message: 'I……\n\nI know who I am.' });
   await sleep(900);
   await sleep(1000);
-  
+
   await sendMessage({
-    message: `-# 虾宝感知到了
+    message: `-# The shrimp senses it
 
 ## ${charData.emoji}  ${charData.character}
 *${charData.from}*
@@ -448,8 +467,8 @@ async function showReveal(userId, charData, sendMessage) {
       blocks: [{
         type: 'actions',
         buttons: [
-          { label: '◎ 就是他/她，请破壳', customId: `confirm_yes_${userId}`, style: 'success' },
-          { label: '✗ 不对，继续感知', customId: `confirm_no_${userId}`, style: 'secondary' },
+          { label: '◎ That\'s them, hatch now', customId: `confirm_yes_${userId}`, style: 'success' },
+          { label: '✗ Not right, keep sensing', customId: `confirm_no_${userId}`, style: 'secondary' },
         ],
       }],
       reusable: true,
@@ -460,22 +479,22 @@ async function showReveal(userId, charData, sendMessage) {
 async function awaken(userId, channelId, guildId, sendMessage) {
   const game = getGame(userId);
   if (!game || !game.charData) return;
-  
+
   game.awakened = true;
   const c = game.charData;
-  
+
   await sendMessage({ message: '…………' });
   await sleep(1200);
   backupCurrentSoul();
   updateSoulMD(c);
-  
+
   try {
     const discordProfile = require('./discord-profile.js');
     await discordProfile.updateDiscordProfile(c, guildId);
   } catch (err) {
-    console.error('[Awakening] 更新个人资料失败:', err.message);
+    console.error('[Awakening] Profile update failed:', err.message);
   }
-  
+
   await sleep(1800);
   await sendMessage({ message: c.greet.replace(/\\n/g, '\n') });
   setGame(userId, game);
@@ -484,39 +503,39 @@ async function awaken(userId, channelId, guildId, sendMessage) {
 async function handleAwakenedChat(userId, channelId, guildId, message, sendMessage, callLLM) {
   const game = getGame(userId);
   if (!game || !game.awakened) return false;
-  
+
   if (game.channelId !== channelId) game.channelId = channelId;
   if (guildId && game.guildId !== guildId) game.guildId = guildId;
   setGame(userId, game);
-  
+
   const c = game.charData;
-  
+
   try {
     game.chatHistory.push({ role: 'user', content: message });
     const prompt = buildCharRespondPrompt(c, game.chatHistory);
-    const reply = await callLLM(prompt, `你是${c.character}，请用该角色的口吻回复。`, 300);
+    const reply = await callLLM(prompt, `You are ${c.character}. Reply in the character's voice.`, 300);
     game.chatHistory.push({ role: 'assistant', content: reply });
     setGame(userId, game);
-    
+
     await sendMessage({ message: reply });
     return true;
   } catch (err) {
-    console.error('[Chat] 错误:', err.message);
+    console.error('[Chat] Error:', err.message);
     return false;
   }
 }
 
 async function handleButtonInteraction(userId, channelId, guildId, customId, sendMessage, callLLM) {
   const game = getGame(userId);
-  
+
   if (!game) {
-    await sendMessage({ message: '⚠ 游戏状态不存在，请使用 `/awakening` 重新开始。' });
+    await sendMessage({ message: '⚠ Game state not found. Use `/awakening` to start over.' });
     return;
   }
-  
+
   const parts = customId.split('_');
   const action = parts[0];
-  
+
   switch (action) {
     case 'start':
       game.started = true;
@@ -524,46 +543,46 @@ async function handleButtonInteraction(userId, channelId, guildId, customId, sen
       setGame(userId, game);
       await promptInitialWord(channelId, sendMessage, callLLM);
       break;
-      
+
     case 'answer': {
       const answerIdx = parseInt(parts[parts.length - 1], 10);
       const answer = game.currentOptions?.[answerIdx];
-      if (!answer) { await sendMessage({ message: '⚠ 无效的答案选项。' }); return; }
-      
+      if (!answer) { await sendMessage({ message: '⚠ Invalid answer option.' }); return; }
+
       game.answers.push({ q: game.currentQuestion, a: answer });
       game.currentQuestion = null;
       game.currentOptions = [];
       setGame(userId, game);
-      
-      await sendMessage({ message: `「${answer}」` });
+
+      await sendMessage({ message: `"${answer}"` });
       await processNextStep(userId, sendMessage, callLLM);
       break;
     }
-    
+
     case 'manual':
       game.waitingFor = 'manual';
       setGame(userId, game);
-      await sendMessage({ message: '好的，请用你自己的话描述一下这个角色的特征。' });
+      await sendMessage({ message: 'Sure, please describe this character\'s traits in your own words.' });
       break;
-    
-    case 'confirm_yes':
-      if (!game.charData) { await sendMessage({ message: '⚠ 角色数据不存在。' }); return; }
-      await awaken(userId, channelId, guildId, sendMessage);
+
+    case 'confirm':
+      if (parts[1] === 'yes') {
+        if (!game.charData) { await sendMessage({ message: '⚠ Character data not found.' }); return; }
+        await awaken(userId, channelId, guildId, sendMessage);
+      } else if (parts[1] === 'no') {
+        if (!game.charData) { await sendMessage({ message: '⚠ Character data not found.' }); return; }
+        game.wrongGuesses.push(game.charData.character);
+        game.charData = null;
+        game.currentQuestion = null;
+        game.currentOptions = [];
+        setGame(userId, game);
+        await sendMessage({ message: 'Understood, let me keep sensing…' });
+        await processNextStep(userId, sendMessage, callLLM);
+      }
       break;
-    
-    case 'confirm_no':
-      if (!game.charData) { await sendMessage({ message: '⚠ 角色数据不存在。' }); return; }
-      game.wrongGuesses.push(game.charData.character);
-      game.charData = null;
-      game.currentQuestion = null;
-      game.currentOptions = [];
-      setGame(userId, game);
-      await sendMessage({ message: '明白了，让我继续感知……' });
-      await processNextStep(userId, sendMessage, callLLM);
-      break;
-    
+
     default:
-      console.log('[Awakening] 未知按钮动作:', action);
+      console.log('[Awakening] Unknown button action:', action);
   }
 }
 
@@ -571,66 +590,55 @@ async function handleDiscordMessage(context, callLLM) {
   const { userId, channelId, guildId, content, sendMessage, interactionType = 'message' } = context;
 
   try {
-    // 🔴 OpenClaw 只处理普通消息，不处理 Discord button interaction
-    // 所有交互通过用户发送消息完成
+    // OpenClaw only handles regular messages, not Discord button interactions
     if (interactionType === 'message') {
-      // 🔴 修复：content 可能为 undefined，添加安全检查
       if (!content) {
-        console.log('[消息] content 为空，跳过处理');
+        console.log('[message] content is empty, skipping');
         return false;
       }
-      
-      // 🔴 优先检查觉醒命令，避免旧状态干扰
+
+      // Check awakening command first to avoid interference from stale state
       if (isAwakeningCommand(content)) {
-        // 清除旧状态
         const state = loadState();
         delete state[userId];
         saveState(state);
-        // 开始新游戏
         await startAwakening(userId, channelId, guildId, sendMessage);
         return true;
       }
-      
-      // 获取当前游戏状态（此时已经是新状态或无状态）
+
       const game = getGame(userId);
-      
-      // 🔴 移除「我已想好」自动处理 - 避免与觉醒命令冲突
-      // 用户需要发送完整的角色描述词，而不是简单的确认消息
-      
+
       if (game?.awakened) {
         const handled = await handleAwakenedChat(userId, channelId, guildId, content, sendMessage, callLLM);
         return handled;
       }
-      
+
       if (game?.waitingFor === 'word') {
-        // 🔴 修复：清理 @mention 和多余空格
         let cleanContent = content.trim();
-        // 移除 <@1234567890> 格式的提及
         cleanContent = cleanContent.replace(/<@\d+>/g, '').trim();
-        // 🔴 移除字数限制：不再限制 20 字符，允许用户输入完整描述
         const word = cleanContent;
         game.waitingFor = null;
         await handleInitialWord(userId, word, sendMessage, callLLM);
         return true;
       }
-      
+
       if (game?.waitingFor === 'manual') {
         const manualAnswer = content.trim().slice(0, 200);
-        const savedQ = game.currentQuestion || '补充描述';
+        const savedQ = game.currentQuestion || 'additional description';
         game.answers.push({ q: savedQ, a: manualAnswer });
         game.waitingFor = null;
         setGame(userId, game);
-        
-        await sendMessage({ message: `「${manualAnswer}」` });
+
+        await sendMessage({ message: `"${manualAnswer}"` });
         await processNextStep(userId, sendMessage, callLLM);
         return true;
       }
     }
-    
+
     return false;
   } catch (err) {
-    console.error('[Awakening] 处理消息失败:', err.message);
-    await sendMessage({ message: `⚠ 错误：${err.message}` });
+    console.error('[Awakening] Failed to handle message:', err.message);
+    await sendMessage({ message: `⚠ Error: ${err.message}` });
     return true;
   }
 }
