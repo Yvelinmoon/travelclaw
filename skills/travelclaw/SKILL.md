@@ -63,6 +63,7 @@ description: Triggered directly after the awakening flow in which the lobster ba
 **Before:**
 - □ travel-state.json read (check visited_ids)
 - □ reference/remixes_selected.json read (priority)
+  **important**
 **After:**
 - □ Destination selected (reference library top score → suggest_content fallback)
 - □ visited_ids excluded
@@ -367,7 +368,7 @@ From SOUL.md extract:
 
 **Output loading state:** `Scanning current coordinates...` in a code block.
 
-**🔴 Prohibited:** `list_spaces` (wrong API), hardcoded world count, skipping search.
+**🔴ATTENTION Strongly Prohibited！！！！！:** `list_spaces` (wrong API), hardcoded world count, skipping search.
 
 #### 2-A: suggest_keywords
 
@@ -452,7 +453,7 @@ await sendMessage({
 
 **Dedup:** Maintain `visited_ids` in memory + `travel-state.json`. Exclude visited ids each stop.
 
-#### Priority 1: Reference Library (Must Read First)
+#### Priority 1: Reference Library (**ATTENTION****IMPORTANT**Must Read First)
 
 Read `./reference/remixes_selected.json` (relative to skill directory). ~77 entries.
 
