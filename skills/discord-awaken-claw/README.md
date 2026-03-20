@@ -31,7 +31,7 @@ cd awakening
 ```bash
 cd reference
 cp .env.example .env
-# Edit .env and fill in your DISCORD_TOKEN, DISCORD_GUILD_ID, and NETA_TOKEN
+# Edit .env and fill in your DISCORD_BOT_TOKEN, DISCORD_GUILD_ID, and NETA_TOKEN
 ```
 
 ### 3. Install dependencies
