@@ -346,64 +346,172 @@ async function searchCharacterImage(characterName, from) {
   return null;
 }
 
+const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+
 /**
- * 搜索维基百科/公开图片
+ * 发起 HTTPS GET 请求并返回 JSON（含 429 自动重试）
+ * @param {string} url - 完整 URL
+ * @param {number} retries - 剩余重试次数
+ * @returns {Promise<Object>}
+ */
+function httpsGetJson(url, retries = 2) {
+  return new Promise((resolve, reject) => {
+    https.get(url, {
+      headers: { 'User-Agent': 'OpenClaw-Bot/1.0 (https://github.com/talesofai/travelclaw)' },
+      timeout: 8000,
+    }, res => {
+      if (res.statusCode === 301 || res.statusCode === 302) {
+        httpsGetJson(res.headers.location, retries).then(resolve).catch(reject);
+        return;
+      }
+      if (res.statusCode === 429 && retries > 0) {
+        const retryAfter = parseInt(res.headers['retry-after'] || '3', 10);
+        console.log(`[Wiki] 429 rate limited, waiting ${retryAfter}s before retry...`);
+        res.resume(); // drain response
+        sleep(retryAfter * 1000).then(() => httpsGetJson(url, retries - 1).then(resolve).catch(reject));
+        return;
+      }
+      let data = '';
+      res.on('data', chunk => { data += chunk; });
+      res.on('end', () => {
+        try { resolve(JSON.parse(data)); }
+        catch (e) { reject(new Error(`JSON parse failed: ${data.substring(0, 200)}`)); }
+      });
+    }).on('error', reject).on('timeout', function() { this.destroy(); reject(new Error('timeout')); });
+  });
+}
+
+/**
+ * 搜索维基百科/Wikimedia Commons 图片（使用真实 API）
+ *
+ * 策略 1: Wikipedia pageimages API — 获取词条主图（最快、最可靠）
+ * 策略 2: Wikimedia Commons search API — 搜索 Commons 图片库
+ * 策略 3: 中文维基百科 fallback — 用中文名搜索
+ *
  * @param {string} characterName - 角色名称
  * @param {string} from - 作品名称
  * @returns {Promise<string|null>} 图片 URL
  */
 async function searchWikiImage(characterName, from) {
-  // 策略 1: 预定义的真实人物映射
-  const wikiMap = {
-    '唐纳德·特朗普': 'Donald_Trump',
-    'Donald Trump': 'Donald_Trump',
-    '特朗普': 'Donald_Trump',
-    '乔·拜登': 'Joe_Biden',
-    'Joe Biden': 'Joe_Biden',
-    '拜登': 'Joe_Biden',
-    '贝拉克·奥巴马': 'Barack_Obama',
-    'Barack Obama': 'Barack_Obama',
-    '奥巴马': 'Barack_Obama',
-  };
-  
-  const wikiName = wikiMap[characterName];
-  if (wikiName) {
-    const wikiUrls = {
-      'Donald_Trump': 'https://upload.wikimedia.org/wikipedia/commons/5/56/Donald_Trump_official_portrait.jpg',
-      'Joe_Biden': 'https://upload.wikimedia.org/wikipedia/commons/6/68/Joe_Biden_presidential_portrait.jpg',
-      'Barack_Obama': 'https://upload.wikimedia.org/wikipedia/commons/8/8d/President_Barack_Obama.jpg',
-    };
-    const wikiUrl = wikiUrls[wikiName];
-    if (wikiUrl) {
-      console.log(`[Wiki] 使用预定义维基百科图片：${wikiName}`);
-      return wikiUrl;
-    }
-  }
-  
-  // 策略 2: 尝试通用维基百科 URL 格式（虚构角色）
-  // 例如：哈利·波特 → Harry_Potter_(character)
-  const cleanName = characterName.replace(/[·\s]/g, '_');
-  const wikiCandidates = [
-    // 尝试角色名 + 作品名
-    `https://upload.wikimedia.org/wikipedia/en/thumb/${cleanName}.png/220px-${cleanName}.png`,
-    // 尝试 Fandom Wiki 格式
-    `https://static.wikia.nocookie.net/${from.replace(/[《》\s]/g, '').toLowerCase()}/images/${cleanName}.jpg`,
-  ];
-  
-  // 验证这些 URL 是否有效
-  for (const url of wikiCandidates) {
+  // 构建搜索名称列表（英文优先，中文 fallback）
+  const searchNames = [characterName];
+  // 如果名字包含中文分隔符，生成英文化版本
+  const cleanName = characterName.replace(/[·]/g, ' ').trim();
+  if (cleanName !== characterName) searchNames.push(cleanName);
+  // 也尝试去掉所有空格/分隔符的版本
+  const compactName = characterName.replace(/[·\s\-]/g, '');
+  if (compactName !== characterName) searchNames.push(compactName);
+
+  // ─── 策略 1: Wikipedia pageimages API ──────────────────────────────
+  // 直接获取维基百科词条的主图，适用于有词条的人物/角色
+  for (const name of searchNames) {
     try {
-      const isValid = await isValidImageUrl(url);
-      if (isValid) {
-        console.log(`[Wiki] 找到通用维基图片：${url}`);
-        return url;
+      // 先尝试英文维基百科
+      const enTitle = encodeURIComponent(name.replace(/\s/g, '_'));
+      const enUrl = `https://en.wikipedia.org/w/api.php?action=query&titles=${enTitle}&prop=pageimages&format=json&pithumbsize=500&redirects=1`;
+      console.log(`[Wiki] 策略1: Wikipedia pageimages → "${name}"`);
+
+      const enResult = await httpsGetJson(enUrl);
+      const enPages = enResult?.query?.pages;
+      if (enPages) {
+        const page = Object.values(enPages)[0];
+        if (page && page.thumbnail && page.thumbnail.source) {
+          // 尝试获取更大的图片（将 500px 替换为原图或更大尺寸）
+          let imageUrl = page.thumbnail.source;
+          // Wikipedia thumbnail URL 格式：.../thumb/x/xx/Filename.jpg/500px-Filename.jpg
+          // 去掉最后的尺寸前缀可以获取更大图片
+          const largerUrl = imageUrl.replace(/\/\d+px-/, '/800px-');
+          await sleep(1500); // 请求间隔，避免 429
+          const isLargerValid = await isValidImageUrl(largerUrl);
+          if (isLargerValid) imageUrl = largerUrl;
+
+          console.log(`[Wiki] ✅ 策略1成功 (en.wikipedia): ${imageUrl}`);
+          return imageUrl;
+        }
       }
-    } catch (e) {
-      // 继续尝试下一个
+    } catch (err) {
+      console.log(`[Wiki] 策略1 英文维基失败 (${name}): ${err.message}`);
+    }
+
+    await sleep(2000); // 英文→中文维基之间间隔
+
+    try {
+      // 尝试中文维基百科
+      const zhTitle = encodeURIComponent(name);
+      const zhUrl = `https://zh.wikipedia.org/w/api.php?action=query&titles=${zhTitle}&prop=pageimages&format=json&pithumbsize=500&redirects=1`;
+
+      const zhResult = await httpsGetJson(zhUrl);
+      const zhPages = zhResult?.query?.pages;
+      if (zhPages) {
+        const page = Object.values(zhPages)[0];
+        if (page && page.thumbnail && page.thumbnail.source) {
+          let imageUrl = page.thumbnail.source;
+          const largerUrl = imageUrl.replace(/\/\d+px-/, '/800px-');
+          await sleep(1500); // 请求间隔，避免 429
+          const isLargerValid = await isValidImageUrl(largerUrl);
+          if (isLargerValid) imageUrl = largerUrl;
+
+          console.log(`[Wiki] ✅ 策略1成功 (zh.wikipedia): ${imageUrl}`);
+          return imageUrl;
+        }
+      }
+    } catch (err) {
+      console.log(`[Wiki] 策略1 中文维基失败 (${name}): ${err.message}`);
+    }
+
+    await sleep(2000); // 不同名称变体之间间隔
+  }
+
+  await sleep(2000); // 策略1→策略2之间间隔
+
+  // ─── 策略 2: Wikimedia Commons search API ─────────────────────────
+  // 在 Wikimedia Commons 图片库中搜索（适合名人肖像等）
+  for (const name of searchNames) {
+    try {
+      const query = encodeURIComponent(`${name} portrait`);
+      const searchUrl = `https://commons.wikimedia.org/w/api.php?action=query&list=search&srsearch=${query}&srnamespace=6&srlimit=5&format=json`;
+      console.log(`[Wiki] 策略2: Commons search → "${name} portrait"`);
+
+      const searchResult = await httpsGetJson(searchUrl);
+      const hits = searchResult?.query?.search;
+
+      if (hits && hits.length > 0) {
+        // 遍历搜索结果，获取每个文件的实际图片 URL
+        for (const hit of hits) {
+          try {
+            await sleep(1500); // 每个 Commons 结果之间间隔
+            const fileTitle = encodeURIComponent(hit.title);
+            const infoUrl = `https://commons.wikimedia.org/w/api.php?action=query&titles=${fileTitle}&prop=imageinfo&iiprop=url|size&format=json`;
+
+            const infoResult = await httpsGetJson(infoUrl);
+            const pages = infoResult?.query?.pages;
+            if (pages) {
+              const page = Object.values(pages)[0];
+              const imageInfo = page?.imageinfo?.[0];
+              if (imageInfo && imageInfo.url) {
+                // 过滤掉太小的图片（可能是图标/logo）
+                if (imageInfo.width && imageInfo.width < 100) continue;
+                // 过滤掉 SVG（通常是图表/图标）
+                if (imageInfo.url.endsWith('.svg')) continue;
+
+                const isValid = await isValidImageUrl(imageInfo.url);
+                if (isValid) {
+                  console.log(`[Wiki] ✅ 策略2成功 (Commons): ${imageInfo.url}`);
+                  return imageInfo.url;
+                }
+              }
+            }
+          } catch (e) {
+            // 单个结果获取失败，继续尝试下一个
+          }
+        }
+      }
+    } catch (err) {
+      console.log(`[Wiki] 策略2 Commons搜索失败 (${name}): ${err.message}`);
     }
   }
-  
-  console.log('[Wiki] 未找到维基百科图片');
+
+  console.log('[Wiki] 所有维基百科/Commons 策略均未找到图片');
   return null;
 }
 

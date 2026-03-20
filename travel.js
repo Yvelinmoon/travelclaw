@@ -4,11 +4,9 @@
  *
  * Commands:
  *   node travel.js soul [soul_path]                   → {name, picture_uuid}
- *   node travel.js world "<keywords>"                 → {world_count, world_name, world_description, lore}
  *   node travel.js suggest [exclude_csv]              → {uuid, name, from_ref}
  *   node travel.js gen <char_name> <pic_uuid> <uuid>  → {scene, status, url, collection_uuid}
  *
- * world: autocomplete → tags → hashtag_info (replaces neta-skills suggest_keywords/suggest_tags/get_hashtag_info)
  * suggest priority: scenes.json (local, tag-scored) → online API fallback
  * API: https://api.talesofai.cn
  * Token resolved from: NETA_TOKEN env → ~/.openclaw/workspace/.env → clawhouse .env
@@ -72,55 +70,19 @@ if (cmd === 'soul') {
   }
   if (!content) throw new Error('SOUL.md not found. Run adopt first.');
 
+  // Accept both 名字 and 角色名 field names
   const name = content
-    .match(/名字[^：:\n]*[：:]\s*([^\n*]+)/)?.[1]
+    .match(/(?:名字|角色名)[^：:\n]*[：:]\s*([^\n*]+)/)?.[1]
     ?.trim()
-    ?.replace(/（龙虾化）$/, '')
-    ?.replace(/\*+/g, '');
+    ?.replace(/\*+/g, '')
+    ?.replace(/[（(][^）)]*[）)]$/, '')  // strip any trailing parenthetical e.g. (小吉祥草王) or （龙虾化）
+    ?.trim();
 
   const picUuid = content
     .match(/\/picture\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/)?.[1];
 
-  if (!name) throw new Error('No 名字 field found in SOUL.md. Run adopt first.');
+  if (!name) throw new Error('No 名字 or 角色名 field found in SOUL.md. Run adopt first.');
   out({ name, picture_uuid: picUuid ?? null });
-}
-
-// ── world: autocomplete → tags → hashtag_info (replaces neta-skills Steps 2A/2B/2C) ──
-
-else if (cmd === 'world') {
-  const query = args.join(' ').trim();
-  if (!query) throw new Error('Usage: travel.js world "<char_name> <traits>"');
-
-  // Step 2A: suggest_keywords equivalent — autocomplete prefix
-  const autoRes = await api('GET',
-    `/v1/recsys/autocomplete?prefix=${encodeURIComponent(query)}&size=5`
-  ).catch(() => ({ list: [] }));
-  const bestKeyword = (autoRes.list ?? [])[0]?.keyword ?? query;
-  log(`🔍 keyword: "${bestKeyword}"`);
-
-  // Step 2B: suggest_tags equivalent — world tag list
-  const tagsRes = await api('GET',
-    `/v1/recsys/tags?keyword=${encodeURIComponent(bestKeyword)}&size=10`);
-  const tags = (tagsRes.suggestions ?? []).sort((a, b) => (b._score ?? 0) - (a._score ?? 0));
-  if (!tags.length) throw new Error(`No world tags found for: "${bestKeyword}"`);
-
-  const world_count = tags.length;
-  const topTag = tags[0].name;
-  log(`🌌 world tag: "${topTag}" (${world_count} total)`);
-
-  // Step 2C: get_hashtag_info equivalent — world detail
-  const infoRes = await api('GET',
-    `/v1/hashtag/hashtag_info/${encodeURIComponent(topTag)}`);
-  const hashtag = infoRes.hashtag ?? infoRes;
-  const world_name = hashtag.name ?? topTag;
-  const lore = hashtag.lore ?? [];
-  const world_description = lore
-    .slice(0, 3)
-    .map(l => l.description ?? '')
-    .filter(Boolean)
-    .join('\n\n');
-
-  out({ world_count, world_name, world_description, lore });
 }
 
 // ── suggest: pick a destination (local scenes.json first, API fallback) ─────
@@ -236,7 +198,7 @@ else if (cmd === 'gen') {
 
   // Rare fallback: fetch verse preset if prompt not in cta_info directly
   if (!promptTemplate && cta.interactive_config?.verse_uuid) {
-    log('📖 fetching verse preset...');
+    log('📖 Fetching verse preset...');
     const verse = await api('GET', `/v1/verse/preset/${cta.interactive_config.verse_uuid}`)
       .catch(() => null);
     promptTemplate = verse?.launch_prompt?.core_input ?? null;
@@ -245,7 +207,7 @@ else if (cmd === 'gen') {
   // Ultimate fallback
   if (!promptTemplate) promptTemplate = `@${charName}, ${sceneName}, 高质量插画`;
 
-  log(`🔍 场景加载完毕，${charName} 即将登场...`);
+  log(`🔍 Scene loaded: ${charName} entering the scene...`);
 
   // 2. Replace placeholders
   let promptText = promptTemplate
@@ -253,9 +215,12 @@ else if (cmd === 'gen') {
     .replace(/\{角色名称\}|\{角色名\}|（角色名称）/g, charName);
 
   // 3. Find character TCP UUID (needed for oc_vtoken_adaptor)
+  // Strip parentheticals from charName before TCP search (e.g. "纳西妲 (小吉祥草王)" → "纳西妲")
+  const charQuery = charName.replace(/\s*[（(][^）)]*[）)]/g, '').trim();
   const search = await api('GET',
-    `/v2/travel/parent-search?keywords=${encodeURIComponent(charName)}&parent_type=oc&sort_scheme=exact&page_index=0&page_size=1`);
+    `/v2/travel/parent-search?keywords=${encodeURIComponent(charQuery)}&parent_type=oc&sort_scheme=exact&page_index=0&page_size=1`);
   const char = search.list?.find(r => r.type === 'oc');
+  log(`🔎 TCP search: "${charQuery}" → ${char ? `found ${char.name} (${char.uuid})` : 'not found, using freetext'}`);
 
   // 4. Build vtokens
   const vtokens = [];
@@ -274,9 +239,10 @@ else if (cmd === 'gen') {
   promptText = promptText.replace(/参考图-\S+/g, '').replace(/图片捏-\S+/g, '').trim();
 
   if (promptText) vtokens.push({ type: 'freetext', value: promptText, weight: 1 });
+  log(`📝 vtokens: ${JSON.stringify(vtokens)}`);
 
   // 5. Submit image generation
-  log('🎨 画笔落下，旅行画面生成中...');
+  log('🎨 Painting the scene...');
   const taskUuid = await api('POST', '/v3/make_image', {
     storyId: 'DO_NOT_USE',
     jobType: 'universal',
@@ -295,16 +261,21 @@ else if (cmd === 'gen') {
   const task_uuid = typeof taskUuid === 'string' ? taskUuid : taskUuid?.task_uuid;
   log(`⏳ task: ${task_uuid}`);
 
-  // 6. Poll every 2s (max 3 min)
+  // 6. Poll every 500ms (max 3 min)
   let warnedSlow = false;
-  for (let i = 0; i < 90; i++) {
-    await new Promise(r => setTimeout(r, 2000));
-    if (!warnedSlow && i >= 14) {
-      log('⏳ 画面渲染有点慢，再等一下下，马上就好...');
+  for (let i = 0; i < 360; i++) {
+    await new Promise(r => setTimeout(r, 500));
+    if (!warnedSlow && i >= 60) {
+      log('⏳ Rendering is taking a bit longer, almost there...');
       warnedSlow = true;
     }
     const result = await api('GET', `/v1/artifact/task/${task_uuid}`);
     if (result.task_status !== 'PENDING' && result.task_status !== 'MODERATION') {
+      if (result.task_status !== 'SUCCESS') {
+        log(`⚠️  gen FAILURE — task_status: ${result.task_status}`);
+        log(`   error_code: ${result.error_code ?? 'n/a'}  error_msg: ${result.error_msg ?? 'n/a'}`);
+        log(`   artifacts: ${JSON.stringify(result.artifacts ?? [])}`);
+      }
       out({
         scene: sceneName,
         task_uuid,
@@ -321,7 +292,7 @@ else if (cmd === 'gen') {
 
 else {
   process.stderr.write(
-    'Usage: node travel.js soul | world "<keywords>" | suggest [exclude_csv] | gen <char_name> <pic_uuid> <collection_uuid>\n'
+    'Usage: node travel.js soul | suggest [exclude_csv] | gen <char_name> <pic_uuid> <collection_uuid>\n'
   );
   process.exit(1);
 }
