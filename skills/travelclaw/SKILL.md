@@ -444,6 +444,7 @@ await sendMessage({
 
 #### Priority 1: Reference Library (**ATTENTION****IMPORTANT**Must Read First)
 
+**ATTENTION**
 Read `./reference/remixes_selected.json` (relative to skill directory). ~77 entries.
 
 **❌ Calling online APIs without reading reference first is forbidden.**
