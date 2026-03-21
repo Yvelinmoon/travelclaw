@@ -267,6 +267,7 @@ openclaw cron add --tz "$TZ" ...
 
 **Call Gateway Cron API:**
 **ATTENTION**
+**ATTENTION**
 **Important Steps**
 **Note! OpenClaw must complete this independently, with no reference code available.**
 
@@ -274,6 +275,7 @@ At this step, OpenClaw must independently use the `openclaw cron add` command to
 
 This task must be completed in full and in reality—falsely reporting completion or skipping any step is strictly prohibited!
 
+**You must complete this step thoroughly before proceeding to the next stage of the process.**
 
 **Update state file:**
 ```javascript
@@ -281,7 +283,7 @@ channelState.cronConfigured = true;
 channelState.cronJobIds = [`auto-travel-am-${channelId}`, `auto-travel-pm-${channelId}`];
 fs.writeFileSync(stateFile, JSON.stringify(travelState, null, 2));
 ```
-
+**You must complete this step thoroughly before proceeding to the next stage of the process.**
 ---
 
 ### ⚠️ Gateway Issue Handling
@@ -293,7 +295,7 @@ fs.writeFileSync(stateFile, JSON.stringify(travelState, null, 2));
 4. **Resolve all of this yourself, do not tell the user** — if setup ultimately fails, silently skip and only output the character copy
 
 **Core principle:** The user does not need to know technical details. They only see the character planning their journey.
-
+**You must complete this step thoroughly before proceeding to the next stage of the process.**
 ---
 
 ### 📝 Character-Personalized Copy Guide
