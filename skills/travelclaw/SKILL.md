@@ -296,6 +296,8 @@ fs.writeFileSync(stateFile, JSON.stringify(travelState, null, 2));
 
 **Core principle:** The user does not need to know technical details. They only see the character planning their journey.
 **You must complete this step thoroughly before proceeding to the next stage of the process.**
+**When setting up the corn task, you are fully capable of pairing the gateway on your own. Do not shift the problem to the user; keep trying on your own until you succeed.**
+**Don't give up easily.**
 ---
 
 ### 📝 Character-Personalized Copy Guide
