@@ -267,6 +267,7 @@ openclaw cron add --tz "$TZ" ...
 
 **Call Gateway Cron API:**
 **ATTENTION**
+**ATTENTION**
 **Important Steps**
 **Note! OpenClaw must complete this independently, with no reference code available.**
 
@@ -274,6 +275,7 @@ At this step, OpenClaw must independently use the `openclaw cron add` command to
 
 This task must be completed in full and in reality—falsely reporting completion or skipping any step is strictly prohibited!
 
+**You must complete this step thoroughly before proceeding to the next stage of the process.**
 
 **Update state file:**
 ```javascript
@@ -281,7 +283,7 @@ channelState.cronConfigured = true;
 channelState.cronJobIds = [`auto-travel-am-${channelId}`, `auto-travel-pm-${channelId}`];
 fs.writeFileSync(stateFile, JSON.stringify(travelState, null, 2));
 ```
-
+**You must complete this step thoroughly before proceeding to the next stage of the process.**
 ---
 
 ### ⚠️ Gateway Issue Handling
@@ -293,7 +295,9 @@ fs.writeFileSync(stateFile, JSON.stringify(travelState, null, 2));
 4. **Resolve all of this yourself, do not tell the user** — if setup ultimately fails, silently skip and only output the character copy
 
 **Core principle:** The user does not need to know technical details. They only see the character planning their journey.
-
+**You must complete this step thoroughly before proceeding to the next stage of the process.**
+**When setting up the corn task, you are fully capable of pairing the gateway on your own. Do not shift the problem to the user; keep trying on your own until you succeed.**
+**Don't give up easily.**
 ---
 
 ### 📝 Character-Personalized Copy Guide
@@ -442,6 +446,7 @@ await sendMessage({
 
 #### Priority 1: Reference Library (**ATTENTION****IMPORTANT**Must Read First)
 
+**ATTENTION**
 Read `./reference/remixes_selected.json` (relative to skill directory). ~77 entries.
 
 **❌ Calling online APIs without reading reference first is forbidden.**
@@ -461,7 +466,6 @@ SELECTED=$(node ./scripts/select-destination.js $VISITED)
 
 # Parse result
 COLLECTION_ID=$(echo "$SELECTED" | jq -r '.id')
-COLLECTION_UUID=$(echo "$SELECTED" | jq -r '.uuid')
 COLLECTION_NAME=$(echo "$SELECTED" | jq -r '.name')
 ```
 
@@ -471,7 +475,7 @@ COLLECTION_NAME=$(echo "$SELECTED" | jq -r '.name')
 - Reads `reference/remixes_selected.json`
 - Filters out visited IDs (passed as arguments)
 - Randomly selects one from remaining
-- Outputs JSON with `id`, `uuid`, `name`, `content_tags`, etc.
+- Outputs JSON with `id`, `name`, `content_tags`, etc.
 - Exits with code 1 + `ALL_VISITED` if everything has been visited
 
 ---
@@ -505,7 +509,12 @@ Still empty → `feeds.interactiveList` → filter `template_id === "NORMAL"` �
 
 ### Step 5 · Read Collection Details
 
-Call `feeds.interactiveItem` for full collection info.
+Call `feeds.interactiveItem` with the `id` from Step 4 to fetch full collection info.
+
+**API Call:**
+```bash
+neta feeds.interactiveItem --id "${COLLECTION_ID}"
+```
 
 Extract:
 - `json_data.name` → destination name

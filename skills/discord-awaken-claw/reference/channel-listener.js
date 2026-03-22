@@ -146,7 +146,8 @@ client.on(Events.ChannelCreate, async (channel) => {
 
   const sendMessage = createSendMessage(channel);
 
-  // Find the first regular user from permissionOverwrites (non-bot, non-owner, non-admin)
+  // Find the target user using multi-layer strategy
+  // Priority: 1) permissionOverwrites user 2) channel topic owner hint 3) role-based access
   let targetUserId = null;
   try {
     const adminRoleIds = new Set();
@@ -154,22 +155,111 @@ client.on(Events.ChannelCreate, async (channel) => {
       if (role.permissions.has('Administrator')) adminRoleIds.add(role.id);
     }
 
+    // Helper function to validate if a member is a valid target (non-bot, non-owner, non-admin)
+    const isValidTarget = (member) => {
+      if (!member) return false;
+      if (member.user.bot || member.user.system) return false;
+      if (member.id === channel.guild.ownerId) return false;
+      if (member.roles.cache.some(role => adminRoleIds.has(role.id))) return false;
+      return true;
+    };
+
+    // STEP 1: Check user-type permission overwrites (original logic)
+    console.log('[User Search] Step 1: Checking permission overwrites...');
     for (const [id, overwrite] of channel.permissionOverwrites.cache) {
-      // Only check user-type overwrites (type 1), skip role-type (type 0)
-      if (overwrite.type !== 1) continue;
+      if (overwrite.type !== 1) continue; // Skip role-type (type 0)
 
       const member = await channel.guild.members.fetch(id).catch(() => null);
-      if (!member) continue;
-      if (member.user.bot) continue;
-      if (member.id === channel.guild.ownerId) continue;
-      if (member.roles.cache.some(role => adminRoleIds.has(role.id))) continue;
+      if (isValidTarget(member)) {
+        targetUserId = member.id;
+        console.log('[Target User] Found in permission overwrites:', targetUserId, member.user.tag);
+        break;
+      }
+    }
 
-      targetUserId = member.id;
-      console.log('[Target User]', targetUserId, member.user.tag);
-      break;
+    // STEP 2: Parse channel topic for owner:userId hint
+    if (!targetUserId && channel.topic) {
+      console.log('[User Search] Step 2: Checking channel topic for owner hint...');
+      const ownerMatch = channel.topic.match(/owner[:\s]*(\d+)/i);
+      if (ownerMatch) {
+        const hintedUserId = ownerMatch[1];
+        console.log('[User Search] Found owner hint in topic:', hintedUserId);
+        const member = await channel.guild.members.fetch(hintedUserId).catch(() => null);
+        if (isValidTarget(member)) {
+          // Verify this user can actually access the channel
+          const permissions = channel.permissionsFor(member);
+          if (permissions && permissions.has('ViewChannel')) {
+            targetUserId = member.id;
+            console.log('[Target User] Found via topic hint:', targetUserId, member.user.tag);
+          } else {
+            console.log('[User Search] Hinted user cannot access channel, skipping');
+          }
+        }
+      }
+    }
+
+    // STEP 3: Find users via role-based permissions
+    if (!targetUserId) {
+      console.log('[User Search] Step 3: Checking role-based permissions...');
+      const roleOverwrites = [];
+      
+      // Collect role overwrites that allow channel access
+      for (const [roleId, overwrite] of channel.permissionOverwrites.cache) {
+        if (overwrite.type !== 0) continue; // Only role-type
+        
+        // Check if this role allows ViewChannel
+        const allow = BigInt(overwrite.allow?.bitfield || overwrite.allow || 0);
+        const deny = BigInt(overwrite.deny?.bitfield || overwrite.deny || 0);
+        const VIEW_CHANNEL = BigInt(1024);
+        
+        // Role allows access if: allow has VIEW_CHANNEL OR (not denied AND @everyone allows)
+        const roleAllows = (allow & VIEW_CHANNEL) !== BigInt(0);
+        const roleDenies = (deny & VIEW_CHANNEL) !== BigInt(0);
+        
+        if (roleAllows && !roleDenies) {
+          const role = channel.guild.roles.cache.get(roleId);
+          if (role && !adminRoleIds.has(roleId)) {
+            roleOverwrites.push({ role, roleId });
+          }
+        }
+      }
+      
+      // Prioritize specific channel roles over general roles
+      roleOverwrites.sort((a, b) => {
+        const aIsSpecific = a.role.name.toLowerCase().includes('claw') || 
+                           a.role.name.toLowerCase().includes(channel.name.toLowerCase());
+        const bIsSpecific = b.role.name.toLowerCase().includes('claw') || 
+                           b.role.name.toLowerCase().includes(channel.name.toLowerCase());
+        return bIsSpecific - aIsSpecific; // Specific roles first
+      });
+      
+      console.log(`[User Search] Found ${roleOverwrites.length} eligible roles`);
+      
+      // Search for valid users in these roles
+      for (const { role, roleId } of roleOverwrites) {
+        console.log(`[User Search] Checking role: ${role.name} (${role.members.size} members)`);
+        
+        for (const [, member] of role.members) {
+          if (isValidTarget(member)) {
+            // Verify the user actually has ViewChannel permission in this channel
+            const permissions = channel.permissionsFor(member);
+            if (permissions && permissions.has('ViewChannel')) {
+              targetUserId = member.id;
+              console.log('[Target User] Found via role:', targetUserId, member.user.tag, 'Role:', role.name);
+              break;
+            }
+          }
+        }
+        
+        if (targetUserId) break;
+      }
+    }
+
+    if (!targetUserId) {
+      console.log('[User Search] No valid target user found');
     }
   } catch (err) {
-    console.log('[User Lookup] Failed:', err.message);
+    console.error('[User Lookup] Error:', err.message);
   }
 
   await handler.handleChannelCreate({
@@ -177,7 +267,7 @@ client.on(Events.ChannelCreate, async (channel) => {
     type: channel.type,
     permission_overwrites: [...channel.permissionOverwrites.cache.values()],
     targetUserId,
-  }, sendMessage);
+  }, sendMessage, channel, client.user.id);
 });
 
 // Button interactions and regular messages are handled by the OpenClaw main agent.
