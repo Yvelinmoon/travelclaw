@@ -374,71 +374,10 @@ Character Tags/Background: ${character_tags}
 Character Personality: ${character_personality}
 
 **Requirements：**
-1. **MUST be based on real cultural/historical/artistic sources**
-2. **MUST specify exact cultural/historical/artistic origins** in cultural_roots field
+1. **MUST use real cultural/historical/artistic/IP story（films,animations,TV series） sources**
+2. **MUST specify exact cultural/historical/artistic/IP story  origins** in cultural_roots field
 3. **MUST be a COHERENT, COMPLETE worldview** - Choose ONE specific, coherent setting/era/style
 4. **Goal:** Create contrast with the character. Select a world that feels surprising or displaced for this character.
-
-**ACCEPTABLE Source Categories (choose from these):**
-
-**Historical Periods:**
-- Ancient: Ancient Egypt, Ancient Greece, Ancient Rome, Mesopotamia, Pre-Columbian Americas
-- Asian: Tang Dynasty, Song Dynasty, Edo Period Japan, Joseon Korea, Angkor Wat era
-- European: Medieval Europe, Renaissance Italy, Victorian England, Roaring 20s, Belle Époque
-- Other: Islamic Golden Age, Byzantine Empire, Ottoman Empire, Mongol Empire
-
-**Cultural/Regional Aesthetics:**
-- East Asian: Chinese ink wash painting, Japanese Ukiyo-e, Korean Minhwa, Tibetan thangka
-- European: Celtic knotwork, Norse/Viking art, Russian icon painting, Art Nouveau, Bauhaus
-- Middle Eastern: Persian miniature, Islamic geometric art, Ottoman illumination
-- African: Ancient Egyptian, Ethiopian Christian art, West African masks/patterns
-- Other: Indigenous Australian dot painting, Mayan/Aztec codex style, Polynesian tapa
-
-**Artistic Movements:**
-- Classical: Renaissance, Baroque, Rococo, Neoclassicism, Romanticism
-- Modern: Impressionism, Post-Impressionism, Expressionism, Cubism, Surrealism
-- Decorative: Art Nouveau, Art Deco, Arts and Crafts, Art Moderne
-- Contemporary: Pop Art, Minimalism, Street Art, Digital Art aesthetics
-
-**Literature/Anime/Mythology IP Styles:**
-- Anime: Studio Ghibli style, Makoto Shinkai style, 90s anime aesthetic, mecha anime
-- Western Animation: Rick and Morty style (sci-fi surreal, bold colors, dimensional chaos), Family Guy style (American sitcom cel-shaded), Disney Renaissance style (The Little Mermaid, Beauty and the Beast hand-drawn magic), South Park cutout style, The Simpsons style
-- Comics: Marvel comic style (dynamic action, Ben-Day dots), DC comic noir style, Japanese manga style (screentone, speed lines), Franco-Belgian bande dessinée (Tintin, Asterix clear line style), Underground comix style
-- Movies: Harry Potter cinematic style (magical British boarding school, warm and mysterious), Star Wars aesthetic (used future, lived-in sci-fi), Tim Burton style (gothic whimsy, stripes and spirals), Wes Anderson style (symmetrical, pastel color palette), Film noir (high contrast black and white, shadows)
-- Games: Souls-like aesthetic (Dark Souls, Elden Ring - medieval decay, melancholic grandeur, intricate armor), Legend of Zelda style (adventure, vibrant fantasy), Final Fantasy aesthetic (JRPG elaborate costumes, ethereal beauty), Indie game style (Hollow Knight hand-painted, Celeste pixel art), Retro 8-bit/16-bit pixel art
-- Literature: Lovecraftian/Cthulhu mythos, Tolkienesque fantasy, Wuxia/Xianxia, Steampunk (Verne/Wells), Dieselpunk, Cyberpunk (Gibson)
-- Mythology: Greek mythology, Norse mythology, Egyptian mythology, Japanese folklore, Celtic mythology
-
-**Architecture Styles:**
-- Gothic cathedrals, Islamic mosques, Chinese pagodas, Indian temples, Brutalist, Mid-century modern
-
-**CONTRAST DIRECTIONS (Use these to create displacement):**
-
-Analyze the character and choose a CONTRAST direction:
-
-**Personality Contrast:**
-- If character is SERIOUS/GRIM → Place them in WHIMSICAL/PLAYFUL worlds (Ghibli, Carnival, Rococo)
-- If character is CHEERFUL/LIGHT → Place them in DARK/SOMBER worlds (Lovecraftian, Gothic, Post-apocalyptic)
-- If character is MODERN/TECH → Place them in ANCIENT worlds (Ancient Egypt, Medieval, Primitive)
-- If character is TRADITIONAL/OLD → Place them in FUTURISTIC worlds (Cyberpunk, Space age, Sci-fi)
-
-**Visual/Aesthetic Contrast:**
-- If character has SOFT/PASTEL aesthetic → Use BOLD/STARK contrasts (Brutalist, High contrast, Noir)
-- If character has DARK/GOTHIC style → Use BRIGHT/VIBRANT worlds (Pop Art, Indian festivals, Neon)
-- If character is MINIMALIST → Place in ORNATE/DETAILED worlds (Baroque, Victorian, Byzantine)
-- If character is ORNATE/ELEGANT → Place in MINIMAL/RAW worlds (Brutalist, Zen gardens, Desert)
-
-**Scale/Setting Contrast:**
-- If character is POWERFUL/GRAND → Place them in MUNDANE/DOMESTIC settings (Small village, Everyday life, Tiny world)
-- If character is SMALL/ORDINARY → Place them in EPIC/GRANDIOSE settings (Cosmic, Divine, Monumental)
-- If character is WARRIOR/FIGHTER → Place in PEACEFUL/GENTLE worlds (Tea ceremony, Library, Garden)
-- If character is PEACEFUL/HEALER → Place in CHAOTIC/WAR-TORN worlds (Battlefield, Industrial, Apocalypse)
-
-**Cultural Contrast:**
-- Eastern character → Western art style (Ukiyo-e character in Art Deco New York)
-- Western character → Eastern aesthetic (Medieval knight in Edo Period Japan)
-- Modern character → Ancient setting (Office worker in Ancient Rome)
-- Ancient character → Modern setting (Viking in 1980s Miami)
 
 **Generate:**
 1. **World Name** - Creative but hinting at cultural roots (e.g., "Neon Tang Dynasty", "Byzantine Clockwork City")
@@ -456,20 +395,6 @@ Analyze the character and choose a CONTRAST direction:
   "cultural_roots": "MUST specify exact sources: e.g., // Choose ONE coherent source, e.g., 'Tang Dynasty China' or 'Blade Runner cyberpunk' or 'Studio Ghibli', 'Studio Ghibli animation style'",
   "contrast_or_resonance": "explain why this world fits or contrasts the character"
 }
-
-**EXAMPLES of STRONG CONTRAST (what you should aim for):**
-- Character: Cheerful Magical Girl → World: "Lovecraftian cosmic horror atmosphere"
-- Character: Modern Office Worker → World: "Ancient Egyptian pyramid construction era"
-- Character: Elegant Victorian Lady → World: "Brutalist Soviet concrete architecture"
-- Character: Serious Samurai → World: "1950s American diner culture"
-- Character: Ancient Greek Philosopher → World: "Blade Runner neon cyberpunk slums"
-
-**ICONIC IP STYLE CONTRASTS (use these!):**
-- Character: Serious Fantasy Knight → World: "Rick and Morty interdimensional cable chaos (wubba-lubba-dub-dub neon sci-fi)"
-- Character: Cute Anime Girl → World: "Family Guy Rhode Island suburban sitcom (thick outlines, stiff animation)"
-- Character: Realistic Movie Hero → World: "South Park construction paper cutout style (simple shapes, flat colors)"
-- Character: Modern Teenager → World: "Harry Potter wizarding world aesthetic (British magical boarding school, warm lighting)"
-
 
 **The goal:** Make the user go "Wait... what?" in a delightful way. The contrast should be jarring but interesting.
 
