@@ -553,6 +553,10 @@ const world_name = worldData.world_name || '';
 ```
 
 2. **Get collection prompt template:**
+**Attention，check the character detail before building your final prompt!**
+- If it's a NETA internal character, use @{character_name} to activate the character apparance;
+- If it's an external character, you must use the reference image in soul.md, and add extra apparance description in in the prompt.
+
 ```javascript
 // From Step 5 collection
 let prompt_template = collectionData.prompt_template || 
