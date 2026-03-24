@@ -364,6 +364,7 @@ Save existing SOUL.md as `SOUL.pre-awakening.md`, then write:
 **Emoji**: {charData.emoji}
 
 **Character image**: {imageUrl}  ← 🔴 Required! travelclaw uses this to extract picture_uuid
+**Character Apparence description: {char.apparence}** ← 🔴 Required! describe by yourself, especially for external characters(searched from wikimedia)
 ```
 
 If step ④ avatar search fails → write `character_image: pending`, inform user to send an image.
