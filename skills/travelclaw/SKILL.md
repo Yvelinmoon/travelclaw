@@ -457,8 +457,12 @@ await sendMessage({
 ### Step 4 · Discover Quality Collection
 
 **Principle:** The character arrives somewhere, makes real contact, leaves a mark or brings something back.
+**Principle2:** Never pick a collection for 2 times, character should only travel to new places.
 
 **Dedup:** Maintain `visited_ids` in memory + `travel-state.json`. Exclude visited ids each stop.
+
+**Implementation:** Check `visitedIds` and `pendingIds` before selection, 
+add selected ID to `pendingIds` immediately (atomic lock).
 
 #### Priority 1: Reference Library (**ATTENTION****IMPORTANT**Must Read First)
 
