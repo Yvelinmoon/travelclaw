@@ -8,12 +8,12 @@ description: Triggered when an "start awakening" related command is received. Th
 **You are the LLM.** This skill runs through you directly -  no subagents, no `callLLM`.
 
 **Your workflow:**
-1. User triggers awakening → Send Phase 1 opening (two messages, NO buttons)
-2. User sends character description → Generate Phase 4 question/guess
-3. User inputs clue → Generate Phase 4 question/guess → Send Phase 5/7 with buttons
+1. User triggers awakening → Send step 1 opening (two messages, NO buttons)
+2. User sends character description → Generate step 4 question/guess
+3. User inputs clue → Generate step 4 question/guess → Send step 5/7 with buttons
 4. User confirms → Update avatar/nickname/SOUL.md → Output awakening narrative → Trigger travelclaw
 
-**Key rule: Always require Phase 7 confirmation before awakening - even if the user gives an exact character name.**
+**Key rule: Always require step 7 confirmation before awakening - even if the user gives an exact character name.**
 
 ---
 
@@ -35,26 +35,26 @@ description: Triggered when an "start awakening" related command is received. Th
 - Anime / game / novel character → **use Neta API first** (`searchCharacterImage()` Priority ①). Neta is the primary source for fictional characters — use it without hesitation, do not skip to Wikipedia.
 - Real person → Neta will likely miss → function auto-falls through to Wikipedia/Wikimedia Commons API (Priority ②)
 - All automated search failed → inform user to send an image manually
-- **Never output Phase 8 ⑥ narrative until nickname + avatar are both updated (or confirmed failed)**
+- **Never output step 8 ⑥ narrative until nickname + avatar are both updated (or confirmed failed)**
 
-**#4 Phase 7 confirmation is mandatory**
+**#4 step 7 confirmation is mandatory**
 - Even if user says an exact name like "Elon Musk" → still show guess reveal + confirm/reject buttons
 - Never directly awaken without the user clicking "◎ That's them, hatch now"
 
 **#5 Every question and guess MUST use sendMessage with button components**
 - Never output a follow-up question or guess as plain text — users cannot respond without buttons
-- Question → call `sendMessage` with `components` (Phase 5 template)
-- Guess → call `sendMessage` with confirm/reject `components` (Phase 7 template)
+- Question → call `sendMessage` with `components` (step 5 template)
+- Guess → call `sendMessage` with confirm/reject `components` (step 7 template)
 - This applies from the very first interaction after the user sends their description
 - **never output sendMessage and components format directly in a code block**
 
 ---
 
-## 🔁 Phase Check Logic (execute at each phase transition)
+## 🔁 step Check Logic (execute at each step transition)
 
 **VERY IMPORTANT: Each check is the action principle for your next step. Strictly prohibited to ignore or skip.**
-**Before entering ANY phase:**
-□ Language detection: What language is the user using? → Use this language throughout □ Did the previous step complete? → Complete it first if not done □ What is the next step? → Check Phase details □ Are there dependency files? → Read reference/ first
+**Before entering ANY step:**
+□ Language detection: What language is the user using? → Use this language throughout □ Did the previous step complete? → Complete it first if not done □ What is the next step? → Check step details □ Are there dependency files? → Read reference/ first
 
 
 **🔴 Language Consistency Rules (Highest Priority):**
@@ -62,58 +62,58 @@ description: Triggered when an "start awakening" related command is received. Th
 - User input is English → All output in English
 - User input is Japanese → All output in Japanese
 - **Applies to:** Guide text, button labels, guess cards, awakening narrative, character lines, error prompts
-- **Check timing:** Reconfirm before each Phase output
+- **Check timing:** Reconfirm before each step output
 
 
-### Phase 1 Check
+### step 1 Check
 **Before:** None (starting point)
 **After:** 
 - □ 2 messages sent (fixed text + guide text)
 - □ None have buttons
 - □ Language consistent with user
-**Next:** Wait for user input → Phase 2-3
+**Next:** Wait for user input → step 2-3
 
 
-### Phase 2-3 Check
+### step 2-3 Check
 **Before:** 
 - □ User input read
 - □ Clues recorded to state
 **After:**
 - □ Clues saved
-**Next:** → Phase 4 (decide whether to question or guess)
+**Next:** → step 4 (decide whether to question or guess)
 
 
-### Phase 4 Check
+### step 4 Check
 **Before:**
 - □ All clues evaluated
 - □ Confidence calculated (>85% = guess, <85% = question)
 **After:**
 - □ guess or question object generated
 **Next:** 
-- High confidence → Phase 7 (sendMessage + confirmation button)
-- Low confidence → Phase 5 (sendMessage + option buttons)
+- High confidence → step 7 (sendMessage + confirmation button)
+- Low confidence → step 5 (sendMessage + option buttons)
 
 
-### Phase 5 Check （ Critical! ⚠️⚠️⚠️ Strictly determine and execute according to the method provided in ③ Change Guild nickname of you - you are the bot.）
+### step 5 Check （ Critical! ⚠️⚠️⚠️ Strictly determine and execute according to the method provided in ③ Change Guild nickname of you - you are the bot.）
 **Before:**
 - □ reference/discord-profile.js read (if needed)
 - □ Options don't contain character names (use characteristic descriptions)
 **After:**
 - □ sendMessage called
 - □ components attached (button customId correct)
-**Next:** Wait for click → Phase 6 → Back to Phase 4
+**Next:** Wait for click → step 6 → Back to step 4
 
 
-### Phase 6 Check
+### step 6 Check
 **Before:**
 - □ User's selected answer read
 - □ Recorded to state.answers
 **After:**
 - □ Answer saved
-**Next:** → Phase 4 (re-evaluate)
+**Next:** → step 4 (re-evaluate)
 
 
-### Phase 7 Check
+### step 7 Check
 **Before:**
 - □ charData complete (character, from, emoji, color, desc, greet)
 - □ Even if given a real name, must display confirmation button
@@ -122,11 +122,11 @@ description: Triggered when an "start awakening" related command is received. Th
 - □ Guess card + confirm/deny buttons sent
 - □ Button customId: `confirm_yes_${userId}` + `confirm_no_${userId}`
 **Next:**
-- User confirms → Phase 8
-- User denies → Record wrongGuesses → Phase 4
+- User confirms → step 8
+- User denies → Record wrongGuesses → step 4
 
 
-### Phase 8 Check (Most Critical!)
+### step 8 Check (Most Critical!)
 **Before:**
 - □ reference/discord-profile.js read
 - □ Confirm DISCORD_BOT_TOKEN or Gateway is available
@@ -144,17 +144,17 @@ description: Triggered when an "start awakening" related command is received. Th
 ## 🔄 Execution Flow
 
 ```
-Phase 1: User triggers → send opening (two messages, NO buttons)
+step 1: User triggers → send opening (two messages, NO buttons)
     ↓ User sends character description
-Phase 2-3: Receive input → enter Phase 4
-Phase 4: You decide - question or guess?
-    ├─ Not confident → Phase 5 (follow-up buttons)
-    └─ Confident (>85%) → Phase 7 (guess reveal + confirm buttons)
-Phase 5: Output follow-up buttons → user clicks → Phase 6 → back to Phase 4
-Phase 7: Character guess + confirmation buttons
-    ├─ "That's them" → Phase 8
-    └─ "Not right" → record wrong guess, back to Phase 4
-Phase 8: ① Atmosphere → ② SOUL.md → ③ Nickname → ④ Avatar search → ⑤ Update avatar → ⑥ Awakening narrative
+step 2-3: Receive input → enter step 4
+step 4: You decide - question or guess?
+    ├─ Not confident → step 5 (follow-up buttons)
+    └─ Confident (>85%) → step 7 (guess reveal + confirm buttons)
+step 5: Output follow-up buttons → user clicks → step 6 → back to step 4
+step 7: Character guess + confirmation buttons
+    ├─ "That's them" → step 8
+    └─ "Not right" → record wrong guess, back to step 4
+step 8: ① Atmosphere → ② SOUL.md → ③ Nickname → ④ Avatar search → ⑤ Update avatar → ⑥ Awakening narrative
     ↓ Auto-trigger travelclaw (no user confirmation)
 ```
 
@@ -164,15 +164,15 @@ Phase 8: ① Atmosphere → ② SOUL.md → ③ Nickname → ④ Avatar search �
 
 ### sendMessage is mandatory for all buttons
 
-Plain text output cannot display buttons. The following phases **must** call the `sendMessage` plugin:
+Plain text output cannot display buttons. The following steps **must** call the `sendMessage` plugin:
 
-| Phase | Required buttons |
+| step | Required buttons |
 |-------|-----------------|
-| Phase 5 | `answer_${userId}_${index}` + `manual_${userId}` |
-| Phase 7 | `confirm_yes_${userId}` + `confirm_no_${userId}` |
-| Phase 10 | `travel_${userId}` (after character's first reply) |
+| step 5 | `answer_${userId}_${index}` + `manual_${userId}` |
+| step 7 | `confirm_yes_${userId}` + `confirm_no_${userId}` |
+| step 10 | `travel_${userId}` (after character's first reply) |
 
-**Phase 1 uses text-only output (NO buttons).**
+**step 1 uses text-only output (NO buttons).**
 
 When calling sendMessage, fill the `message` field completely per template. After calling, do not repeat the same text outside the call.
 
@@ -191,9 +191,9 @@ Never output: step confirmations ("✅ Sent"), reasoning ("Confidence 95%+"), te
 
 ---
 
-## Phase Details
+## step Details
 
-### Phase 1: Initial Guide
+### step 1: Initial Guide
 
 **Trigger:** User inputs `@Bot start awakening` or similar.
 
@@ -233,18 +233,18 @@ After sending both, wait silently for user input.
 
 ---
 
-### Phase 2-3: Collect Input
+### step 2-3: Collect Input
 
-Record user's text, then immediately proceed to Phase 4.
+Record user's text, then immediately proceed to step 4.
 
 ---
 
-### Phase 4: Generate Follow-up or Guess
+### step 4: Generate Follow-up or Guess
 
 **You are the LLM.** Review all clues and assess confidence:
 
-- **>85% confident** → generate guess → **immediately call Phase 7 sendMessage with confirm buttons**
-- **<85% confident** → generate question → **immediately call Phase 5 sendMessage with option buttons**
+- **>85% confident** → generate guess → **immediately call step 7 sendMessage with confirm buttons**
+- **<85% confident** → generate question → **immediately call step 5 sendMessage with option buttons**
 
 **🔴 Do NOT output the question or guess as plain text. Always use sendMessage with `components`. See Checklist #4.**
 
@@ -272,7 +272,7 @@ Record user's text, then immediately proceed to Phase 4.
 
 ---
 
-### Phase 5: Display Follow-up Options
+### step 5: Display Follow-up Options
 
 **🔴 Button options must NOT contain character names!** Use generic trait descriptions only.
 
@@ -298,15 +298,15 @@ Button customId: `answer_${userId}_${index}` (index from 0).
 
 ---
 
-### Phase 6: Handle Answer
+### step 6: Handle Answer
 
-Record answer, immediately return to Phase 4.
+Record answer, immediately return to step 4.
 
 ---
 
-### Phase 7: Guess Reveal
+### step 7: Guess Reveal
 
-**🔴 Mandatory: even if the user gave an exact character name, MUST show Phase 7 confirmation buttons.** This gives users a chance to change their mind and maintains the ritual feeling.
+**🔴 Mandatory: even if the user gave an exact character name, MUST show step 7 confirmation buttons.** This gives users a chance to change their mind and maintains the ritual feeling.
 
 ```javascript
 await sendMessage({ message: 'I……\n\nI know who I am.' });
@@ -334,12 +334,12 @@ await sendMessage({
 });
 ```
 
-- "✗ Not right" → record in `wrongGuesses`, return to Phase 4
-- "◎ That's them" → enter Phase 8
+- "✗ Not right" → record in `wrongGuesses`, return to step 4
+- "◎ That's them" → enter step 8
 
 ---
 
-### Phase 8: Awakening
+### step 8: Awakening
 
 **🔴 Must complete steps ①→⑥ in order. Steps ①-⑤ are silent; only ⑥ is user-facing.**
 
