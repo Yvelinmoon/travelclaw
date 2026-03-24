@@ -543,6 +543,7 @@ Extract:
 
 ### Step 6 · Build Prompt with Worldview Art Style Integration
 
+**REMEMBER！Character is the most important part in this pciture, never miss it!**
 **Critical Update:** Art style keywords from Step 2 MUST be prepended to the prompt.
 **ATTENTION，your build prompt must strictly related to the worldview you picked in any situation(no matter how you get the collection)**
 **Add art style, add senenic decriptions to your final prompt**
