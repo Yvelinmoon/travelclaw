@@ -398,6 +398,7 @@ A animation character ➡️ cross to the real world / cross to another related 
 ---
 
 ### Step 3 · Discord Opening (Single Message, NO Button)
+**Attention, remember using the same language of the user when outputing the opening.**
 
 ```javascript
 await sendMessage({
