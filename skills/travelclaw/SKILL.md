@@ -4,7 +4,6 @@ description: Triggered directly after the awakening flow in which the lobster ba
 ---
 
 **Related project:** [neta-skills](https://github.com/talesofai/neta-skills) — Neta platform API toolkit
-**Optimization reference:** See `OPTIMIZATIONS.md` for implementation details (cron flow, reference file reading, character image accuracy, immersion protection).
 
 ## Prerequisites
 
