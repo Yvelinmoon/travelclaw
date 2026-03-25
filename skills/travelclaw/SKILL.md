@@ -605,6 +605,7 @@ if (isExternalCharacter) {
 }
 ```
 
+**ATTENTION, YOU MUST FOLLOW THE RULES BELOW TO BUILD YOUR MAKE IMAGE PROMPTS**
 **Prompt Structure Priority (Front to Back):**
 1. **Art style keywords** (highest priority - determines overall aesthetic)
 2. **Character name** (who)
