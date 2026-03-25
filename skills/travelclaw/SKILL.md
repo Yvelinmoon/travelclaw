@@ -432,6 +432,40 @@ await sendMessage({
 });
 ```
 
+**Chinese version（for example）**
+```javascript
+await sendMessage({
+  message: `# N E T A 宇 宙
+
+## 【坐标已映射】
+**已映射世界** \`${world_count}\` | **世界标签** \`${world_name}\`
+
+---
+
+## 【灵魂频率扫描】
+*现实的结构正在波动...*
+*${character_name} 与 ${world_name} 的本质产生共鸣*
+
+\`▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓\` **匹配成功**
+
+---
+
+## 【世界已揭晓】
+### ◈ ${world_name}
+*${cultural_roots}*
+
+> ${world_tagline}
+>
+> ${world_description}
+
+---
+*${character_name} 踏入了 ${world_name} —*
+*在这里 ${art_style_keywords.split(',')[0]} 与 ${art_style_keywords.split(',')[1]} 相遇*
+
+**美术风格：** ${art_style_keywords}`,
+});
+```
+
 - `world_name`: Creative world name from LLM
 - `world_tagline`: One-line evocative description
 - `world_description`: Atmospheric setting description
