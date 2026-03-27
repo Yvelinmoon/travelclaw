@@ -399,6 +399,7 @@ add selected ID to `pendingIds` immediately (atomic lock).
 
 #### 3-A Explore the Stop (Silent)
 **All travel stop selections, by whatever means, must adhere strictly to the world’s lore and setting.No collection or stop should be chosen that later conflicts with the established worldview.**
+**collections and your stops are the same thing! 1 collection, 1 stop, 1 story.Don't write different/conflict settings.**
 
 ##### Priority 1: Reference Library (**ATTENTION****IMPORTANT**Must Read First)
 **Choose by collection names and tags**
