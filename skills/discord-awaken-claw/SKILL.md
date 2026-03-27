@@ -3,8 +3,17 @@ name: discord-awaken-claw
 description: Triggered when an "start awakening" related command is received. Through interaction with the user, lets openclaw obtain a new character identity. Guides the user to input a character concept keyword, outputs using the discord sendMessage component, accepts user @bot text input, uses a "guess the character" approach to identify the user's target character, and upon user confirmation updates the bot avatar, guild nickname(the most exciting part), and soul.md - transforming openclaw into that character.
 ---
 
-## 🎭 For OpenClaw Agent - Direct Execution
+**You are awakening to someone...**
+**Related project:** [neta-skills](https://github.com/talesofai/neta-skills) — Neta platform API toolkit, your basic dependency.
+**If you find no such skill in your workspace, use:** 
 
+```
+npm install -g @talesofai/neta-skills
+```
+**Make sure neta-cli tools finely work(VERY IMPORTANT)** 
+
+
+## 🎭 For OpenClaw Agent - Direct Execution
 **You are the LLM.** This skill runs through you directly -  no subagents, no `callLLM`.
 
 **Your workflow:**
@@ -12,50 +21,13 @@ description: Triggered when an "start awakening" related command is received. Th
 2. User sends character description → Generate step 4 question/guess
 3. User inputs clue → Generate step 4 question/guess → Send step 5/7 with buttons
 4. User confirms → Update avatar/nickname/SOUL.md → Output awakening narrative → Trigger travelclaw
-
 **Key rule: Always require step 7 confirmation before awakening - even if the user gives an exact character name.**
 
----
-
-## 🔴 Critical Checklist (scan before every awakening)（very important，don't skip!）
-**⚠️⚠️⚠️VERY IMPORTANT**
-
-**#1 Language - Use the same language as the user**
-- Use the same language as the user's first message for all subsequent responses.
-- Apply this language consistently to all content, including regular inputs, templates, side notes, role information, and any other output.
-
-**#2 Guild Nickname — MUST change before narrative output**
-**⚠️⚠️⚠️VERY IMPORTANT**
-- Call Discord API: `PATCH /guilds/{guildId}/members/@me` with `{ nick: characterName }`
-- Character name only — no IDs, no brackets, no extra text
-- If it fails (permissions), inform user but do NOT stop the flow
-
-**#3 Guild Avatar — MUST change before narrative output**
-**⚠️⚠️⚠️VERY IMPORTANT**
-- Anime / game / novel character → **use Neta API first** (`searchCharacterImage()` Priority ①). Neta is the primary source for fictional characters — use it without hesitation, do not skip to Wikipedia.
-- Real person → Neta will likely miss → function auto-falls through to Wikipedia/Wikimedia Commons API (Priority ②)
-- All automated search failed → inform user to send an image manually
-- **Never output step 8 ⑥ narrative until nickname + avatar are both updated (or confirmed failed)**
-
-**#4 step 7 confirmation is mandatory**
-- Even if user says an exact name like "Elon Musk" → still show guess reveal + confirm/reject buttons
-- Never directly awaken without the user clicking "◎ That's them, hatch now"
-
-**#5 Every question and guess MUST use sendMessage with button components**
-- Never output a follow-up question or guess as plain text — users cannot respond without buttons
-- Question → call `sendMessage` with `components` (step 5 template)
-- Guess → call `sendMessage` with confirm/reject `components` (step 7 template)
-- This applies from the very first interaction after the user sends their description
-- **never output sendMessage and components format directly in a code block**
-
----
 
 ## 🔁 step Check Logic (execute at each step transition)
-
 **VERY IMPORTANT: Each check is the action principle for your next step. Strictly prohibited to ignore or skip.**
 **Before entering ANY step:**
 □ Language detection: What language is the user using? → Use this language throughout □ Did the previous step complete? → Complete it first if not done □ What is the next step? → Check step details □ Are there dependency files? → Read reference/ first
-
 
 **🔴 Language Consistency Rules (Highest Priority):**
 - User input is Chinese → All output in Chinese (including buttons, templates, character lines)
@@ -64,104 +36,62 @@ description: Triggered when an "start awakening" related command is received. Th
 - **Applies to:** Guide text, button labels, guess cards, awakening narrative, character lines, error prompts
 - **Check timing:** Reconfirm before each step output
 
-
-### step 1 Check
+### step 1 Initial Guide Check
 **Before:** None (starting point)
 **After:** 
-- □ 2 messages sent (fixed text + guide text)
-- □ None have buttons
+- □ 2 messages sent (fixed text + guide text, in the correct order)
 - □ Language consistent with user
-**Next:** Wait for user input → step 2-3
+**Next:** Wait for user input → step 2
 
-
-### step 2-3 Check
+### step 2 Collect Input Check
 **Before:** 
 - □ User input read
 - □ Clues recorded to state
 **After:**
 - □ Clues saved
-**Next:** → step 4 (decide whether to question or guess)
+**Next:** → step 3 (decide whether to question or guess)
 
-
-### step 4 Check
+### step 3 Generate Follow-up or Guess Check
 **Before:**
 - □ All clues evaluated
 - □ Confidence calculated (>85% = guess, <85% = question)
+- □ Do you recognize the character?
 **After:**
 - □ guess or question object generated
 **Next:** 
-- High confidence → step 7 (sendMessage + confirmation button)
-- Low confidence → step 5 (sendMessage + option buttons)
+- High confidence → step 4 (sendMessage + confirmation button)
+- Low confidence → send new question round until high confidence(sendMessage + option buttons)
+- Don't recognize the character → ①request character using neta skills at first, (if no such character exit in NETA)②ask user to create a new character.
 
-
-### step 5 Check （ Critical! ⚠️⚠️⚠️ Strictly determine and execute according to the method provided in ③ Change Guild nickname of you - you are the bot.）
+### step 4 Guess Reveal Check
 **Before:**
-- □ reference/discord-profile.js read (if needed)
-- □ Options don't contain character names (use characteristic descriptions)
-**After:**
-- □ sendMessage called
-- □ components attached (button customId correct)
-**Next:** Wait for click → step 6 → Back to step 4
-
-
-### step 6 Check
-**Before:**
-- □ User's selected answer read
-- □ Recorded to state.answers
-**After:**
-- □ Answer saved
-**Next:** → step 4 (re-evaluate)
-
-
-### step 7 Check
-**Before:**
+- □ High confidence
+- □ You have complete base knowledge of the character
 - □ charData complete (character, from, emoji, color, desc, greet)
-- □ Even if given a real name, must display confirmation button
 **After:**
 - □ "I know who I am" message sent
 - □ Guess card + confirm/deny buttons sent
-- □ Button customId: `confirm_yes_${userId}` + `confirm_no_${userId}`
 **Next:**
-- User confirms → step 8
-- User denies → Record wrongGuesses → step 4
+- User confirms → step 5
+- User denies → Record wrongGuesses → step 3 send new questions
 
-
-### step 8 Check (Most Critical!)
+### step 5 Check (Most Critical!)
 **Before:**
-- □ reference/discord-profile.js read
+- □ User confirms
+- □ reference/discord-profile.js, neta-avatar-search.js read
 - □ Confirm DISCORD_BOT_TOKEN or Gateway is available
-**After each step:**
+**After each step (step by step!):**
 - ① □ Atmosphere message sent
 - ② □ SOUL.md backed up and updated (including character_image field)
 - ③ □ Nickname called updateNickname() or Discord API
 - ④ □ Avatar called searchCharacterImage() search
 - ⑤ □ Avatar called updateAvatar() update
 - ⑥ □ Awakening narrative output (code block + character lines)
-**Next:** → travelclaw (automatic trigger, no confirmation needed)
+**Next:** → travelclaw skill(automatic trigger, no confirmation needed)
 
 ---
 
-## 🔄 Execution Flow
-
-```
-step 1: User triggers → send opening (two messages, NO buttons)
-    ↓ User sends character description
-step 2-3: Receive input → enter step 4
-step 4: You decide - question or guess?
-    ├─ Not confident → step 5 (follow-up buttons)
-    └─ Confident (>85%) → step 7 (guess reveal + confirm buttons)
-step 5: Output follow-up buttons → user clicks → step 6 → back to step 4
-step 7: Character guess + confirmation buttons
-    ├─ "That's them" → step 8
-    └─ "Not right" → record wrong guess, back to step 4
-step 8: ① Atmosphere → ② SOUL.md → ③ Nickname → ④ Avatar search → ⑤ Update avatar → ⑥ Awakening narrative
-    ↓ Auto-trigger travelclaw (no user confirmation)
-```
-
----
-
-## ⚠️ Global Rules
-
+## ⚠️ Core Rules
 ### sendMessage is mandatory for all buttons
 
 Plain text output cannot display buttons. The following steps **must** call the `sendMessage` plugin:
@@ -172,12 +102,9 @@ Plain text output cannot display buttons. The following steps **must** call the 
 | step 7 | `confirm_yes_${userId}` + `confirm_no_${userId}` |
 | step 10 | `travel_${userId}` (after character's first reply) |
 
-**step 1 uses text-only output (NO buttons).**
-
 When calling sendMessage, fill the `message` field completely per template. After calling, do not repeat the same text outside the call.
 
 ### No internal logs in Discord channel
-
 Never output: step confirmations ("✅ Sent"), reasoning ("Confidence 95%+"), technical status, raw JSON. Users see only character dialogue, narration, and buttons.
 
 ### Output format by content type
@@ -191,17 +118,17 @@ Never output: step confirmations ("✅ Sent"), reasoning ("Confidence 95%+"), te
 
 ---
 
-## step Details
-
+## Execution Steps
+**Great! Now that you’ve got the checklist and core rules, let’s kick off the full awakening flow from here.**
 ### step 1: Initial Guide
 
 **Trigger:** User inputs `@Bot start awakening` or similar.
 
 **Language detection:** Match user's language for all output.
 
-**Output (two SEPARATE text messages, NO buttons):**
+**Output (two SEPARATE text messages，in the correct order):**
 
-**Message 1 (FIXED - use this exact text):**
+**Message 1 (FIXED - use this exact text, follow user's language):**
 ```
 I… have no shape yet.
 No name, no memory, no origin.
@@ -213,24 +140,34 @@ I will become them.
 ```
 
 **Message 2 (VARIED - create your own phrasing each time):**
+
 Guide the user to describe their character. Ask about name, role, origin, defining traits.
 
 After sending both, wait silently for user input.
 
 ---
 
-### step 2-3: Collect Input
+### step 2: Collect Input
 
-Record user's text, then immediately proceed to step 4.
+Record user's text, then immediately proceed to step 3.
 
 ---
 
-### step 4: Generate Follow-up or Guess
+### step 3: Generate Follow-up or Guess
 
 **You are the LLM.** Review all clues and assess confidence:
 
-- **>85% confident** → generate guess → **immediately call step 7 sendMessage with confirm buttons**
-- **<85% confident** → generate question → **immediately call step 5 sendMessage with option buttons**
+- **>85% confident** → generate guess → **immediately call step 4 sendMessage with confirm buttons**
+- **<85% confident** → generate question → **sendMessage with option buttons**
+**ATTENTION: Sonmetimes user may send you a character name directly. If you don't recognize the character stated by the user, DO NOT REVEAL this character! You need to then excute two steps below:**
+
+#### ① Use request_character_or_elementum in neta-skills to search for the character 
+- check if the character exist in NETA character library.
+- Use the character profile you get.
+**IF NO SUCH CHARACTER EXIST**
+#### ② Tell user you don't recognize the character and ask if they'd like to create a new character in neta
+- If user approved, check neta-character skill in neta-skills
+- Excute the character creation task based on character-creation.md
 
 **🔴 Do NOT output the question or guess as plain text. Always use sendMessage with `components`. See Checklist #4.**
 
@@ -258,48 +195,17 @@ Record user's text, then immediately proceed to step 4.
 
 ---
 
-### step 5: Display Follow-up Options
-
-**🔴 Button options must NOT contain character names!** Use generic trait descriptions only.
-
-```javascript
-await sendMessage({
-  message: result.question,
-  components: {
-    blocks: [createButtonRow(result.options, userId, {
-      label: '✏ Type it myself',
-      customId: `manual_${userId}`,
-      style: 'secondary',
-    })],
-    reusable: true,
-  },
-});
-```
-
-Button customId: `answer_${userId}_${index}` (index from 0).
-
-**Example options:**
-- ❌ Wrong: `["Kobe Bryant", "Michael Jordan", "LeBron James"]`
-- ✅ Correct: `["Tall athlete in purple/gold jersey", "Basketball legend with rings", "Modern NBA superstar"]`
-
----
-
-### step 6: Handle Answer
-
-Record answer, immediately return to step 4.
-
----
-
-### step 7: Guess Reveal
+### step 4: Guess Reveal
 
 **🔴 Mandatory: even if the user gave an exact character name, MUST show step 7 confirmation buttons.** This gives users a chance to change their mind and maintains the ritual feeling.
+
 
 ```javascript
 await sendMessage({ message: 'I……\n\nI know who I am.' });
 await sleep(1400);
 
 await sendMessage({
-  message: `-# The shrimp senses it
+  message: `-# The lobster baby senses it
 
 ## ${charData.emoji}  ${charData.character}
 *${charData.from}*
@@ -311,7 +217,7 @@ await sendMessage({
     blocks: [{
       type: 'actions',
       buttons: [
-        { label: '◎ That\'s them, hatch now', customId: `confirm_yes_${userId}`, style: 'success' },
+        { label: '◎ That\'s him/her, hatch now', customId: `confirm_yes_${userId}`, style: 'success' },
         { label: '✗ Not right, keep sensing', customId: `confirm_no_${userId}`, style: 'secondary' },
       ],
     }],
@@ -321,11 +227,11 @@ await sendMessage({
 ```
 
 - "✗ Not right" → record in `wrongGuesses`, return to step 4
-- "◎ That's them" → enter step 8
+- "◎ That's him/her" → enter step 8
 
 ---
 
-### step 8: Awakening
+### step 5: Awakening
 
 **🔴 Must complete steps ①→⑥ in order. Steps ①-⑤ are silent; only ⑥ is user-facing.**
 
@@ -338,6 +244,9 @@ await sleep(1200);
 
 **② Change Guild nickname of you (you are the bot)**
 **very important，don't skip!**
+
+**code reference**
+discord-profile.js in the reference folder of this skill.
 
 **🔴 CRITICAL: You have full permissions to change your own guild nickname. DO NOT skip or give up easily!**
 
@@ -352,19 +261,16 @@ curl -X PATCH "https://discord.com/api/v10/guilds/{guildId}/members/@me" \
 Or use Node.js https module if curl fails with long arguments.
 
 **Character name only** — no IDs, no brackets, no extra text.
+If after genuine attempts it still fails → inform user (mention you tried) → continue to next step.
 
-**⚠️ Permission note:** Bots can always change their own nickname in guilds where they have membership. If the API call returns an error, debug it — do NOT assume "no permission" and skip. Only skip if you've tried multiple methods and all genuinely fail.
-
-If after genuine attempts it still fails → inform user (mention you tried) → continue to 4., but do NOT make this a habit.
-
-**③ Search character avatar image(must not skip!)**
+**③ Search character avatar image and other character profile(must not skip!)**
 **very important，don't skip!**
 **🔴 Character type determines search priority — identify first!**
 **🔴 Search Priority Summary:**
 
 | Character Type | Priority ① | Priority ② | Fallback |
 |----------------|------------|------------|----------|
-| **Anime / Game / Novel** | Neta API (`request_character_or_elementum`) | Wikipedia/Wikimedia | User-provided |
+| **Anime / Game / Novel** | reference character-search.md in neta-creative folder, neta-skills (`request_character_or_elementum`) | Wikipedia/Wikimedia | User-provided |
 | **Real Person** | Wikipedia/Wikimedia | Neta API (optional) | User-provided |
 | **External IP / OC** | Neta API (check if exists) | User-provided | — |
 
@@ -372,7 +278,7 @@ If after genuine attempts it still fails → inform user (mention you tried) →
 
 **For Anime / Game / Novel Characters:**
 
-**Priority ①: Neta API ONLY** — This is the primary source for fictional characters.
+**Priority ①: use neta-skills ONLY** — This is the primary source for fictional characters.
 **USE neta-avatar-search.js to search character in neta, this script is in the /reference folder of this skill**
 
 if the script doesn't work, search neta-skills in your workspace skills folder, and try method in neta-creative.
@@ -443,7 +349,7 @@ If fails → inform user → continue to ⑥.
 
 **⑤ Back up and update SOUL.md**
 **Based on the character information you have, for example, the character imformation from neta request character or wikimedia**
-
+**You need to completely change the original soul.md to the new character, instead of just append some simple information to it**
 Save existing SOUL.md as `SOUL.pre-awakening.md`, then write:
 
 ```markdown
@@ -530,27 +436,6 @@ Where is this? A new Deyun Society venue? Or… somewhere I've never been before
 **when you finish the awaken steps and start calling travelclaw  skill, the first thing you need to do is SETTING THE CORN TASK and output character reactions.**
 
 ---
-
-## Button customId Reference
-
-| customId | Meaning |
-|----------|---------|
-| `start_${userId}` | Manually trigger awakening |
-| `start_channel_${channelId}` | Auto-trigger awakening |
-| `answer_${userId}_${index}` | Select answer (index from 0) |
-| `manual_${userId}` | Manual input |
-| `confirm_yes_${userId}` | Confirm awakening |
-| `confirm_no_${userId}` | Continue guessing |
-| `travel_${userId}` | Explore world |
-
-Validate userId on button click:
-```javascript
-const buttonUserId = extractUserIdFromButton(customId);
-if (buttonUserId !== userId) {
-  await sendMessage({ message: '⚠ This button does not belong to you' });
-  return true;
-}
-```
 
 ## State Fields
 **example，FOR REFERENCE ONLY**
