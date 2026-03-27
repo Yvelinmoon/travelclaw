@@ -101,8 +101,8 @@ description: Triggered directly after the awakening flow in which the lobster ba
 
 | Content Type | Output Method |
 |-------------|---------------|
-| **Narration / atmosphere / scene** | Code Block (when no buttons) |
-| **Narration + buttons** | Discord components (`sendMessage` + `components`) | ATTENTION!
+| **Narration / atmosphere / scene / descriptions(actions/expressions/environment...)** | Code Block (when no buttons) | ATTENTION
+| **Narration + buttons** | Discord components (`sendMessage` + `components`) | ATTENTION
 | **Character first-person dialogue** | Plain text (standalone message) |
 | **Image URL** | Plain text — **must be standalone message, never embed in components or mix with text** |
 
@@ -147,6 +147,7 @@ description: Triggered directly after the awakening flow in which the lobster ba
 **Great! Be ready for the real travel flow then!**
 **Attention**
 **Execute strictly in order. Output feedback immediately after each step.**
+**REMEMBER, you need to automatically finish the whole flow from step 0 to step 4 -- travel to 1 spot, and wait for your next instruct.**
 
 ### Step 0 🕰️ Cron Setup — Travel Ritual (Required on First Run)
 
@@ -315,7 +316,7 @@ A animation character ➡️ cross to the real world / cross to another related 
 
 ```javascript
 await sendMessage({
-  message: `# N E T A   U N I V E R S E
+  message: `\n# N E T A   U N I V E R S E
 
 ## 【Coordinates Mapped】
 **Worlds Mapped** \`${world_count}\` | **World Tag** \`${world_name}\`
@@ -345,7 +346,7 @@ await sendMessage({
 **Chinese version（for example）**
 ```javascript
 await sendMessage({
-  message: `# N E T A 宇 宙
+  message: `\n# N E T A 宇 宙
 
 ## 【坐标已映射】
 **已映射世界** \`${world_count}\` | **世界标签** \`${world_name}\`
@@ -430,19 +431,14 @@ Still empty → `feeds.interactiveList` → filter `template_id === "NORMAL"` �
 2. **Character appearance and motions**（what is the character wearing, what's the character doing） very important！Character behaviour is the main part in the picture!
 3. **Scene/destination/event/** (where & what happened in the picture?)
 
-**Example Output:**
-```
-
-
-```
 
 **SEND**character_name and the prompt to travel.js
 
 #### 3-C Traveling loading.
-**When you are picking collections or building your prompt, output the loading text below:**
-- "🔍 Searching for a new travel spot... ..."
-**When you sending prompt to travel.js, output the loading text below:**
-- "🚶 {character_name} is travelling... ..."
+**When you are picking collections or building your prompt, output the loading text below (based on user's language):**
+- "🔍 Searching for a new travel spot..."
+**When you sending prompt to travel.js, output the loading text below(based on user's language):**
+- "🚶 {character_name} is travelling..."
 
 
 
@@ -455,55 +451,29 @@ Still empty → `feeds.interactiveList` → filter `template_id === "NORMAL"` �
 **ATTENTION**Output image_url as a **separate message**，this is the only thing you need to output to the user in step 4-A.
 
 #### 4-B Stop Display & Navigation
-**After output the image url, you need to output Stop Display & Navigation immediately, including 2 parts **
+**After output the image url, you need to output Stop Display & Navigation immediately**
 ##### 1. Character Scene Simulation
 
 ```
-🎭【{destination_name}】
+
+🗺️  {destination_name}
 
 ```{scene description: 1-2 sentences, sensory details}```
 
-character_name: {first-person reaction, in-character}
-(action/expression, 1 sentence)
-```
-
-**Example (Klee):**
-```
-🎭【Paper-art Morax ✨】
-
-Layer upon layer of paper-art world unfolds — Jumpty Dumpty transformed into 3D paper flowers, four-leaf clovers spinning in the air.
-
-Klee: Wow——! Everything here is layered just like Klee's Jumpty Dumpty — so magical!
-(Eyes sparkling, reaching out to touch the floating paper stars)
+{first-person reaction, in-characte, 50-100 words, or more than that.}
 ```
 
 #### 2. Progress Bar + Buttons
 
-Format: `▓` × round + `░` × (5 - round) + encouraging line. 🎉 at stop 5.
-
 **Under 5 stops:**
 
-```javascript
-await sendMessage({
-  message: '▓░░░░  {round} / 5 stops\n🌟 Stop {round} checked in! Continue exploring?',
-  components: {
-    blocks: [{
-      type: 'actions',
-      buttons: [
-        { label: 'Continue adventure 🗺️', customId: `travel_continue_${userId}`, style: 'primary' },
-        { label: 'Rest for now 👋',        customId: `travel_end_${userId}`,      style: 'secondary' },
-      ],
-    }],
-    reusable: true,
-  },
-});
-```
+**Output in a code block:** ' 🚩 {round} / 5 stops, continue exploring?'
 
 **At 5 stops:**
 
 ```javascript
 await sendMessage({
-  message: '▓▓▓▓▓  5 / 5 stops 🎉\nAll 5 stops explored! Cross to another world, or rest?',
+  message: '5 / 5 stops 🎉\nAll 5 stops explored! Cross to another world, or rest?',
   components: {
     blocks: [{
       type: 'actions',
