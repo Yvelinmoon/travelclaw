@@ -175,6 +175,7 @@ Record user's text, then immediately proceed to step 3.
 **🔴 REMEMBER use discord component to output your questions or guesses**
 
 **Question format:**
+**Options can only be features, never output names as options -- the point is Guess and Reveal, not charcater selection.**
 ```json
 {
   "action": "question",
