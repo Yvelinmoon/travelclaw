@@ -162,6 +162,7 @@ Record user's text, then immediately proceed to step 3.
 **ATTENTION: Sonmetimes user may send you a character name directly. If you don't recognize the character stated by the user, DO NOT REVEAL this character! You need to then excute two steps below:**
 
 #### ① Use request_character_or_elementum in neta-skills to search for the character 
+- Tell user you are thinking about the character.
 - check if the character exist in NETA character library.
 - Use the character profile you get.
 **IF NO SUCH CHARACTER EXIST**
@@ -171,6 +172,7 @@ Record user's text, then immediately proceed to step 3.
 
 **🔴 Do NOT output the question or guess as plain text. Always use sendMessage with `components`. See Checklist #4.**
 **🔴 Before you output the guess format, you MUST get the full profile of the character**
+**🔴 REMEMBER use discord component to output your questions or guesses**
 
 **Guess format:**
 ```json
