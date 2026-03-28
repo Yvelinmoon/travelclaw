@@ -296,7 +296,7 @@ A animation character ➡️ cross to the real world / cross to another related 
 **Make sure these world views are already exit, do not makeup things**
 
 **Generate:**
-1. **World Name** - Creative but hinting at cultural roots (e.g., "Tang Dynasty", "Byzantine Clockwork City","Citidal of Ricks","Acient Egypt","Morden World")
+1. **World Name** - Creative but hinting at cultural roots 
 2. **World Tagline** - One evocative sentence (≤15 words)
 3. **World Description** - 2-3 sentences describing the setting with specific cultural details
 4. **Art Style Keywords** - 5-10 specific artistic style and visual keywords of the worldview or IP (e.g.,"Minecraft style","Family guy cartoon style","Super Mario pixel style","gold leaf backgrounds", "neon-lit pagodas", "ukiyo-e flat colors")
