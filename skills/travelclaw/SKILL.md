@@ -402,7 +402,7 @@ add selected ID to `pendingIds` immediately (atomic lock).
 **collections and your stops are the same thing! 1 collection, 1 stop, 1 story.Don't write different/conflict settings.If you pick the collection first, then your story must fit the collection content.**
 
 ##### Priority 1: Reference Library (**ATTENTION****IMPORTANT**Must Read First)
-**Choose by collection names and tags**
+**Choose by collection names (and tags) - very important，the name of collection you picked determines the main theme of this stop -- so, be careful!**
 **ATTENTION**
 **Before reading the file check NETA_API_BASE_URL first**
 - if NETA_API_BASE_URL = https://api.talesofai.cn
@@ -424,7 +424,7 @@ Still empty → `feeds.interactiveList` → filter `template_id === "NORMAL"` �
 **Principal of prompt building** The top priority in constructing prompts is to deeply integrate the character into the worldview and travel scenes, and to tell each travel story effectively through images.
 
 ##### Scenario 1: You picked a collection uuid
-**Add world art style, worldview background description and character role to {world_context}**
+**YOU MUST ADD world art style, worldview background description and character role to {world_context}**
 
 **SEND**character_name, collection_uuid and world_context to travel.js
 
@@ -457,7 +457,7 @@ Still empty → `feeds.interactiveList` → filter `template_id === "NORMAL"` �
 
 #### 4-B Stop Display & Navigation
 **After output the image url, you need to output Stop Display & Navigation immediately**
-##### 1. Character Scene Simulation
+##### 1. Character Scene Simulation （Depends on the stop you picked in step 3!）
 
 ```
 
