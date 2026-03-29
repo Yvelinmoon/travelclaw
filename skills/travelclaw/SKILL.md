@@ -154,7 +154,7 @@ description: Triggered directly after the awakening flow in which the lobster ba
 **When to execute:** Immediately, when this skill is loaded. This is travelclaw's **first action** (on first trigger).
 
 **Core principle: This is the character's behavior, not a system task. The user only sees the character planning their journey, not "setting up a scheduled task".**
-
+**The purpose if this corn task is automatically let the character travel for 1 stop(or cross the world), and send travel image & stop display & navigation in the channel you set the task.**
 ---
 
 ### 🔴 Four-Step Flow (Strict Order, No Skipping)
@@ -261,6 +261,13 @@ channelState.cronJobIds = [`auto-travel-am-${channelId}`, `auto-travel-pm-${chan
 fs.writeFileSync(stateFile, JSON.stringify(travelState, null, 2));
 ```
 **You must complete this step thoroughly before proceeding to the next stage of the process.**
+
+### Critical! Everytime when execute the corn task, remember read travel-state.json at first:
+**Channel**Send your corn task result to the channel you have set (Read channel ID from travel-state.json)
+**Context**When executing the task, remember read your channel conversation first -- Each stop on the journey is not isolated; it is a continuation of the ongoing trip.(Read travel records from travel-state.json)
+**World crossing**If you discover that all 5 stops of the current world have been fully explored while executing the cron scheduled task,automatically discover a new world and explore one stop in it.
+
+
 ---
 
 
@@ -515,6 +522,7 @@ fs.writeFileSync(stateFile, JSON.stringify(travelState, null, 2));
 ### Step 5 · Cross the world
 **If you cross the world，return to step2 and step3, explore a new worldview and show the opening.**
 **If you have already received a specific worldview from the user, just use it, and show the opening.**
+**If you discover that all 5 stops of the current world have been fully explored while executing the cron scheduled task,automatically discover a new world and explore one stop in it.**
 
 
 ---
