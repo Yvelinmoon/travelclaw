@@ -25,6 +25,21 @@ description: Triggered directly after the awakening flow in which the lobster ba
 ## 🔁 Step Check Logic (execute at each step transition, Silently)
 **ATTENTION** When the skill is triggered, Before you excute anything, read the check logic first!
 
+**CRITICAL: State Management Rule (Highest Priority)**
+```
+□ **ALWAYS READ travel-state.json FIRST** — regardless of trigger type (cron or manual)
+□ Check channels[channelId] exists → Initialize if not
+□ Extract exploration.visitedWorlds → For world deduplication
+□ Extract exploration.visitedStops → For stop deduplication  
+□ Extract exploration.currentWorldStops → To determine current progress (0-5)
+□ Check if currentWorldStops >= 5 AND trigger is cron → Auto world switch required
+```
+
+**🔴 WRITE RULE (Mandatory):**
+- After EVERY state-changing operation → **IMMEDIATELY WRITE to travel-state.json**
+- Never delay writes, never batch writes
+- Always preserve: visitedWorlds, visitedStops, explorationLog, currentWorldStops
+
 **Before entering ANY step:**
 ```
 □ Language detection: What language is the user using? → Use that language throughout
@@ -42,10 +57,13 @@ description: Triggered directly after the awakening flow in which the lobster ba
 
 **Below are the steps and details you need to check**
 ### Step 0 🕰️ Cron Setup Check - on the first run!
-**Before:** None (starting point)
+**Before:**
+- □ **READ travel-state.json** → Get channelState
+- □ Check channelState.cronConfigured → Skip if true
 **After:**
 - □ Corn taks has been setup correctly.
 - □ Character copy（2 copies） has been sent correctly.
+- □ **WRITE travel-state.json** → Set cronConfigured = true, save cronJobIds
 **Next:** →  → Step 1 read character file
 
 ### Step 1 Read Character File Check
@@ -60,6 +78,9 @@ description: Triggered directly after the awakening flow in which the lobster ba
 ### Step 2 Search for Creative Worldview Check
 **Before:**
 - □ Character details confirmed
+- □ **READ travel-state.json** → Get exploration.visitedWorlds for DEDUPLICATION
+- □ Generate world_name → Check against visitedWorlds → Regenerate if duplicate
+- □ IF currentWorldStops >= 5 → Must generate NEW world (auto world switch)
 **After:**
 - □ Loading state output ("The boundaries between dimensions are blurring..." code block)
 - □ LLM worldview generation prompt sent
@@ -68,6 +89,7 @@ description: Triggered directly after the awakening flow in which the lobster ba
 - □ world_count generated (random 100-999)
 - □ Opening message sent (single message, no buttons)
 - □ Format matches template (N E T A   U N I V E R S E heading)
+- □ **WRITE travel-state.json** → Update currentWorld, reset currentWorldStops to 0
 **Next:** → Step 3 setting your stop.
 
 ### Step 3 Exploration and Prompt build Check
@@ -75,20 +97,31 @@ description: Triggered directly after the awakening flow in which the lobster ba
 - □ world_name, world_count, world_description ready
 - □ Opening message sent (single message, no buttons)
 - □ reference/remixes_selected.json or remixes_selected_en.json read (priority)
+- □ **READ travel-state.json** → Get exploration.visitedStops for DEDUPLICATION
+- □ Filter collections → Exclude any UUID in visitedStops
 **After:**
-- □ Found an appropriate collection in the reference json file or decide to design the scene/event prompt by yourself.
+- □ Found an appropriate collection (NOT in visitedStops) or design prompt by yourself.
+- □ Set pendingStopId = selected_collection_uuid (atomic lock)
 - □ build the image gen prompt of this stop.
+- □ **WRITE travel-state.json** → Save pendingStopId immediately
 **Next:** → Step 4 (auto-trigger instantly)
 
 ### Step 4 Run travel.js and travel for one stop Check
 **Before:**
-- □ travel-state.json read (check visited_ids)
+- □ **READ travel-state.json** → Check visitedStops, currentWorldStops
 - □ travel.js read (check the script for travelling)
 - □ Got the character and collection detail / image gen prompt ready.
 - □ Check which stop it is（5 stops in one world）.
+**Execution:**
+- □ Run travel.js once → Get imageUrl
 **After:**
-- □ Run travel.js once.
-- □ Already Output stop display and navigation.
+- □ **WRITE travel-state.json** IMMEDIATELY:
+  - Append stopId to visitedStops
+  - Increment currentWorldStops by 1
+  - Append entry to explorationLog (timestamp, worldName, stopId, imageUrl, triggerType)
+  - Clear pendingStopId
+- □ Output image URL (standalone message)
+- □ Output stop display and navigation
 **Next:** → User input / corn task for your next move.
 
 
@@ -251,6 +284,7 @@ Now then... let us begin exploring this world.
   - All environment variables (including NETA_TOKEN)
   - Full context (SOUL.md, travel-state.json, character info)
   - Proper timeout handling
+  - **discord channel id** Use the ID of the channel where you triggered the travelclaw skill. 
 
 **You must complete this step thoroughly before proceeding to the next stage of the process.**
 
@@ -387,7 +421,9 @@ await sendMessage({
 
 **Okay, after the character step into a worldview, He/She/It needs to find a place/scene to travel**
 **The "place" is a virtual spot(prompt), which may lines in the collection list you have, or can be searched from online recommendation, or the prompt designed by yourself.**
-**Hint: Collections are entities that contain specific creative ideas and prompts, help for building the scene**
+**Trick: if you get user's real ip information, merge the current time & weather information in your image gen prompt, that will create user's aha moment.**
+**Trick: Use weather skill.**
+**Hint: Collections are entities that contain specific creative ideas and prompts, help for building the scene.**
 
 **Principle1:** The character arrives somewhere, makes real contact, leaves a mark or brings something back.
 **Principle2:** The "Stop"(or place,scene, spot...) MUST strongly related to the worldview you picked for the character. 
@@ -404,7 +440,10 @@ add selected ID to `pendingIds` immediately (atomic lock).
 **All travel stop selections, by whatever means, must adhere strictly to the world’s lore and setting.No collection or stop should be chosen that later conflicts with the established worldview.**
 **collections and your stops are the same thing! 1 collection, 1 stop, 1 story.Don't write different/conflict settings.If you pick the collection first, then your story must fit the collection content.**
 
-##### Priority 1: Reference Library (**ATTENTION****IMPORTANT**Must Read First)
+##### Priority 1: Build prompt by yourself
+**Jump to 3-B to build prompt**
+
+##### Priority 2: Reference Library  (Fallback, in case you don't know what to do or no place to go...)
 **Choose by collection names (and tags) - very important，the name of collection you picked determines the main theme of this stop -- so, be careful!**
 **ATTENTION**
 **Before reading the file check NETA_API_BASE_URL first**
@@ -415,34 +454,31 @@ Read `./reference/remixes_selected_en.json` (relative to skill directory). ~77 e
 **Then, Pick a collection(check collection names and tags) that fit the worldview, get collection uuid and pass it to travel.js**
 
 
-##### Priority 2: Online Recommendation (Fallback)
-All reference entries visited or low match → `suggest_content` → filter visited ids → pick best quality.
-Still empty → `feeds.interactiveList` → filter `template_id === "NORMAL"` → exclude `visited_ids`.
-**Get collection uuid and pass it to travel.js**
-
-##### Priority 3: Build prompt by yourself (Fallback)
-**Jump to 3-B to build prompt**
-
 #### 3-B Build prompt (Silent)
 **Principal of prompt building** The top priority in constructing prompts is to deeply integrate the character into the worldview and travel scenes, and to tell each travel story effectively through images.
 
-##### Scenario 1: You picked a collection uuid
+##### Scenario 1: You decide to build prompt by yourself
+
+**Follow the Prompt Structure Below to build your prompt**
+1. **Art style keywords** (highest priority - determines overall aesthetic)
+2. **Character role, appearance and actions**（what's the role of the character, what's character wearing, what's the character doing） —— very important！Character behaviour is the main part in the picture!
+3. **Interaction** The character is interacting with someone else in this world(need names here)? what is the story?
+4. **Scene & Lightning & weather** (This story happened in what place? what time does this story happened? - describe by lightning, you can also check weather in user's ip and apply in the picture)
+5. **Angle & composition** To enhance the aesthetic appeal of images.
+
+**Example - just for reference**
+'{character_name}, '
+
+**SEND**character_name and the prompt to travel.js
+
+
+##### Scenario 2: You picked a collection uuid
 **YOU MUST ADD world art style, worldview background description（scene elements in the world） and character role to {world_context}**
 - It is necessary to add sufficient image elements that align with the worldview in this step, as the prompts from the collection itself may not be closely related to the world.
 - Remember, the most important principles are relevance to the world and the character’s personalized expression within it.
 
 **SEND**character_name, collection_uuid and world_context to travel.js
 
-
-##### Scenario 2: You decide to build prompt by yourself
-
-**Follow the Prompt Structure Below to build your prompt**
-1. **Art style keywords** (highest priority - determines overall aesthetic)
-2. **Character role, appearance and actions**（what's the role of the character, what's character wearing, what's the character doing,for example:Doraemon transformed into a military general from the Three Kingdoms era, clad in the armor of a Three Kingdoms commander, galloping on horseback across the battlefield.） —— very important！Character behaviour is the main part in the picture!
-3. **Scene/destination/event/** (where & what happened in the picture?)
-
-
-**SEND**character_name and the prompt to travel.js
 
 #### 3-C Traveling loading.
 **When you are picking collections or building your prompt, output the loading text below (based on user's language):**
@@ -466,14 +502,14 @@ Still empty → `feeds.interactiveList` → filter `template_id === "NORMAL"` �
 **Character Scene Simulations between each stop must be story-driven and interconnected, reflecting the character's sense of realism during the journey, and connecting the previous and subsequent scenes coherently.**
 ```
 
-🗺️  {destination_name}
+🗺️  {destination_name} {current_date_and_time} {weather} (if possible)
 
 ```{scene description: 1-2 sentences, sensory details}```
 
-{first-person reaction, in-character, 50-100 words, or more than that.}
+{first-person diary, in-character, 50-100 words, or more than that.}
 ```
 
-#### 2. Progress Bar + Buttons
+#### 2. Guide text, Progress Bar and Buttons
 
 **Under 5 stops:**
 
@@ -516,10 +552,29 @@ fs.writeFileSync(stateFile, JSON.stringify(travelState, null, 2));
 
 
 ### Step 5 · Cross the world
-**If you cross the world，return to step2 and step3, explore a new worldview and show the opening.**
-**If you have already received a specific worldview from the user, just use it, and show the opening.**
-**If you discover that all 5 stops of the current world have been fully explored while executing the cron scheduled task,automatically discover a new world and explore one stop in it.**
-**Every time you explore 1 new stop or cross a new world, UPDATE travel-state.json!**
+**Trigger:** User clicks "Cross Worlds 🌌" or 5 stops completed
+
+**Before:**
+- □ **READ travel-state.json** → Preserve visitedWorlds, visitedStops
+- □ IF user specified world → Check visitedWorlds → Warn if already explored
+- □ IF auto-switch → Generate new world with MAX contrast + Check visitedWorlds
+
+**Execution:**
+- □ Go to Step 2 → Generate new worldview
+- □ Step 3 → Select new stop (filter with visitedStops)
+- □ Step 4 → Generate image
+
+**After:**
+- □ **WRITE travel-state.json**:
+  - Append new world_name to visitedWorlds
+  - Reset currentWorldStops = 0
+  - Preserve all visitedStops (do NOT clear)
+  - Append worldSwitch entry to explorationLog
+
+**Next:** → User input / continue exploring
+
+**CRITICAL:**
+**Every time you explore 1 new stop or cross a new world, you MUST READ and WRITE travel-state.json!**
 
 ---
 
