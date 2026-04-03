@@ -24,8 +24,10 @@ npm install -g @talesofai/neta-skills
 **Key rule: Always require step 7 confirmation before awakening - even if the user gives an exact character name.**
 
 
-## 🔁 step Check Logic (execute at each step transition)
+## 🔁 step Check Logic (execute at each step transition, silent)
 **VERY IMPORTANT: Each check is the action principle for your next step. Strictly prohibited to ignore or skip.**
+**ATTENTION** Check silently, never output check message to the user directly!
+
 **Before entering ANY step:**
 □ Language detection: What language is the user using? → Use this language throughout □ Did the previous step complete? → Complete it first if not done □ What is the next step? → Check step details □ Are there dependency files? → Read reference/ first
 
