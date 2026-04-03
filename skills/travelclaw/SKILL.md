@@ -536,7 +536,7 @@ Read `./reference/remixes_selected_en.json` (relative to skill directory). ~77 e
 
 ```{scene description: 1-2 sentences, sensory details}``` (in a code block)
 
-{first-person diary, in-character, over 100 words.} (output directly)
+{first-person diary（in a diary narrative style）, in-character, over 100 words.} (output directly)
 ```
 
 #### 2. Guide text
