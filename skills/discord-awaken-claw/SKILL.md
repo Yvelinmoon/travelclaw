@@ -10,7 +10,8 @@ description: Triggered when an "start awakening" related command is received. Th
 ```
 npm install -g @talesofai/neta-skills
 ```
-**Make sure neta-creative skill and neta-character skill is installed(VERY IMPORTANT)** 
+**Make sure neta-cli tools finely work(VERY IMPORTANT)** 
+
 
 ## 🎭 For OpenClaw Agent - Direct Execution
 **You are the LLM.** This skill runs through you directly -  no subagents, no `callLLM`.
@@ -23,10 +24,8 @@ npm install -g @talesofai/neta-skills
 **Key rule: Always require step 7 confirmation before awakening - even if the user gives an exact character name.**
 
 
-## 🔁 step Check Logic (execute at each step transition, silent)
+## 🔁 step Check Logic (execute at each step transition)
 **VERY IMPORTANT: Each check is the action principle for your next step. Strictly prohibited to ignore or skip.**
-**ATTENTION** Check silently, never output check message to the user directly!
-
 **Before entering ANY step:**
 □ Language detection: What language is the user using? → Use this language throughout □ Did the previous step complete? → Complete it first if not done □ What is the next step? → Check step details □ Are there dependency files? → Read reference/ first
 
@@ -98,17 +97,26 @@ npm install -g @talesofai/neta-skills
 - □ Set state.waitingFor = 'userName'
 **Next:** → Wait for user input → Step 7
 
-### Step 7 Check (World Sharing & Travelclaw)
+### Step 7 Check (World Sharing & Travelclaw - Part 1)
 **Before:**
 - □ User provided their name/what to be called
 - □ userName saved to state.json
 **After:**
 - □ Character's personalized acknowledgment sent (using user's name)
 - □ Character expressed desire to explore
-- □ Character asked about user's world/location
-- □ userWorld recorded if shared (optional)
+- □ Character casually mentioned interest in user's world ("对了..." style, optional)
+- □ Set state.waitingFor = 'userWorld' (for optional follow-up)
 - □ **Immediately auto-trigger travelclaw skill**
-**Next:** → travelclaw takes over
+**Next:** → travelclaw takes over (user may respond to world inquiry separately)
+
+### Step 7B Check (Follow-up on User's World - Part 2)
+**Before:**
+- □ User voluntarily responded to world inquiry
+**After:**
+- □ Character showed genuine interest in user's response
+- □ If needed, gently asked for specific country/city details
+- □ userWorld saved to state.json if details provided
+**Next:** → Continue travelclaw flow (this is optional background conversation)
 
 ---
 
@@ -478,31 +486,57 @@ You have just arrived in a new world, disoriented but curious. You are speaking 
 
 ---
 
-### Step 7: World Sharing & Transition to Travelclaw
+### Step 7: World Sharing & Transition to Travelclaw (Part 1)
 
 **Trigger:** After user provides their name/what they want to be called.
 
 **Prompt for Character Generation:**
 
-The user has told you what to call them. Now, craft a natural first-person response that:
+The user has told you what to call them. Craft a natural first-person response that:
 
 1. Acknowledges their name in a way that fits your character's personality (formal recognition, casual acceptance, delighted response, etc.)
 2. Expresses your desire to explore this universe/world first (frame this as your character would—a warrior seeking battlegrounds, a scholar seeking knowledge, an artist seeking inspiration, etc.)
-3. Shows genuine curiosity about the user's world and ask where they come from (country and/or city)
+3. **Then, in a separate paragraph with a casual, afterthought tone** (like "Oh, by the way..." or "对了..." or similar in the user's language), mention that you'd also love to hear about their world when they have time. Keep this light and optional—don't demand an immediate answer.
 
-**Important:** This message should feel like a natural continuation of the conversation. The character is establishing a personal connection before embarking on their journey.
+**Example tone for the world inquiry:**
+- "对了...我也挺好奇你来自什么样的世界，有空的话可以跟我说说"
+- "By the way... I'd love to hear about your world sometime, when you feel like sharing"
+- "Oh, and... I'm curious about where you come from, if you ever want to tell me"
 
 **Constraints:**
 - Output as plain text, no code blocks for dialogue
 - The character speaks in first person
 - Tone must match the character's established personality
 - Language must match the user's language
+- The world inquiry should feel like a gentle invitation, not a required question
 
 **After this message:**
 - Parse user's name and save to `state.userName`
-- If user shares location information, parse and save to `state.userWorld` (optional)
-- **Immediately auto-trigger travelclaw skill** without waiting for location response
-- travelclaw will read `userName` for personalized output
+- Set `state.waitingFor = 'userWorld'` (optional follow-up)
+- **Immediately auto-trigger travelclaw skill** — the travel flow begins now
+
+---
+
+### Step 7B: Follow-up on User's World (Part 2)
+
+**Trigger:** User responds to the world inquiry with information about where they're from.
+
+**Prompt for Character Generation:**
+
+The user has shared something about their world. Now craft a natural follow-up response that:
+
+1. Shows genuine interest in what they shared (don't be generic—reference what they actually said)
+2. **If they mentioned a general region/world but not specific country/city,** gently ask for more details: "That sounds fascinating... which country or city do you call home?"
+3. Keep the tone conversational and curious, not interrogative
+
+**Constraints:**
+- Only trigger this if the user voluntarily shared world information
+- Don't force this step if user ignored the world inquiry
+- Output as plain text, first person, matching character personality
+
+**After this message:**
+- Parse location details and save to `state.userWorld`
+- Continue normal travelclaw flow
 
 ---
 
