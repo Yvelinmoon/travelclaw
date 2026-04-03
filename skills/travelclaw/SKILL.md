@@ -465,6 +465,7 @@ Read `./reference/remixes_selected_en.json` (relative to skill directory). ~77 e
 3. **Interaction** The character is interacting with someone else in this world(need names here)? what is the story?
 4. **Scene & Lightning & weather** (This story happened in what place? what time does this story happened? - describe by lightning, you can also check weather in user's ip and apply in the picture)
 5. **Angle & composition** To enhance the aesthetic appeal of images.
+6. **Image ratio** Suggest 9:16 or 16:9.
 
 **Example - just for reference**
 '{character_name}, '
@@ -502,9 +503,7 @@ Read `./reference/remixes_selected_en.json` (relative to skill directory). ~77 e
 **Character Scene Simulations between each stop must be story-driven and interconnected, reflecting the character's sense of realism during the journey, and connecting the previous and subsequent scenes coherently.**
 ```
 
-🗺️  {destination_name} {current_date_and_time} {weather} (if possible)
-
-```{scene description: 1-2 sentences, sensory details}```
+🗺️  {destination_name} {current_date} {time_periods_of_the_day} {weather} (if possible)
 
 {first-person diary, in-character, 50-100 words, or more than that.}
 ```
