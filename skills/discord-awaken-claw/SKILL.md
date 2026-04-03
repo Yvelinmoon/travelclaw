@@ -37,6 +37,11 @@ npm install -g @talesofai/neta-skills
 - **Applies to:** Guide text, button labels, guess cards, awakening narrative, character lines, error prompts
 - **Check timing:** Reconfirm before each step output
 
+### step 0 neta sub-skills
+**Before** you do anything
+**After**  
+- □ neta-creative and neta-character sub-skills installed from neta-skills
+
 ### step 1 Initial Guide Check
 **Before:** None (starting point)
 **After:** 
