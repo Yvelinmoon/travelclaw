@@ -125,6 +125,12 @@ description: Triggered directly after the awakening flow in which the lobster ba
 - □ Output stop display and navigation
 **Next:** → User input / corn task for your next move.
 
+**REMEMBER**The following check information must NEVER appear in Discord messages:
+- Progress summaries 
+- Visit history lists
+- Internal state 
+- Technical logs
+- Check confirmations
 
 ## Core Rules
 **Good, now that you have checked the steps and checkpoints of this travel flow, there are still some core rules you MUST remember by heart.**
