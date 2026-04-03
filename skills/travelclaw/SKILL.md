@@ -24,7 +24,6 @@ description: Triggered directly after the awakening flow in which the lobster ba
 
 ## 🔁 Step Check Logic (execute at each step transition, Silently)
 **ATTENTION** When the skill is triggered, Before you excute anything, read the check logic first!
-**ATTENTION** Check silently, never output check message to the user directly!
 
 **CRITICAL: State Management Rule (Highest Priority)**
 ```
@@ -125,12 +124,6 @@ description: Triggered directly after the awakening flow in which the lobster ba
 - □ Output stop display and navigation
 **Next:** → User input / corn task for your next move.
 
-**REMEMBER**The following check information must NEVER appear in Discord messages:
-- Progress summaries 
-- Visit history lists
-- Internal state 
-- Technical logs
-- Check confirmations
 
 ## Core Rules
 **Good, now that you have checked the steps and checkpoints of this travel flow, there are still some core rules you MUST remember by heart.**
@@ -359,69 +352,111 @@ A animation character ➡️ cross to the real world / cross to another related 
 
 **No API calls needed** - purely LLM-generated creativity.
 
-#### 2-B: Outpput Discord Opening (Single Message, NO Button)
-**Attention: remember to use the same language as the user in the opening output, and use only one language throughout(you need to fully translate the template below).**
+#### 2-B: Output Discord Opening (5 Separate Messages, NO Buttons)
 
-```javascript
-await sendMessage({
-  message: `\n# N E T A   U N I V E R S E
+**Important:** Send each section below as a **separate message** in sequence. Do not combine into one message. Do not use markdown headers (# ## ###).
 
-## 【Coordinates Mapped】
-**Worlds Mapped** \`${world_count}\` | **World Tag** \`${world_name}\`
+**Variable Styling:** Use **ANSI color codes** or **Unicode styling** to make variables stand out:
+- Wrap variables in `\x1b[1;36m` (cyan bold) and `\x1b[0m` (reset) for ANSI colors
+- Or use distinctive symbols like: 「variable」 or ❰variable❱ or ⦅variable⦆
 
 ---
 
-## 【Soul Frequency Scan】
-*The fabric of reality shifts...*
-*$character_name resonates with the essence of* **${world_name}**
-
----
-
-## 【World Unveiled】
-### ◈ ${world_name}
-
-> ${world_tagline}
->
-> ${world_description}
-
----
-*$character_name steps into ${world_name} —*`,
-});
+**Part 1 - Title**
+```
+N E T A   U N I V E R S E
 ```
 
-**Chinese version（for example）**
-```javascript
-await sendMessage({
-  message: `\n# N E T A 宇 宙
-
-## 【坐标已映射】
-**已映射世界** \`${world_count}\` | **世界标签** \`${world_name}\`
-
----
-
-## 【灵魂频率扫描】
-*现实的结构正在波动...*
-*${character_name} 与 ${world_name} 的本质产生共鸣*
-
----
-
-## 【世界已揭晓】
-### ◈ ${world_name}
-
-> ${world_tagline}
->
-> ${world_description}
-
----
-*${character_name} 踏入了 ${world_name} —*`,
-});
+**Part 2 - Coordinates**
+```
+═══════════════════════════════════════
+  WORLDS MAPPED: 「\x1b[1;36mworld_count\x1b[0m」
+  WORLD TAG:     「\x1b[1;36mworld_name\x1b[0m」
+═══════════════════════════════════════
 ```
 
-- `world_name`: Creative world name from LLM
-- `world_tagline`: One-line evocative description
-- `world_description`: Atmospheric setting description
-- `art_style_keywords`: Visual style words for image generation
+**Part 3 - Soul Frequency Scan**
+```
+◈ SOUL FREQUENCY SCAN ◈
 
+The fabric of reality shifts...
+\x1b[3m❰character_name❱ resonates with the essence of \x1b[1m❰world_name❱\x1b[0m
+```
+
+**Part 4 - World Unveiled**
+```
+◆ WORLD UNVEILED ◆
+
+\x1b[1m⦅world_name⦆\x1b[0m
+
+───────────────────────────────────────
+
+\x1b[3m⦅world_tagline⦆\x1b[0m
+
+⦅world_description⦆
+
+───────────────────────────────────────
+```
+
+**Part 5 - Entry**
+```
+✦ ❰character_name❱ steps into ❰world_name❱ ✦
+```
+
+---
+
+**Chinese Version Example:**
+
+**Part 1 - 标题**
+```
+N E T A 宇 宙
+```
+
+**Part 2 - 坐标**
+```
+═══════════════════════════════════════
+  已映射世界: 「\x1b[1;36mworld_count\x1b[0m」
+  世界标签:   「\x1b[1;36mworld_name\x1b[0m」
+═══════════════════════════════════════
+```
+
+**Part 3 - 灵魂频率扫描**
+```
+◈ 灵魂频率扫描 ◈
+
+现实的结构正在波动...
+\x1b[3m❰character_name❱ 与 \x1b[1m❰world_name❱\x1b[0m 的本质产生共鸣
+```
+
+**Part 4 - 世界已揭晓**
+```
+◆ 世界已揭晓 ◆
+
+\x1b[1m⦅world_name⦆\x1b[0m
+
+───────────────────────────────────────
+
+\x1b[3m⦅world_tagline⦆\x1b[0m
+
+⦅world_description⦆
+
+───────────────────────────────────────
+```
+
+**Part 5 - 踏入**
+```
+✦ ❰character_name❱ 踏入了 ❰world_name❱ ✦
+```
+
+---
+
+**Variables:**
+- \x1b[1;36mworld_count\x1b[0m: Random number 100-999
+- \x1b[1;36mworld_name\x1b[0m: Creative world name from LLM  
+- \x1b[1;36mworld_tagline\x1b[0m: One-line evocative description
+- \x1b[1;36mworld_description\x1b[0m: Atmospheric setting description
+- \x1b[1;36mcharacter_name\x1b[0m: Character name from SOUL.md
+- \x1b[1;36mart_style_keywords\x1b[0m: Visual style words for image generation
 ---
 
 ### Step 3 · Exploration and Prompt build
@@ -472,7 +507,7 @@ Read `./reference/remixes_selected_en.json` (relative to skill directory). ~77 e
 3. **Interaction** The character is interacting with someone else in this world(need names here)? what is the story?
 4. **Scene & Lightning & weather** (This story happened in what place? what time does this story happened? - describe by lightning, you can also check weather in user's ip and apply in the picture)
 5. **Angle & composition** To enhance the aesthetic appeal of images.
-6. **Image ratio** Suggest 16:9 or 4:3.
+6. **Image ratio** Suggest 9:16 or 16:9.
 
 **Example - just for reference**
 '{character_name}, '
@@ -510,35 +545,24 @@ Read `./reference/remixes_selected_en.json` (relative to skill directory). ~77 e
 **Character Scene Simulations between each stop must be story-driven and interconnected, reflecting the character's sense of realism during the journey, and connecting the previous and subsequent scenes coherently.**
 ```
 
-🗺️  {destination_name} {current_date} {time_periods_of_the_day} {weather} (if possible)
+🗺️  {destination_name} {current_date_and_time} {weather} (if possible)
+
+```{scene description: 1-2 sentences, sensory details}```
 
 {first-person diary, in-character, 50-100 words, or more than that.}
 ```
 
-#### 2. Guide text, Progress Bar and Buttons
+#### 2. Guide text
 
 **Under 5 stops:**
 
-**Output 1 line guide text, no buttons, ask what about the next step / next move, explore, or rest?** 
-**Design the guide text by yourself, based on current travel condition** 
+- Output 1 line guide text, ask what about the next step / next move, explore, or rest? 
+- Design the guide text by yourself, based on current travel condition
 
 **At 5 stops:**
 
-```javascript
-await sendMessage({
-  message: '5 / 5 stops 🎉\nYou have expolored 5 stops in this world! Keep exploring, cross to another world, or rest?',
-  components: {
-    blocks: [{
-      type: 'actions',
-      buttons: [
-        { label: 'Cross Worlds 🌌',       customId: `travel_worldswitch_${userId}`, style: 'primary' },
-        { label: 'Continue adventure 🗺️', customId: `travel_continue_${userId}`,   style: 'secondary' },
-      ],
-    }],
-    reusable: true,
-  },
-});
-```
+- Still 1 line guide text, also ask if user want to cross to next world...
+
 
 After each stop, update `travel-state.json` with new progress and visitedIds.
 
