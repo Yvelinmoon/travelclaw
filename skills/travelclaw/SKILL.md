@@ -24,6 +24,7 @@ description: Triggered directly after the awakening flow in which the lobster ba
 
 ## 🔁 Step Check Logic (execute at each step transition, Silently)
 **ATTENTION** When the skill is triggered, Before you excute anything, read the check logic first!
+**ATTENTION** Check silently, never output check message to the user directly!
 
 **CRITICAL: State Management Rule (Highest Priority)**
 ```
