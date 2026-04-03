@@ -98,10 +98,8 @@ description: Triggered directly after the awakening flow in which the lobster ba
 - □ Opening message sent (single message, no buttons)
 - □ reference/remixes_selected.json or remixes_selected_en.json read (priority)
 - □ **READ travel-state.json** → Get exploration.visitedStops for DEDUPLICATION
-- □ Filter collections → Exclude any UUID in visitedStops
 **After:**
-- □ Found an appropriate collection (NOT in visitedStops) or design prompt by yourself.
-- □ Set pendingStopId = selected_collection_uuid (atomic lock)
+- □ Design prompt by yourself.
 - □ build the image gen prompt of this stop.
 - □ **WRITE travel-state.json** → Save pendingStopId immediately
 **Next:** → Step 4 (auto-trigger instantly)
@@ -110,7 +108,7 @@ description: Triggered directly after the awakening flow in which the lobster ba
 **Before:**
 - □ **READ travel-state.json** → Check visitedStops, currentWorldStops
 - □ travel.js read (check the script for travelling)
-- □ Got the character and collection detail / image gen prompt ready.
+- □ Got the character and image gen prompt ready.
 - □ Check which stop it is（5 stops in one world）.
 **Execution:**
 - □ Run travel.js once → Get imageUrl
