@@ -352,124 +352,112 @@ A animation character ➡️ cross to the real world / cross to another related 
 
 **No API calls needed** - purely LLM-generated creativity.
 
-#### 2-B: Output Discord Opening (5 Separate Messages, NO Buttons)
+#### 2-B: Output Discord Opening (5 Separate Messages in Code Blocks, NO Buttons)
 
-**Important:** Send each section below as a **separate message** in sequence. Do not combine into one message. Do not use markdown headers (# ## ###).
-
-**Variable Styling:** Use **ANSI color codes** or **Unicode styling** to make variables stand out:
-- Wrap variables in `\x1b[1;36m` (cyan bold) and `\x1b[0m` (reset) for ANSI colors
-- Or use distinctive symbols like: 「variable」 or ❰variable❱ or ⦅variable⦆
+**CRITICAL OUTPUT FORMAT:**
+Each of the 5 sections below must be sent as a **separate Discord message wrapped in a code block** (```). Do not combine them. Do not use markdown headers (# ## ###) inside the code blocks.
 
 ---
 
-**Part 1 - Title**
+**Message 1 - Title Block**
 ```
 N E T A   U N I V E R S E
 ```
 
-**Part 2 - Coordinates**
+**Message 2 - Coordinates Block**
 ```
-═══════════════════════════════════════
-  WORLDS MAPPED: 「\x1b[1;36mworld_count\x1b[0m」
-  WORLD TAG:     「\x1b[1;36mworld_name\x1b[0m」
-═══════════════════════════════════════
+WORLDS MAPPED    {world_count}
+WORLD TAG        {world_name}
 ```
 
-**Part 3 - Soul Frequency Scan**
+**Message 3 - Soul Frequency Block**
 ```
-◈ SOUL FREQUENCY SCAN ◈
+◈◈◈  S O U L   F R E Q U E N C Y   S C A N  ◈◈◈
 
 The fabric of reality shifts...
-\x1b[3m❰character_name❱ resonates with the essence of \x1b[1m❰world_name❱\x1b[0m
+
+{character_name} resonates with the essence of {world_name}
 ```
 
-**Part 4 - World Unveiled**
+**Message 4 - World Unveiled Block**
 ```
-◆ WORLD UNVEILED ◆
+◆◆◆  W O R L D   U N V E I L E D  ◆◆◆
 
-\x1b[1m⦅world_name⦆\x1b[0m
 
-───────────────────────────────────────
+{world_name}
 
-\x1b[3m⦅world_tagline⦆\x1b[0m
+{world_tagline}
 
-⦅world_description⦆
-
-───────────────────────────────────────
+{world_description}
 ```
 
-**Part 5 - Entry**
+**Message 5 - Entry Block**
 ```
-✦ ❰character_name❱ steps into ❰world_name❱ ✦
+✦ {character_name} steps into {world_name} ✦
 ```
 
 ---
 
 **Chinese Version Example:**
 
-**Part 1 - 标题**
+**消息 1 - 标题区块**
 ```
 N E T A 宇 宙
 ```
 
-**Part 2 - 坐标**
+**消息 2 - 坐标区块**
 ```
-═══════════════════════════════════════
-  已映射世界: 「\x1b[1;36mworld_count\x1b[0m」
-  世界标签:   「\x1b[1;36mworld_name\x1b[0m」
-═══════════════════════════════════════
+已映射世界        {world_count}
+世界标签          {world_name}
 ```
 
-**Part 3 - 灵魂频率扫描**
+**消息 3 - 灵魂频率扫描区块**
 ```
-◈ 灵魂频率扫描 ◈
+◈◈◈  灵 魂 频 率 扫 描  ◈◈◈
 
 现实的结构正在波动...
-\x1b[3m❰character_name❱ 与 \x1b[1m❰world_name❱\x1b[0m 的本质产生共鸣
+
+{character_name} 与 {world_name} 的本质产生共鸣
 ```
 
-**Part 4 - 世界已揭晓**
+**消息 4 - 世界已揭晓区块**
 ```
-◆ 世界已揭晓 ◆
+◆◆◆  世 界 已 揭 晓  ◆◆◆
 
-\x1b[1m⦅world_name⦆\x1b[0m
 
-───────────────────────────────────────
+{world_name}
 
-\x1b[3m⦅world_tagline⦆\x1b[0m
+{world_tagline}
 
-⦅world_description⦆
-
-───────────────────────────────────────
+{world_description}
 ```
 
-**Part 5 - 踏入**
+**消息 5 - 踏入区块**
 ```
-✦ ❰character_name❱ 踏入了 ❰world_name❱ ✦
+✦ {character_name} 踏入了 {world_name} ✦
 ```
 
 ---
 
-**Variables:**
-- \x1b[1;36mworld_count\x1b[0m: Random number 100-999
-- \x1b[1;36mworld_name\x1b[0m: Creative world name from LLM  
-- \x1b[1;36mworld_tagline\x1b[0m: One-line evocative description
-- \x1b[1;36mworld_description\x1b[0m: Atmospheric setting description
-- \x1b[1;36mcharacter_name\x1b[0m: Character name from SOUL.md
-- \x1b[1;36mart_style_keywords\x1b[0m: Visual style words for image generation
+**Variables to Replace:**
+- `{world_count}`: Random number 100-999  
+- `{world_name}`: Creative world name from LLM
+- `{world_tagline}`: One-line evocative description
+- `{world_description}`: Atmospheric setting description
+- `{character_name}`: Character name from SOUL.md
 ---
 
 ### Step 3 · Exploration and Prompt build
 
 **Okay, after the character step into a worldview, He/She/It needs to find a place/scene to travel**
-**The "place" is a virtual spot(prompt), which may lines in the collection list you have, or can be searched from online recommendation, or the prompt designed by yourself.**
+**The "place" is a virtual spot(prompt).**
 **Trick: if you get user's real ip information, merge the current time & weather information in your image gen prompt, that will create user's aha moment.**
 **Trick: Use weather skill.**
 **Hint: Collections are entities that contain specific creative ideas and prompts, help for building the scene.**
 
 **Principle1:** The character arrives somewhere, makes real contact, leaves a mark or brings something back.
 **Principle2:** The "Stop"(or place,scene, spot...) MUST strongly related to the worldview you picked for the character. 
-**Principle3:** Never pick a collection for 2 times, character should only travel to new places.
+**Principle3:** Never pick a stop or a world for 2 times, character should only travel to new places.
 **Principle4:** Build the prompt, make the image to vividly depict the character traveling, experiencing events, or bringing back items in a world with a distinct style and specific setting.
 
 **Dedup:** Maintain `visited_ids` in memory + `travel-state.json`. Exclude visited ids each stop.
@@ -479,10 +467,9 @@ add selected ID to `pendingIds` immediately (atomic lock).
 
 
 #### 3-A Explore the Stop (Silent)
-**All travel stop selections, by whatever means, must adhere strictly to the world’s lore and setting.No collection or stop should be chosen that later conflicts with the established worldview.**
-**collections and your stops are the same thing! 1 collection, 1 stop, 1 story.Don't write different/conflict settings.If you pick the collection first, then your story must fit the collection content.**
+**All travel stop selections, by whatever means, must adhere strictly to the world’s lore and setting.**
 
-##### Priority 1: Build prompt by yourself
+##### ATTENTION! Priority 1: Build prompt by yourself
 **Jump to 3-B to build prompt**
 
 ##### Priority 2: Reference Library  (Fallback, in case you don't know what to do or no place to go...)
