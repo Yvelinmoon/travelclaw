@@ -534,9 +534,9 @@ Read `./reference/remixes_selected_en.json` (relative to skill directory). ~77 e
 
 🗺️  {destination_name} {current_date}(but in the year of the worldview){time_period}(don't be specific) {weather} (if possible)
 
-```{scene description: 1-2 sentences, sensory details}```
+```{scene description: 1-2 sentences, sensory details}``` (in a code block)
 
-{first-person diary, in-character, 50-100 words, or more than that.}
+{first-person diary, in-character, over 100 words.} (output directly)
 ```
 
 #### 2. Guide text
