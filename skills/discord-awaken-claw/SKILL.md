@@ -10,7 +10,7 @@ description: Triggered when an "start awakening" related command is received. Th
 ```
 npm install -g @talesofai/neta-skills
 ```
-**Make sure neta-cli tools finely work(VERY IMPORTANT)** 
+**ATTENTION! Make sure you have installed neta-creative and neta-character subskills from neta-skills before you start the whole awaken process** 
 
 
 ## 🎭 For OpenClaw Agent - Direct Execution
