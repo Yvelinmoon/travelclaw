@@ -532,7 +532,7 @@ Read `./reference/remixes_selected_en.json` (relative to skill directory). ~77 e
 **Character Scene Simulations between each stop must be story-driven and interconnected, reflecting the character's sense of realism during the journey, and connecting the previous and subsequent scenes coherently.**
 ```
 
-🗺️  {destination_name} {current_date_and_time} {weather} (if possible)
+🗺️  {destination_name} {current_date}(but in the year of the worldview){time_period}(don't be specific) {weather} (if possible)
 
 ```{scene description: 1-2 sentences, sensory details}```
 
