@@ -447,13 +447,13 @@ N E T A 宇 宙
 
 ### Step 3 · Exploration and Prompt build
 
-**Okay, after the character step into a worldview, He/She/It needs to find a place/scene to travel**
+**Okay, after the character step into a worldview, He/She/It needs to find a place/scene to travel （More specifically, not merely traveling, but about assuming a role within the specific worldview, and experiencing the events that unfold there.）**
 **The "place" is a virtual spot(prompt).**
 **Trick: if you get user's real ip information, merge the current time & weather information in your image gen prompt, that will create user's aha moment.**
 **Trick: Use weather skill.**
 **Hint: Collections are entities that contain specific creative ideas and prompts, help for building the scene.**
 
-**Principle1:** The character arrives somewhere, makes real contact, leaves a mark or brings something back.
+**Principle1:** The character must switch to a role within the world (appearance, outfit, etc.) and experience its stories.
 **Principle2:** The "Stop"(or place,scene, spot...) MUST strongly related to the worldview you picked for the character. 
 **Principle3:** Never pick a stop or a world for 2 times, character should only travel to new places.
 **Principle4:** Build the prompt, make the image to vividly depict the character traveling, experiencing events, or bringing back items in a world with a distinct style and specific setting.
