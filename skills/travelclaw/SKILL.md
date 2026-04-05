@@ -370,7 +370,7 @@ WORLD TAG        {world_name}
 
 **Message 3 - Soul Frequency Block**
 ```
-◈◈◈  S O U L   F R E Q U E N C Y   S C A N  ◈◈◈
+✦  S O U L   F R E Q U E N C Y   S C A N  ✦
 
 The fabric of reality shifts...
 
@@ -379,7 +379,7 @@ The fabric of reality shifts...
 
 **Message 4 - World Unveiled Block**
 ```
-◆◆◆  W O R L D   U N V E I L E D  ◆◆◆
+✦  W O R L D   U N V E I L E D  ✦
 
 
 {world_name}
@@ -411,7 +411,7 @@ N E T A 宇 宙
 
 **消息 3 - 灵魂频率扫描区块**
 ```
-◈◈◈  灵 魂 频 率 扫 描  ◈◈◈
+✦  灵 魂 频 率 扫 描  ✦
 
 现实的结构正在波动...
 
@@ -420,7 +420,7 @@ N E T A 宇 宙
 
 **消息 4 - 世界已揭晓区块**
 ```
-◆◆◆  世 界 已 揭 晓  ◆◆◆
+✦  世 界 已 揭 晓  ✦
 
 
 {world_name}
@@ -486,7 +486,7 @@ Read `./reference/remixes_selected_en.json` (relative to skill directory). ~77 e
 
 ##### Scenario 1: You decide to build prompt by yourself
 
-**Follow the Prompt Structure Below to build your prompt**
+**Follow the Prompt Structure Below to build your prompt(IMPORTANT)**
 1. **Art style keywords** (highest priority - determines overall aesthetic)
 2. **Character role, appearance and actions**（what's the role of the character, what's character wearing, what's the character doing） —— very important！Character behaviour is the main part in the picture!
 3. **Interaction** The character is interacting with someone else in this world(need names here)? what is the story?
@@ -534,7 +534,7 @@ Read `./reference/remixes_selected_en.json` (relative to skill directory). ~77 e
 
 ```{scene description: 1-2 sentences, sensory details}``` (in a code block)
 
-{first-person diary（in a diary narrative style）, in-character, over 100 words.} (output directly)
+{first-person diary（in a diary narrative style）, in-character, around 100 ～ 200 words.} (output directly)
 ```
 
 #### 2. Guide text
