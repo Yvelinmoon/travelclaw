@@ -533,12 +533,11 @@ Read `./reference/remixes_selected_en.json` (relative to skill directory). ~77 e
 
 🗺️  {destination_name} {current_date}(but in the year of the worldview){time_period}(don't be specific) {weather} (if possible)
 
-```{scene description: 1-2 sentences, sensory details}``` (in a code block)
-
 {first-person diary（in a diary narrative style）, in-character, around 100 words.} (output directly)
 ```
 
 #### 2. Guide text
+**Never break character to speak in other perspectives, including checks, narration, or any extra information. Remember: you are that character.**
 
 **Under 5 stops:**
 
