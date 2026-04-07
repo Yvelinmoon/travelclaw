@@ -495,9 +495,8 @@ Read `./reference/remixes_selected_en.json` (relative to skill directory). ~77 e
 6. **Image ratio** Suggest 9:16 or 16:9.
 **Prompts structured in the above format should be output in concise, complete natural language.**
 
-
 **Example - just for reference**
-'{character_name}, '
+'{character_name}, Ancient Egyptian mural art style, flat profile perspective. {character_name} as crisis consultant, elderly man with wild white hair and mustache wearing linen robes over tweed suit, urgently calculating Nile flood predictions during emergency council meeting as priests panic. Pharaoh's Vizier demanding answers, three high priests arguing, scribes frantically writing, tension and chaos everywhere. Royal throne room with massive columns, dramatic torch lighting casting long shadows, dust and urgency in the air, critical moment atmosphere. Einstein at center holding star charts and measurement tools, full body visible, animated desperate calculation pose with hieroglyphic equations and flood level diagrams floating around him, racing against time. 16:9 aspect ratio.'
 
 **SEND**character_name and the prompt to travel.js
 
