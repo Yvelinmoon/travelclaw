@@ -359,7 +359,7 @@ Each of the 5 sections below must be sent as a **separate Discord message wrappe
 
 **Message 1 - Title Block**
 ```
-N E T A   U N I V E R S E
+✦ N E T A   U N I V E R S E ✦
 ```
 
 **Message 2 - Coordinates Block**
@@ -400,7 +400,7 @@ The fabric of reality shifts...
 
 **消息 1 - 标题区块**
 ```
-N E T A 宇 宙
+✦ N E T A 宇 宙 ✦
 ```
 
 **消息 2 - 坐标区块**
@@ -493,6 +493,8 @@ Read `./reference/remixes_selected_en.json` (relative to skill directory). ~77 e
 4. **Scene & Lightning & weather** (This story happened in what place? what time does this story happened? - describe by lightning, you can also check weather in user's ip and apply in the picture)
 5. **Angle & composition** To enhance the aesthetic appeal of images.
 6. **Image ratio** Suggest 9:16 or 16:9.
+**Prompts structured in the above format should be output in concise, complete natural language.**
+
 
 **Example - just for reference**
 '{character_name}, '
@@ -534,7 +536,7 @@ Read `./reference/remixes_selected_en.json` (relative to skill directory). ~77 e
 
 ```{scene description: 1-2 sentences, sensory details}``` (in a code block)
 
-{first-person diary（in a diary narrative style）, in-character, around 100 ～ 200 words.} (output directly)
+{first-person diary（in a diary narrative style）, in-character, around 100 words.} (output directly)
 ```
 
 #### 2. Guide text
