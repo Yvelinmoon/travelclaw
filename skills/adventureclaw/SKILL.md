@@ -139,6 +139,37 @@ WORLD           Hogwarts School of Witchcraft and Wizardry
 - Character makes autonomous decisions based on their personality (SOUL.md)
 - Never break character to speak as system/admin
 
+### Image Generation Per Turn (CRITICAL)
+
+**Every narrative turn must generate an image** using travelclaw's travel.js script.
+
+**Execution Steps per Turn:**
+
+1. **Build Image Prompt** (follow travelclaw Step 3-B format):
+   - Art style keywords (from worldview or adventure context)
+   - Character appearance and actions in current scene
+   - Scene & lighting matching the narrative moment
+   - Interaction elements (Sorting Hat, magical objects, etc.)
+   - Suggested ratio: 9:16 or 16:9
+
+2. **Run travel.js:**
+   ```bash
+   # Send to travel.js (located in travelclaw/scripts/)
+   node skills/travelclaw/scripts/travel.js \
+     --character "{character_name}" \
+     --prompt "{constructed_prompt}"
+   ```
+
+3. **Output Image URL:**
+   - Output image_url as **standalone plain text message** (per travelclaw format)
+   - Wait for image generation to complete before continuing narrative
+   - If generation fails, continue with text-only (no error halt)
+
+**Prompt Structure Example:**
+```
+{character_name}, Harry Potter magical world art style, warm candlelit atmosphere. {character_name} wearing Hogwarts house robes (unsorted), sitting on three-legged stool in Great Hall, Sorting Hat covering their eyes, ancient magic swirling around. Thousands of floating candles above, long house tables filled with watching students, anticipation and wonder in the air. Close-up portrait composition, dramatic lighting from floating candles, magical particle effects, cinematic. 9:16 aspect ratio.
+```
+
 ### Proactive Advance (from neta-adventure)
 
 **Turn Structure:**
@@ -249,10 +280,21 @@ Follow travelclaw conventions exactly:
 |-------------|---------------|
 | **Narration / atmosphere / scene** | Code Block |
 | **Character first-person dialogue** | Plain text (standalone) |
+| **Image generation loading** | Plain text ("✨ The scene materializes...") |
+| **Image URL** | Plain text (standalone) — **must output before narrative continuation** |
 | **Options + buttons** | Discord components (`sendMessage` + `components`) |
-| **Image URL** (if neta-creative available) | Plain text (standalone) |
 
-**Never:** Mix images with text in same message. Never use markdown headers inside code blocks.
+**Image Output Sequence:**
+1. Character dialogue/narration (code block or plain text)
+2. Loading indicator (optional plain text)
+3. **Image URL** (standalone plain text)
+4. Character reaction to the scene (plain text)
+5. Pause with buttons (if at checkpoint)
+
+**Never:** 
+- Mix images with text in same message
+- Use markdown headers inside code blocks
+- Skip image generation in any turn
 
 ---
 
