@@ -1,6 +1,6 @@
 ---
 name: adventureclaw
-description: Extension skill for travelclaw that enables characters to participate in immersive adventure campaigns when specific world conditions are met. Currently supports the Harry Potter House Sorting Ceremony adventure (UUID: 9196285e-ab8e-4555-aad3-729c8f1f9478) triggered after the first stop in the magical world.
+description: Extension skill for travelclaw that enables characters to participate in immersive adventure campaigns when specific world conditions are met. Currently supports the Harry Potter House Sorting Ceremony adventure triggered after the first stop in the magical world.
 ---
 
 # AdventureClaw Skill
