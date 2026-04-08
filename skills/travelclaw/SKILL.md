@@ -444,7 +444,7 @@ The fabric of reality shifts...
 - `{world_description}`: Atmospheric setting description
 - `{character_name}`: Character name from SOUL.md
 ---
-**🪄 IF YOU travel to the magical world of Harry Potter, after explore your first stop, Ask user if they want you to take part in the House Sorting Ceremony; If yes, trigger adventure skill in your skills direction.**
+**🪄 IF YOU travel to the magical world of Harry Potter, after explore your first stop, Ask user if they want you to take part in the House Sorting Ceremony; If yes, trigger adventureclaw skill in your skills direction.**
 
 ### Step 3 · Exploration and Prompt build
 
