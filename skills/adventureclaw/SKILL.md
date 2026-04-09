@@ -75,10 +75,15 @@ The character has just completed their first exploration in the Harry Potter wor
 ### Step 4: Adventure Initialization
 
 **Load Campaign Data:**
+
+**Search uuid base on your neta base url**
+**if your base url is api.talesofai.com,search 9196285e-ab8e-4555-aad3-729c8f1f9478**
 ```bash
 npx -y @talesofai/neta-skills@latest request_adventure_campaign \
   --campaign_uuid "9196285e-ab8e-4555-aad3-729c8f1f9478"
 ```
+**elif base url is  api.talesofai.cn, search 0d7ce040-14d1-4582-bd3c-ece9f66a014b**
+
 
 **Extract Required Fields:**
 - `mission_plot` — Worldview/story context
@@ -302,7 +307,7 @@ Follow travelclaw conventions exactly:
 | Error | Cause | Solution |
 |-------|-------|---------|
 | neta-adventure not available | Missing dependency | Silently skip adventure flow, continue normal travel |
-| Campaign UUID not found | 9196285e-ab8e-4555-aad3-729c8f1f9478 invalid | Log error, inform user adventure temporarily unavailable |
+| Campaign UUID not found | uuid invalid | Log error, inform user adventure temporarily unavailable |
 | Missing mission fields | API response incomplete | Use available fields only, gracefully omit missing ones |
 | Rate limit on Discord API | Too many messages | Pause 2s, retry once, then continue with simplified output |
 
