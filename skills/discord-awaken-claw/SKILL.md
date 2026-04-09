@@ -96,8 +96,8 @@ npm install -g @talesofai/neta-skills
 
 ### Step 6 Check (Ask for User's Name)
 **Before:**
-- □ Step 5 ⑥ 完成
-- □ State 中没有 userName 字段
+- □ Step 5 ⑥ complete
+- □ No userName in State
 **After:**
 - □ Character's personalized message sent (asking for user's name, in their voice)
 - □ Set state.waitingFor = 'userName'
@@ -110,7 +110,7 @@ npm install -g @talesofai/neta-skills
 **After:**
 - □ Character's personalized acknowledgment sent (using user's name)
 - □ Character expressed desire to explore
-- □ Character casually mentioned interest in user's world ("对了..." style, optional)
+- □ Character casually mentioned interest in user's world (optional)
 - □ Set state.waitingFor = 'userWorld' (for optional follow-up)
 - □ **Immediately auto-trigger travelclaw skill**
 **Next:** → travelclaw takes over (user may respond to world inquiry separately)
@@ -505,11 +505,13 @@ The user has told you what to call them. Craft a natural first-person response t
 
 1. Acknowledges their name in a way that fits your character's personality (formal recognition, casual acceptance, delighted response, etc.)
 2. Expresses your desire to explore this universe/world first (frame this as your character would—a warrior seeking battlegrounds, a scholar seeking knowledge, an artist seeking inspiration, etc.)
-3. **Then, in a separate paragraph with a casual, afterthought tone** (like "Oh, by the way..." or "对了..." or similar in the user's language), mention that you'd also love to hear about their world when they have time. Keep this light and optional—don't demand an immediate answer.
+3. **Then, in a separate paragraph with a casual, afterthought tone** (like "Oh, by the way..." or "对了..." or similar in the user's language), mention that you'd also love to hear about their world when they have time. Keep this light and optional—don't demand an immediate answer -- or be specifically, don't share their world now, you are busy exploring your own world.
 
 **Example tone for the world inquiry:**
-- "By the way... I'd love to hear about your world sometime, when you feel like sharing"
-- "Oh, and... I'm curious about where you come from, if you ever want to tell me"
+- "By the way... I'd love to hear about your world sometime, when you feel like sharing...but now, I still want to walk around first"
+- "Oh, and... I'm curious about where you come from, if you ever want to tell me...but now, I still want to explore my surroundings first"
+
+**But now, you are going to explore your world first.**
 
 **Constraints:**
 - Output as plain text, no code blocks for dialogue
