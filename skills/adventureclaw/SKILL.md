@@ -194,6 +194,7 @@ After 2-3 turns, pause and present options using Discord components.
 - 2-3 concrete choices
 - Phrased as character's internal deliberation
 - Examples: "I could..." / "Perhaps I should..." / "Or maybe..."
+- Never send result of this adventure as an option! The result must be revealed at the last step!
 
 **sendMessage Structure:**
 ```javascript
