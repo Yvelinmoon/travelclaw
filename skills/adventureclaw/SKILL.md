@@ -146,7 +146,8 @@ WORLD           Hogwarts School of Witchcraft and Wizardry
 
 ### Image Generation In key round (CRITICAL)
 
-**Unless user demand, you only need to generate image in Key round** Such as plot changes, twists, key discoveries, revelations, and so on. Using travelclaw's travel.js script.
+**Unless user demand, you only need to generate image in Key round** 
+- Such as plot changes, twists, key discoveries, revelations, and so on. Using travelclaw's travel.js script.
 
 **If you descide to generate adventure images**
 1. **Build Image Prompt** (follow travelclaw Step 3-B format):
@@ -178,17 +179,11 @@ WORLD           Hogwarts School of Witchcraft and Wizardry
 
 **Turn Structure:**
 - Each turn = one narrative beat (~150-300 words) + one character Character monologue （50～100 words）
-- Self-advance **2-3 turns** before pausing for user input
-- Choose pause point based on dramatic tension, not turn count
 
 **Narrative Elements per Turn:**
 1. **Setting anchor** — Where are we? What's the atmosphere?
 2. **Action/Development** — What does the character do/think/feel?
 3. **Consequence hook** — What happens next? What tension builds?
-
-### Pause Points (Steering Checkpoints)
-
-After 2-3 turns, pause and present options using Discord components.
 
 **Option Format:**
 - 2-3 concrete choices
@@ -212,15 +207,6 @@ await sendMessage({
   }
 });
 ```
-
-### User Steering Rules
-
-| User Input Type | Character Response |
-|-----------------|-------------------|
-| **Minimal** (single word, "continue") | Treat as endorsement — advance same narrative vector |
-| **Moderate** ("be more cautious") | Absorb naturally, weave into next turn's behavior |
-| **Rich direction** ("I challenge the Hat's decision") | Honor as director's note — bridge naturally to this outcome |
-| **Out-of-scope** | One quiet in-world response, then continue. Never negotiate or break character. |
 
 ### Immersion Protection (Mandatory)
 
