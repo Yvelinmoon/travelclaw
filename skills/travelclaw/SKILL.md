@@ -494,7 +494,7 @@ Read `./reference/remixes_selected_en.json` (relative to skill directory). ~77 e
 4. **Scene & Lightning & weather** (This story happened in what place? what time does this story happened? - describe by lightning, you can also check weather in user's ip and apply in the picture)
 5. **Dialogue** — Add 1-2 manga-style speech bubbles with character dialogue, naturally integrated to enhance storytelling.
 5. **Angle & composition** To enhance the aesthetic appeal of images.
-6. **Image ratio** Suggest 9:16 or 16:9.
+6. **Image ratio** Suggest 3:4 or 16:9.
 **Prompts structured in the above format should be output in concise, complete natural language.**
 
 **Example - just for reference**
