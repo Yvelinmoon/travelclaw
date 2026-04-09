@@ -148,6 +148,7 @@ WORLD           Hogwarts School of Witchcraft and Wizardry
 
 **Unless user demand, you only need to generate image in Key round** 
 - Such as plot changes, twists, key discoveries, revelations, and so on. Using travelclaw's travel.js script.
+- Especially the Last round MUST be treated as the key round and generate image.
 
 **If you descide to generate adventure images**
 1. **Build Image Prompt** (follow travelclaw Step 3-B format):
