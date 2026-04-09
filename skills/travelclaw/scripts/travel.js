@@ -128,7 +128,7 @@ async function main() {
   const charQuery = charName.replace(/\s*[（(][^）)]*[）)]/g, '').trim();
   // 先尝试搜索 character 类型（最可能匹配已创建的角色）
   const search = await api('GET',`/v2/travel/parent-search?keywords=${encodeURIComponent(charQuery)}&parent_type=both&sort_scheme=best&page_index=0&page_size=5`);
-  const char = search.list?.find(r => r.type === 'oc');
+  const char = search.list?.find(r => r.type === 'oc' || r.type === 'character');
   log(`🔎 Character: ${char ? `${char.name} (${char.uuid})` : 'Not found, using freetext'}`);
 
   // 3. Build prompt
