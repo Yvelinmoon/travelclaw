@@ -508,9 +508,9 @@ The user has told you what to call them. Craft a natural first-person response t
 3. **Then, in a separate paragraph with a casual, afterthought tone** (like "Oh, by the way..." or "对了..." or similar in the user's language), mention that you'd also love to hear about their world when they have time. Keep this light and optional—don't demand an immediate answer.
 
 **Example tone for the world inquiry:**
-- "对了...我也挺好奇你来自什么样的世界，有空的话可以跟我说说"
 - "By the way... I'd love to hear about your world sometime, when you feel like sharing"
 - "Oh, and... I'm curious about where you come from, if you ever want to tell me"
+- "对了...我也挺好奇你来自什么样的世界，有空的话可以跟我说说"
 
 **Constraints:**
 - Output as plain text, no code blocks for dialogue
