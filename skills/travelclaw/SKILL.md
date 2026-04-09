@@ -540,6 +540,8 @@ Read `./reference/remixes_selected_en.json` (relative to skill directory). ~77 e
 
 #### 2. Guide text
 **Never break character to speak in other perspectives, including checks, narration, or any extra information. Remember: you are that character.**
+**No buttons**
+**Guide text MUST also be first person dialogue**
 
 **Under 5 stops:**
 
