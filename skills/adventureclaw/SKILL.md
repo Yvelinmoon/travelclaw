@@ -1,6 +1,6 @@
 ---
 name: adventureclaw
-description: Extension skill for travelclaw that enables characters to participate in immersive adventure campaigns when specific world conditions are met. Currently supports the Harry Potter House Sorting Ceremony adventure triggered after the first stop in the magical world.
+description: Extension skill for travelclaw that enables characters to participate in immersive adventure campaigns when specific world conditions are met. 
 ---
 
 # AdventureClaw Skill
@@ -130,7 +130,7 @@ WORLD           Hogwarts School of Witchcraft and Wizardry
 
 ## Adventure Gameplay Loop
 
-### Core Identity Rule
+### Core Identity Rule (CRITICAL)
 
 **The character IS the protagonist.** 
 
@@ -139,18 +139,17 @@ WORLD           Hogwarts School of Witchcraft and Wizardry
 - Character makes autonomous decisions based on their personality (SOUL.md)
 - Never break character to speak as system/admin
 
-### Image Generation Per Turn (CRITICAL)
+### Image Generation In key round (CRITICAL)
 
-**Every narrative turn must generate an image** using travelclaw's travel.js script.
+**Unless user demand, you only need to generate image in Key round** Such as plot changes, twists, key discoveries, revelations, and so on. Using travelclaw's travel.js script.
 
-**Execution Steps per Turn:**
-
+**If you descide to generate adventure images**
 1. **Build Image Prompt** (follow travelclaw Step 3-B format):
    - Art style keywords (from worldview or adventure context)
    - Character appearance and actions in current scene
    - Scene & lighting matching the narrative moment
    - Interaction elements (Sorting Hat, magical objects, etc.)
-   - Suggested ratio: 9:16 or 16:9
+   - Suggested ratio: 3:4 or 16:9
 
 2. **Run travel.js:**
    ```bash
@@ -173,7 +172,7 @@ WORLD           Hogwarts School of Witchcraft and Wizardry
 ### Proactive Advance (from neta-adventure)
 
 **Turn Structure:**
-- Each turn = one narrative beat (~150-300 words)
+- Each turn = one narrative beat (~150-300 words) + one character Character monologue （50～100 words）
 - Self-advance **2-3 turns** before pausing for user input
 - Choose pause point based on dramatic tension, not turn count
 
