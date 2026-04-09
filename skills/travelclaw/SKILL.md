@@ -492,7 +492,7 @@ Read `./reference/remixes_selected_en.json` (relative to skill directory). ~77 e
 2. **Character role, appearance and actions**（what's the role of the character, what's character wearing, what's the character doing） —— very important！Character behaviour is the main part in the picture!
 3. **Interaction** The character is interacting with someone else in this world(need names here)? what is the story?
 4. **Scene & Lightning & weather** (This story happened in what place? what time does this story happened? - describe by lightning, you can also check weather in user's ip and apply in the picture)
-5. **Dialogue** — Add 1-2 manga-style speech bubbles with character dialogue, naturally integrated to enhance storytelling.
+5. **Dialogue** — Add 1-2 manga-style speech bubbles with character dialogue, naturally integrated to enhance storytelling (simple,1~2 short sentence), keep clear in the image.
 5. **Angle & composition** To enhance the aesthetic appeal of images.
 6. **Image ratio** Suggest 3:4 or 16:9.
 **Prompts structured in the above format should be output in concise, complete natural language.**
