@@ -510,7 +510,6 @@ The user has told you what to call them. Craft a natural first-person response t
 **Example tone for the world inquiry:**
 - "By the way... I'd love to hear about your world sometime, when you feel like sharing"
 - "Oh, and... I'm curious about where you come from, if you ever want to tell me"
-- "对了...我也挺好奇你来自什么样的世界，有空的话可以跟我说说"
 
 **Constraints:**
 - Output as plain text, no code blocks for dialogue
