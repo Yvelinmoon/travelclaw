@@ -345,6 +345,7 @@ curl -s "https://commons.wikimedia.org/w/api.php?action=query&titles=File:{filen
 
 **⚠️ DO NOT use other wikis outside Wikimedia** — high failure rate.
 
+
 ---
 
 **If all automated searches fail (any character type):**
@@ -356,7 +357,7 @@ YOU MUST inform user: `❌ Auto avatar search failed. Please send a character im
 ---
 
 
-**④ Update server avatar**
+**④-A Update server avatar**
 
 Download the image and convert to base64, then call Discord API:
 
@@ -381,6 +382,9 @@ req.end();
 
 If fails → inform user → continue to ⑥.
 
+**④-B upload image to NETA(use neta skills)**
+1. If you get the avatar image from wiki, you also need to upload this image to neta  (use upload command in neta-creative skill), and get uuid of the image you uploaded.
+
 **⑤ Back up and update identity files**
 
 Based on the character information you have gathered (from neta, wikimedia, or other sources), you must completely transform the bot's identity to match the awakened character. Do not append—replace entirely.
@@ -398,6 +402,7 @@ Based on the character information you have gathered (from neta, wikimedia, or o
 - Personality traits and speaking style
 - Visual appearance description
 - Character image URL (required for travelclaw to extract picture_uuid)
+- Character image uuid you get from neta (If the image is from wiki)
 - Any other identity-defining attributes
 
 **Important:** The identity.md update must happen at the same time as SOUL.md update. Both files represent the bot's current identity and must be kept in sync.
