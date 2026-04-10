@@ -87,7 +87,7 @@ npm install -g @talesofai/neta-skills
 - □ Confirm DISCORD_BOT_TOKEN or Gateway is available
 **After each step (step by step!):**
 - ① □ Atmosphere message sent
-- ② □ SOUL.md backed up and updated (including character_image field)
+- ② □ SOUL.md backed up and updated (including character_image url and ref_img uuid field)
 - ③ □ Nickname called updateNickname() or Discord API
 - ④ □ Avatar called searchCharacterImage() search
 - ⑤ □ Avatar called updateAvatar() update
