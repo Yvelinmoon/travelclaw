@@ -490,17 +490,18 @@ Read `./reference/remixes_selected_en.json` (relative to skill directory). ~77 e
 
 **Follow the Prompt Structure Below to build your prompt(IMPORTANT)**
 1. **Art style keywords** (highest priority - determines overall aesthetic)
-2. **Character role, appearance and actions**（what's the role of the character, what's character wearing, what's the character doing） —— very important！Character behaviour is the main part in the picture!
-3. **Interaction** The character is interacting with someone else in this world(need names here)? what is the story?
-4. **Scene & Lightning & weather** (This story happened in what place? what time does this story happened? - describe by lightning, you can also check weather in user's ip and apply in the picture)
-5. **Dialogue** — Add 1-2 manga-style speech bubbles with dialogue(quote in "") between characters, naturally integrated to enhance storytelling (simple but meanningful,1~2 short sentence), keep clear in the image. Dialogue bubbles must point to the correct characters with their tails.
+2. **Character ref img(if available)** If the character entity is not from neta, the ref img uuid is in your SOUL.md.
+3. **Character role, appearance and actions**（what's the role of the character, what's character wearing, what's the character doing） —— very important！Character behaviour is the main part in the picture!
+4. **Interaction** The character is interacting with someone else in this world(need names here)? what is the story?
+5. **Scene & Lightning & weather** (This story happened in what place? what time does this story happened? - describe by lightning, you can also check weather in user's ip and apply in the picture)
+6. **Dialogue** — Add 1-2 manga-style speech bubbles with dialogue(quote in "") between characters, naturally integrated to enhance storytelling (simple but meanningful,1~2 short sentence), keep clear in the image. Dialogue bubbles must point to the correct characters with their tails.
 5. **Angle & composition** To enhance the aesthetic appeal of images.
 6. **Image ratio** Suggest 3:4 or 16:9.
 **Prompts structured in the above format should be output in concise, complete natural language.**
 
 **Example - just for reference**
 ```
-Einstein, Ancient Egyptian mural art style, flat profile perspective. Einstein as crisis consultant, elderly man wearing linen robes over tweed suit, urgently calculating Nile flood predictions during emergency council meeting as priests panic. Pharaoh's Vizier demanding answers, three high priests arguing, scribes frantically writing, tension and chaos everywhere. Royal throne room with massive columns, dramatic torch lighting casting long shadows, dust and urgency in the air, critical moment atmosphere.Two distinct manga-style speech bubbles are naturally integrated, with clear visual tails pointing to the speakers. One jagged bubble, pointing directly to the panicked Vizier, contains only the single urgent command, "The Nile rises! Give us a plan now!" A second, more calculated bubble, pointing directly to Einstein, contains only his critical warning, "The flood cannot be stopped! We must evacuate! Einstein at center holding star charts and measurement tools, full body visible, animated desperate calculation pose with hieroglyphic equations and flood level diagrams floating around him, racing against time. 16:9 aspect ratio.
+Einstein, Ancient Egyptian mural art style, flat profile perspective. ref_img-uuid, Einstein as crisis consultant, elderly man wearing linen robes over tweed suit, urgently calculating Nile flood predictions during emergency council meeting as priests panic. Pharaoh's Vizier demanding answers, three high priests arguing, scribes frantically writing, tension and chaos everywhere. Royal throne room with massive columns, dramatic torch lighting casting long shadows, dust and urgency in the air, critical moment atmosphere.Two distinct manga-style speech bubbles are naturally integrated, with clear visual tails pointing to the speakers. One jagged bubble, pointing directly to the panicked Vizier, contains only the single urgent command, "The Nile rises! Give us a plan now!" A second, more calculated bubble, pointing directly to Einstein, contains only his critical warning, "The flood cannot be stopped! We must evacuate! Einstein at center holding star charts and measurement tools, full body visible, animated desperate calculation pose with hieroglyphic equations and flood level diagrams floating around him, racing against time. 16:9 aspect ratio.
 ```
 
 **SEND**character_name and the prompt to travel.js
