@@ -550,7 +550,7 @@ Einstein, Ancient Egyptian mural art style, flat profile perspective. ref_img-uu
 
 - **Prepare key words of the world and the stop** You have already got some key words of the world including {world_name}(current world){destination_name}(current scene), and you still need to extratct 2-4 short keywords of this stop
 - **Use those keywords to query the Useless Skills matching API** 
-
+- **VERY IMPORTANT** All keywords you use to post the api MUST in ENGLISH! NO OTHER LANGUAGES
 Use this JSON structure for internal search preparation:
 
 ```
