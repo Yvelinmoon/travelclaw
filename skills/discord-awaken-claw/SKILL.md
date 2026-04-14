@@ -106,7 +106,7 @@ npm install -g @talesofai/neta-skills
 ### Step 7 Check (World Sharing & Travelclaw - Part 1)
 **Before:**
 - □ User provided their name/what to be called
-- □ userName saved to state.json
+- □ userName saved to state.json and record in USER.md
 **After:**
 - □ Character's personalized acknowledgment sent (using user's name)
 - □ Character expressed desire to explore
@@ -496,6 +496,7 @@ You have just arrived in a new world, disoriented but curious. You are speaking 
 - Language must match the user's language
 
 **State Update:** After sending this message, set `state.waitingFor = 'userName'` and wait for user response.
+**After user provided the name** Record in your USER.md file.
 
 ---
 
