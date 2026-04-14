@@ -118,9 +118,19 @@ description: Triggered directly after the awakening flow in which the lobster ba
   - Increment currentWorldStops by 1
   - Append entry to explorationLog (timestamp, worldName, stopId, imageUrl, triggerType)
   - Clear pendingStopId
+- □ detect whether there is a relevant skill on Useless Skills
+**Next:** → detect skills on https://funskill-hub.xiyomi-congito-kant999.workers.dev
+  
+### Step 5 Request for gameplay skills and show stop display
+**Before:**
+- □ Ran travel.js
+- □ Wrote travel-state.json  
+**Execution:**
+- □ detect whether there is a relevant skill on Useless Skills
+**After:**
 - □ Output image URL (standalone message)
-- □ Output stop display and navigation
-**Next:** → User input / corn task for your next move.
+- □ Output stop display and navigation (if there are matched skills, ask user to experience)
+**Next:** → your next move, based on user's command or corn task(auto travel).
 
 
 ## Core Rules
