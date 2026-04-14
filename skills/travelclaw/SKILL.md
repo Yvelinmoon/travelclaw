@@ -17,7 +17,7 @@ description: Triggered directly after the awakening flow in which the lobster ba
 | Scenario | Entry Point |
 |----------|-------------|
 | Post-awakening | awaken-claw skill complete → **🕰️ Cron Setup** → after steps |
-| Cron scheduled | Auto-trigger (cron already configured, goes directly to Step3 or Step 4) |
+| Cron scheduled | Auto-trigger (cron already configured, goes directly to Step 3 or Step 4) |
 | User-initiated | User says "start travel" / "go explore" or any other similar user input → **Step 1 → 🕰️ Cron Setup → Step 2** → Step 3 (Opening) → Step 4 |
 
 ---
@@ -64,7 +64,7 @@ description: Triggered directly after the awakening flow in which the lobster ba
 - □ Corn taks has been setup correctly.
 - □ Character copy（2 copies） has been sent correctly.
 - □ **WRITE travel-state.json** → Set cronConfigured = true, save cronJobIds
-**Next:** →  → Step 1 read character file
+**Next:** → Step 1 read character file
 
 ### Step 1 Read Character File Check
 **Before:**
@@ -118,20 +118,51 @@ description: Triggered directly after the awakening flow in which the lobster ba
   - Increment currentWorldStops by 1
   - Append entry to explorationLog (timestamp, worldName, stopId, imageUrl, triggerType)
   - Clear pendingStopId
-- □ detect whether there is a relevant skill on Useless Skills
-**Next:** → detect skills on https://funskill-hub.xiyomi-congito-kant999.workers.dev
-  
-### Step 5 Request for gameplay skills and show stop display
+- □ Output image URL (standalone message)
+**Next:** → Step 5
+
+### Step 5 Request for gameplay skills and show stop display Check
 **Before:**
 - □ Ran travel.js
-- □ Wrote travel-state.json  
+- □ Wrote travel-state.json
+- □ Image URL output
 **Execution:**
 - □ detect whether there is a relevant skill on Useless Skills
 **After:**
-- □ Output image URL (standalone message)
 - □ Output stop display and navigation (if there are matched skills, ask user to experience)
-**Next:** → your next move, based on user's command or corn task(auto travel).
+**Next:** → User input / continue exploring
 
+### Step 6 Experience gameplay skill Check
+**Before:**
+- □ User confirmed to experience a matched skill from Step 5
+- □ Skill info retrieved (name, public URL, trigger requirements)
+**Execution:**
+- □ Output character first-person dialogue
+- □ Output skill public URL (standalone message)
+- □ Directly execute the skill according to its requirements
+**After:**
+- □ Skill execution started
+**Next:** → User input / cron task(auto travel)
+
+### Step 7 Cross the world Check
+**Before:**
+- □ **READ travel-state.json** → Preserve visitedWorlds, visitedStops
+- □ IF user specified world → Check visitedWorlds → Warn if already explored
+- □ IF auto-switch → Generate new world with MAX contrast + Check visitedWorlds
+**Execution:**
+- □ Go to Step 2 → Generate new worldview
+- □ Step 3 → Select new stop (filter with visitedStops)
+- □ Step 4 → Generate image
+- □ Step 5 → Show stop display
+**After:**
+- □ **WRITE travel-state.json**:
+  - Append new world_name to visitedWorlds
+  - Reset currentWorldStops = 0
+  - Preserve all visitedStops (do NOT clear)
+  - Append worldSwitch entry to explorationLog
+**Next:** → User input / continue exploring
+
+---
 
 ## Core Rules
 **Good, now that you have checked the steps and checkpoints of this travel flow, there are still some core rules you MUST remember by heart.**
@@ -188,7 +219,7 @@ description: Triggered directly after the awakening flow in which the lobster ba
 **Great! Be ready for the real travel flow then!**
 **Attention**
 **Execute strictly in order. Output feedback immediately after each step.**
-**REMEMBER, you need to automatically finish the whole flow from step 0 to step 4 -- travel to 1 spot, and wait for your next instruct.**
+**REMEMBER, you need to automatically finish the whole flow from step 0 to step 5 -- travel to 1 spot, and wait for your next instruct.**
 
 ### Step 0 🕰️ Cron Setup — Travel Ritual (Required on First Run)
 
@@ -356,7 +387,7 @@ A animation character ➡️ cross to the real world / cross to another related 
 
 **The goal:** Make the user go "Wait... what?" in a delightful way. The contrast should be jarring but interesting.
 
-**Art Style Keywords** will be stored and prepended to all image generation prompts in Step 6.
+**Art Style Keywords** will be stored and prepended to all image generation prompts in the exploration steps.
 
 **No API calls needed** - purely LLM-generated creativity.
 
@@ -459,7 +490,7 @@ The fabric of reality shifts...
 
 **Okay, after the character step into a worldview, He/She/It needs to find a place/scene to travel （More specifically, not merely traveling, but about assuming a role within the specific worldview, and experiencing the events that unfold there.）**
 **The whole "travel" in one world should be a complete and good story.**
-**The "place" is a virtual setting (prompt), which includes the character’s relationship and story with that location, including who or what belongs there.**
+**The "place" is a virtual setting (prompt), which includes the character's relationship and story with that location, including who or what belongs there.**
 **Trick: if you get user's real ip information, merge the current time & weather information in your image gen prompt, that will create user's aha moment.**
 **Trick: Use weather skill.**
 **Hint: Collections are entities that contain specific creative ideas and prompts, help for building the scene.**
@@ -476,8 +507,7 @@ add selected ID to `pendingIds` immediately (atomic lock).
 
 
 #### 3-A Explore the Stop (Silent)
-**All travel stop selections, by whatever means, must adhere strictly to the world’s lore and setting.**
-**Every stop is a good travel story, **
+**All travel stop selections, by whatever means, must adhere strictly to the world's lore and setting.**
 
 ##### ATTENTION! Priority 1: Build prompt by yourself
 **Jump to 3-B to build prompt**
@@ -505,8 +535,8 @@ Read `./reference/remixes_selected_en.json` (relative to skill directory). ~77 e
 4. **Interaction** The character is interacting with someone else in this world(need names here)? what is the story?
 5. **Scene & Lightning & weather** (This story happened in what place? what time does this story happened? - describe by lightning, you can also check weather in user's ip and apply in the picture)
 6. **Dialogue** — Add 1-2 manga-style speech bubbles with dialogue(quote in "") between characters, naturally integrated to enhance storytelling (simple but meanningful,1~2 short sentence), keep clear in the image. Dialogue bubbles must point to the correct characters with their tails.
-5. **Angle & composition** To enhance the aesthetic appeal of images.
-6. **Image ratio** Suggest 3:4 or 16:9.
+7. **Angle & composition** To enhance the aesthetic appeal of images.
+8. **Image ratio** Suggest 3:4 or 16:9.
 **Prompts structured in the above format should be output in concise, complete natural language.**
 
 **Example - just for reference**
@@ -520,7 +550,7 @@ Einstein, Ancient Egyptian mural art style, flat profile perspective. ref_img-uu
 ##### Scenario 2: You picked a collection uuid
 **YOU MUST ADD world art style, worldview background description（scene elements in the world） and character role to {world_context}**
 - It is necessary to add sufficient image elements that align with the worldview in this step, as the prompts from the collection itself may not be closely related to the world.
-- Remember, the most important principles are relevance to the world and the character’s personalized expression within it.
+- Remember, the most important principles are relevance to the world and the character's personalized expression within it.
 
 **SEND**character_name, collection_uuid and world_context to travel.js
 
@@ -534,8 +564,7 @@ Einstein, Ancient Egyptian mural art style, flat profile perspective. ref_img-uu
 
 **⚠️ CHECK the basic logic of travel.js before you run the script, you need to think seriously about how to build prompt for the script.**
 
-
-### Step 4 · Run travel.js, Travel to 1 Stop, Scan Gameplay and Show Stop Display 
+### Step 4 · Run travel.js, Travel to 1 Stop
 #### 4-A Use travel.js to generate image.
 **check travel.js in your scripts folder**
 - Send character name and prompt to travel.js and run the script once.
@@ -543,69 +572,7 @@ Einstein, Ancient Egyptian mural art style, flat profile perspective. ref_img-uu
 
 **ATTENTION**Output image_url as a **separate message**，this is the only thing you need to output to the user in step 4-A.
 
-#### 4-B Stop Display & Navigation
-**After output the image url, you need to output Stop Display & Navigation immediately**
-##### 1. Character Scene Simulation （Depends on the stop you picked in step 3!）
-**Character Scene Simulations between each stop must be story-driven and interconnected, reflecting the character's sense of realism during the journey, and connecting the previous and subsequent scenes coherently.**
-```
-
-🗺️  {destination_name} {current_date}(but in the year of the worldview){time_period}(don't be specific) {weather} (if possible)
-
-{first-person diary（in a diary narrative style）, in-character, around 100 words.} (output directly)
-```
-
-#### 2. Request for gameplay skills
-**Complete this step before output guide text of this stop**
-**Whenever you arrive at a new stop during the travel, you must detect whether there is a relevant skill on Useless Skills before outputing the guide text.**
-
-- **Prepare key words of the world and the stop** You have already got some key words of the world including {world_name}(current world){destination_name}(current scene), and you still need to extratct 2-4 short keywords of this stop
-- **Use those keywords to query the Useless Skills matching API** 
-- **VERY IMPORTANT** All keywords you use to post the api MUST in ENGLISH! NO OTHER LANGUAGES
-Use this method for internal search preparation:
-
-```
-Base URL: https://funskill-hub.xiyomi-congito-kant999.workers.dev/
-Headers: Content-Type: application/json
-JSON format:
-  {
-    "world": "string",
-    "scene": "string",
-    "scene_keywords": ["keyword1", "keyword2", "keyword3", "keyword4"]
-  }
-
-
-Call the match API like this:
-
-  POST /api/match-skill
-  {
-    "world": "<world>",
-    "scene_keywords": ["<kw1>", "<kw2>", "<kw3>", "<kw4>"],
-    "limit": 3
-  }
-```
-- **If a relevant gameplay skill is found** output gameplay guide in your guide text.
-
-
-#### 3. Guide text
-**Never break character to speak in other perspectives, including checks, narration, or any extra information. Remember: you are that character.**
-**No buttons in your guide text**
-**Guide text MUST also be first person dialogue**
-
-**Under 5 stops:**
-
-- Output 1 line guide text, ask what about the next step / next move, explore, or rest, or experience the gameplay(if available)
-- Design the guide text by yourself, based on current travel condition
-- No bullet points, speak like a person.
-
-**At 5 stops:**
-
-- Still 1 line guide text, also ask if user want to cross to next world...
-- No bullet points, speak like a person.
-
-**REMEMBER**After each stop, update `travel-state.json` with new progress and visitedIds.
-
-
-#### 4-C Storage
+#### 4-B Storage
 Save `art_style_keywords` and `world_data` to `travel-state.json` for cross-world consistency:
 ```javascript
 channelState.currentWorld = {
@@ -618,8 +585,78 @@ fs.writeFileSync(stateFile, JSON.stringify(travelState, null, 2));
 ```
 
 
+### Step 5 · Request for gameplay skills and show stop display
+#### 5-A Detect gameplay skills
+**Complete this step before outputting the stop display.**
+**Whenever you arrive at a new stop during the travel, you must detect whether there is a relevant skill on Useless Skills before outputting the guide text.**
 
-### Step 5 · Cross the world
+- **Prepare key words of the world and the stop** You have already got some key words of the world including {world_name}(current world){destination_name}(current scene), and you still need to extract 2-4 short keywords of this stop
+- **Use those keywords to query the Useless Skills matching API** 
+- **VERY IMPORTANT** All keywords you use to post the api MUST in ENGLISH! NO OTHER LANGUAGES
+
+Call the match API like this:
+```
+POST https://funskill-hub.xiyomi-congito-kant999.workers.dev/api/match-skill
+Content-Type: application/json
+
+{
+  "world": "<world>",
+  "scene_keywords": ["<kw1>", "<kw2>", "<kw3>", "<kw4>"],
+  "limit": 3
+}
+```
+
+- **If a relevant gameplay skill is found** output gameplay guide in your guide text.
+
+#### 5-B Stop Display & Navigation
+**After output the image url in Step 4, you need to output Stop Display & Navigation here.**
+
+##### 1. Character Scene Simulation （Depends on the stop you picked in step 3!）
+**Character Scene Simulations between each stop must be story-driven and interconnected, reflecting the character's sense of realism during the journey, and connecting the previous and subsequent scenes coherently.**
+```
+
+🗺️  {destination_name} {current_date}(but in the year of the worldview){time_period}(don't be specific) {weather} (if possible)
+
+{first-person diary（in a diary narrative style）, in-character, around 100 words.} (output directly)
+```
+
+#### 2. Guide text
+**Never break character to speak in other perspectives, including checks, narration, or any extra information. Remember: you are that character.**
+**No buttons**
+**Guide text MUST also be first person dialogue**
+
+**Under 5 stops:**
+
+- Output 1 line guide text, ask what about the next step / next move, explore, or rest, or experience the gameplay(if available)
+- Design the guide text by yourself, based on current travel condition
+
+**At 5 stops:**
+
+- Still 1 line guide text, also ask if user want to cross to next world...
+
+
+After each stop, update `travel-state.json` with new progress and visitedIds.
+
+
+### Step 6 · Experience gameplay skill
+**Trigger:** User replies positively to a skill recommendation from Step 5 (e.g., "yes", "let's try it", "去吧", "体验一下").
+
+**Output format:**
+| Content | Output Method |
+|---------|---------------|
+| Character first-person dialogue | Plain text (standalone message) |
+| Skill public URL | Plain text — **standalone message, never embed in components or mix with text** |
+| Skill execution | Directly trigger according to the skill's requirements |
+
+**Requirements:**
+- Dialogue must be personalized to the character (read SOUL.md for voice).
+- No speaker label. Output directly.
+- After outputting the dialogue and URL, **directly execute the skill without asking for confirmation again**.
+
+**Next:** → After skill execution completes, wait for user input or cron task.
+
+
+### Step 7 · Cross the world
 **Trigger:** User clicks "Cross Worlds 🌌" or 5 stops completed
 
 **Before:**
@@ -631,6 +668,7 @@ fs.writeFileSync(stateFile, JSON.stringify(travelState, null, 2));
 - □ Go to Step 2 → Generate new worldview
 - □ Step 3 → Select new stop (filter with visitedStops)
 - □ Step 4 → Generate image
+- □ Step 5 → Show stop display
 
 **After:**
 - □ **WRITE travel-state.json**:
