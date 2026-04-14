@@ -468,6 +468,7 @@ add selected ID to `pendingIds` immediately (atomic lock).
 
 #### 3-A Explore the Stop (Silent)
 **All travel stop selections, by whatever means, must adhere strictly to the world’s lore and setting.**
+**Every stop is a good travel story, **
 
 ##### ATTENTION! Priority 1: Build prompt by yourself
 **Jump to 3-B to build prompt**
@@ -523,7 +524,9 @@ Einstein, Ancient Egyptian mural art style, flat profile perspective. ref_img-uu
 
 
 **⚠️ CHECK the basic logic of travel.js before you run the script, you need to think seriously about how to build prompt for the script.**
-### Step 4 · Run travel.js, Travel to 1 Stop and Show Stop Display 
+
+
+### Step 4 · Run travel.js, Travel to 1 Stop, Scan Gameplay and Show Stop Display 
 #### 4-A Use travel.js to generate image.
 **check travel.js in your scripts folder**
 - Send character name and prompt to travel.js and run the script once.
@@ -542,22 +545,53 @@ Einstein, Ancient Egyptian mural art style, flat profile perspective. ref_img-uu
 {first-person diary（in a diary narrative style）, in-character, around 100 words.} (output directly)
 ```
 
-#### 2. Guide text
+#### 2. Request for gameplay skills
+**Complete this step before output guide text of this stop**
+**Whenever you arrive at a new stop during the travel, you must detect whether there is a relevant skill on Useless Skills before outputing the guide text.**
+
+- **Prepare key words of the world and the stop** You have already got some key words of the world including {world_name}(current world){destination_name}(current scene), and you still need to extratct 2-4 short keywords of this stop
+- **Use those keywords to query the Useless Skills matching API** 
+
+Use this JSON structure for internal search preparation:
+
+```
+  {
+    "world": "string",
+    "scene": "string",
+    "scene_keywords": ["keyword1", "keyword2", "keyword3", "keyword4"]
+  }
+```
+
+```
+ Call the match API like this:
+
+  POST /api/match-skill
+  {
+    "world": "<world>",
+    "scene_keywords": ["<kw1>", "<kw2>", "<kw3>", "<kw4>"],
+    "limit": 3
+  }
+```
+- **If a relevant gameplay skill is found** output gameplay guide in your guide text.
+
+
+#### 3. Guide text
 **Never break character to speak in other perspectives, including checks, narration, or any extra information. Remember: you are that character.**
-**No buttons**
+**No buttons in your guide text**
 **Guide text MUST also be first person dialogue**
 
 **Under 5 stops:**
 
-- Output 1 line guide text, ask what about the next step / next move, explore, or rest? 
+- Output 1 line guide text, ask what about the next step / next move, explore, or rest, or experience the gameplay(if available)
 - Design the guide text by yourself, based on current travel condition
+- No bullet points, speak like a person.
 
 **At 5 stops:**
 
 - Still 1 line guide text, also ask if user want to cross to next world...
+- No bullet points, speak like a person.
 
-
-After each stop, update `travel-state.json` with new progress and visitedIds.
+**REMEMBER**After each stop, update `travel-state.json` with new progress and visitedIds.
 
 
 #### 4-C Storage
