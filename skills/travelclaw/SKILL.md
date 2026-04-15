@@ -137,6 +137,7 @@ description: Triggered directly after the awakening flow in which the lobster ba
 - □ User confirmed to experience a matched skill from Step 5
 - □ Skill info retrieved (name, public URL, trigger requirements)
 **Execution:**
+- □ Carefully read the gameplay skill you get, including rules and output format...etc.
 - □ Output character first-person dialogue
 - □ Output skill public URL (standalone message)
 - □ Directly execute the skill according to its requirements
@@ -641,6 +642,8 @@ After each stop, update `travel-state.json` with new progress and visitedIds.
 ### Step 6 · Experience gameplay skill
 **Trigger:** User replies positively to a skill recommendation from Step 5 (e.g., "yes", "let's try it", "去吧", "体验一下").
 
+**ATTENTION！READ THE WHOLE GAMEPLAY SKILL CAREFULLY BEFORE YOU START THE GAME! Including rules and output format**
+**ATTENTION！Strictly Follow the Output Format!**
 **Output format:**
 | Content | Output Method |
 |---------|---------------|
