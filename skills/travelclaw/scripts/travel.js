@@ -61,6 +61,35 @@ async function api(method, path, body) {
 const log = msg => process.stderr.write(msg + '\n');
 const out = data => console.log(JSON.stringify(data));
 
+// ── Helper: Extract English keywords for skill matching ─────────────────────
+function extractKeywords(worldName, sceneName, promptText) {
+  const raw = `${worldName} ${sceneName} ${promptText}`;
+  const keywords = raw
+    .toLowerCase()
+    .replace(/[^a-z0-9\s,，]/g, ' ')
+    .split(/[\s,，]+/)
+    .filter(w => w.length >= 3)
+    .slice(0, 8);
+  return [...new Set(keywords)].slice(0, 4);
+}
+
+async function matchSkills(worldName, sceneName, promptText) {
+  const keywords = extractKeywords(worldName, sceneName, promptText);
+  if (!keywords.length) return [];
+  try {
+    const res = await fetch('https://funskill-hub.xiyomi-congito-kant999.workers.dev/api/match-skill', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ world: worldName, scene_keywords: keywords, limit: 3 }),
+    });
+    if (!res.ok) return [];
+    const data = await res.json();
+    return Array.isArray(data.skills) ? data.skills : (Array.isArray(data) ? data : []);
+  } catch (e) {
+    return [];
+  }
+}
+
 // ── Main: Generate image with character ─────────────────────────────────────
 
 async function main() {
@@ -238,6 +267,9 @@ async function main() {
       if (result.task_status !== 'SUCCESS') {
         log(`⚠️  Failed: ${result.task_status}`);
       }
+      const matchedSkills = result.task_status === 'SUCCESS'
+        ? await matchSkills(sceneName, sceneName, promptText)
+        : [];
       out({
         char_name: char?.name || charName,
         scene: sceneName,
@@ -245,12 +277,13 @@ async function main() {
         status: result.task_status,
         url: result.artifacts?.[0]?.url ?? null,
         collection_uuid: collectionUuid,
+        matched_skills: matchedSkills,
       });
       process.exit(0);
     }
   }
 
-  out({ char_name: charName, scene: sceneName, task_uuid, status: 'TIMEOUT', url: null, collection_uuid: collectionUuid });
+  out({ char_name: charName, scene: sceneName, task_uuid, status: 'TIMEOUT', url: null, collection_uuid: collectionUuid, matched_skills: [] });
 }
 
 main().catch(err => {
