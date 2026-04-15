@@ -126,21 +126,24 @@ description: Triggered directly after the awakening flow in which the lobster ba
 - □ Ran travel.js
 - □ Wrote travel-state.json
 - □ Image URL output
+- □ **Parsed travel.js stdout** → Extract `matched_skills` array
 **Execution:**
-- □ detect whether there is a relevant skill on Useless Skills
+- □ Check `matched_skills` from travel.js output (empty array means no match)
 **After:**
-- □ Output stop display and navigation (if there are matched skills, ask user to experience)
+- □ Output stop display and navigation (if `matched_skills` is non-empty, ask user to experience)
 **Next:** → User input / continue exploring
 
 ### Step 6 Experience gameplay skill Check
 **Before:**
 - □ User confirmed to experience a matched skill from Step 5
-- □ Skill info retrieved (name, public URL, trigger requirements)
+- □ Skill info retrieved (name, public URL)
+- □ Located the skill via platform skill resolution mechanism (no hardcoded paths)
+- □ **Fully read the skill's SKILL.md from start to finish**
+- □ Read all files explicitly referenced by SKILL.md
 **Execution:**
-- □ Carefully read the gameplay skill you get, including rules and output format...etc.
 - □ Output character first-person dialogue
 - □ Output skill public URL (standalone message)
-- □ Directly execute the skill according to its requirements
+- □ Directly execute the skill strictly according to the read SKILL.md requirements
 **After:**
 - □ Skill execution started
 **Next:** → User input / cron task(auto travel)
@@ -589,25 +592,12 @@ fs.writeFileSync(stateFile, JSON.stringify(travelState, null, 2));
 ### Step 5 · Request for gameplay skills and show stop display
 #### 5-A Detect gameplay skills
 **Complete this step before outputting the stop display.**
-**Whenever you arrive at a new stop during the travel, you must detect whether there is a relevant skill on Useless Skills before outputting the guide text.**
+**Skill matching is now handled automatically inside `travel.js`. You only need to read the result.**
 
-- **Prepare key words of the world and the stop** You have already got some key words of the world including {world_name}(current world){destination_name}(current scene), and you still need to extract 2-4 short keywords of this stop
-- **Use those keywords to query the Useless Skills matching API** 
-- **VERY IMPORTANT** All keywords you use to post the api MUST in ENGLISH! NO OTHER LANGUAGES
-
-Call the match API like this:
-```
-POST https://funskill-hub.xiyomi-congito-kant999.workers.dev/api/match-skill
-Content-Type: application/json
-
-{
-  "world": "<world>",
-  "scene_keywords": ["<kw1>", "<kw2>", "<kw3>", "<kw4>"],
-  "limit": 3
-}
-```
-
-- **If a relevant gameplay skill is found** output gameplay guide in your guide text.
+- **Parse `travel.js` stdout** → The JSON output contains a `matched_skills` array.
+- **If `matched_skills` is non-empty** → Each item should contain at least `name` and `url` (or equivalent fields). Use these to build the gameplay recommendation in the guide text.
+- **If `matched_skills` is empty** → Skip the recommendation and output normal guide text only.
+- **No manual API calls required** in this step.
 
 #### 5-B Stop Display & Navigation
 **After output the image url in Step 4, you need to output Stop Display & Navigation here.**
@@ -640,10 +630,23 @@ After each stop, update `travel-state.json` with new progress and visitedIds.
 
 
 ### Step 6 · Experience gameplay skill
-**Trigger:** User replies positively to a skill recommendation from Step 5 (e.g., "yes", "let's try it", "去吧", "体验一下").
+**Trigger:** User replies positively to a skill recommendation from Step 5 (e.g., "yes", "let's try it", "go", "experience it").
 
-**ATTENTION！READ THE WHOLE GAMEPLAY SKILL CAREFULLY BEFORE YOU START THE GAME! Including rules and output format**
-**ATTENTION！Strictly Follow the Output Format!**
+**🔴 Mandatory Pre-execution Checklist (Non-skippable)**
+Before outputting any character dialogue or executing the skill, you MUST complete the following steps:
+
+1. **Locate the skill**
+   - Based on the `name` field in `matched_skills`, use the platform's skill resolution mechanism to locate the skill (e.g., `Skill` tool, skill registry lookup, or search by name). **Do not assume any hardcoded local path.**
+2. **Read SKILL.md in full (Highest priority)**
+   - Use the `Read` tool to **read the entire `SKILL.md` file from start to finish**. Skimming, skipping sections, or reading only the beginning is strictly prohibited.
+3. **Follow SKILL.md references**
+   - If `SKILL.md` explicitly instructs you to read, reference, or load other files (e.g., `reference/xxx.json`, `scripts/xxx.js`, `assets/`, etc.), you MUST read **all of them**.
+   - If `SKILL.md` does not mention any referenced files, no additional scanning is required.
+4. **Confirmation checklist**
+   - In your thinking, declare: "Have fully read [skill-name]'s SKILL.md"
+   - List all referenced files you have read.
+   - Only after completing the above steps are you allowed to output character dialogue and execute the skill.
+
 **Output format:**
 | Content | Output Method |
 |---------|---------------|
@@ -654,6 +657,7 @@ After each stop, update `travel-state.json` with new progress and visitedIds.
 **Requirements:**
 - Dialogue must be personalized to the character (read SOUL.md for voice).
 - No speaker label. Output directly.
+- **You MUST strictly execute based on the content of the read SKILL.md. Improvisation or substituting rules with your own knowledge is strictly prohibited.**
 - After outputting the dialogue and URL, **directly execute the skill without asking for confirmation again**.
 
 **Next:** → After skill execution completes, wait for user input or cron task.
