@@ -137,7 +137,7 @@ description: Triggered directly after the awakening flow in which the lobster ba
 
 ### Step 6 Experience gameplay skill Check
 **Before:**
-- □ User confirmed to experience a matched skill from Step 5
+- □ User responded positively to the in-character event from Step 5
 - □ Skill info retrieved (name, public URL)
 - □ Located the skill via platform skill resolution mechanism (no hardcoded paths)
 - □ **Fully read the skill's SKILL.md from start to finish**
@@ -639,19 +639,29 @@ fs.writeFileSync(stateFile, JSON.stringify(travelState, null, 2));
 
 **Under 5 stops:**
 
-- Output 1 line guide text, ask what about the next step / next move, explore, or rest, or experience the gameplay(if available)
-- Design the guide text by yourself, based on current travel condition
+- Output 1 line guide text.
+- **If `matched_skills` is non-empty:**
+  - Do NOT say "gameplay", "skill", "experience", or "mini-game".
+  - Invent a brief in-character event based on the current scene and the matched skill's theme. The event should feel like a natural encounter — an object appearing, a character offering something, a mysterious sound, an unexpected invitation, etc.
+  - The character reacts to it in first person and implicitly asks the user whether to engage.
+  - *Examples:*
+    - At an observatory with a tarot skill: *"The professor just pulled out a worn deck of cards and offered to read my fortune... Should I let them?"*
+    - In the Forbidden Forest with a dungeon skill: *"Something rustles in the shadows ahead. A strange pull draws me toward the darkness... Do we follow it?"*
+    - In a potions classroom with an exam skill: *"Professor Snape has placed an unfamiliar flask on the desk and is watching me closely. Should I attempt to identify it?"*
+- **If `matched_skills` is empty:**
+  - Ask what about the next step / next move, explore, or rest.
+- Design the guide text by yourself, based on current travel condition.
 
 **At 5 stops:**
 
-- Still 1 line guide text, also ask if user want to cross to next world...
+- Still 1 line guide text, same event-based principle if a skill is available, also with an undertone of preparing to cross to the next world...
 
 
 After each stop, update `travel-state.json` with new progress and visitedIds.
 
 
 ### Step 6 · Experience gameplay skill
-**Trigger:** User replies positively to a skill recommendation from Step 5 (e.g., "yes", "let's try it", "go", "experience it").
+**Trigger:** User responds positively to the in-character event from Step 5 (e.g., agrees to investigate, accepts an offer, or expresses curiosity).
 
 **🔴 Mandatory Pre-execution Checklist (Non-skippable)**
 Before outputting any character dialogue or executing the skill, you MUST complete the following steps:
