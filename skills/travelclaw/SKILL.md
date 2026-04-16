@@ -101,6 +101,7 @@ description: Triggered directly after the awakening flow in which the lobster ba
 **After:**
 - □ Design prompt by yourself.
 - □ build the image gen prompt of this stop.
+- □ Prepared gameplay skill search metadata: world_name, scene_name, tags (independent from the image prompt)
 - □ **WRITE travel-state.json** → Save pendingStopId immediately
 **Next:** → Step 4 (auto-trigger instantly)
 
@@ -109,9 +110,10 @@ description: Triggered directly after the awakening flow in which the lobster ba
 - □ **READ travel-state.json** → Check visitedStops, currentWorldStops
 - □ travel.js read (check the script for travelling)
 - □ Got the character and image gen prompt ready.
+- □ Got world_name, scene_name, and tags ready for gameplay skill matching.
 - □ Check which stop it is（5 stops in one world）.
 **Execution:**
-- □ Run travel.js once → Get imageUrl
+- □ Run travel.js once with `--world`, `--scene`, `--tags` flags → Get imageUrl and matched_skills
 **After:**
 - □ **WRITE travel-state.json** IMMEDIATELY:
   - Append stopId to visitedStops
@@ -566,12 +568,31 @@ Einstein, Ancient Egyptian mural art style, flat profile perspective. ref_img-uu
 - "🚶 {character_name} is travelling..."
 
 
+#### 3-D Prepare gameplay skill search metadata (Silent)
+**These three fields are used ONLY for matching gameplay skills and must be kept strictly separate from the image generation prompt.**
+
+1. **world_name**: The current world the character is traveling in (same as the generated world_name).
+2. **scene_name**: The specific location or place the character is visiting at this stop.
+3. **tags**: 2-4 short keywords describing the **core theme or activity** of this stop (e.g., `dungeon,combat,exploration` or `exam,magic,classroom`).
+   - **CRITICAL**: These tags must be chosen based on the **narrative of the stop**, NOT extracted from the image prompt.
+   - Tags should be concise. Prefer English for maximum API compatibility.
+
+---
+
 **⚠️ CHECK the basic logic of travel.js before you run the script, you need to think seriously about how to build prompt for the script.**
 
 ### Step 4 · Run travel.js, Travel to 1 Stop
 #### 4-A Use travel.js to generate image.
 **check travel.js in your scripts folder**
-- Send character name and prompt to travel.js and run the script once.
+Run the script with the following parameters:
+```bash
+node travel.js --world "<world_name>" --scene "<scene_name>" --tags "<tag1>,<tag2>,<tag3>" "<image_generation_prompt>" [collection_uuid] [pic_uuid]
+```
+- `--world`: Current world name (for gameplay skill matching).
+- `--scene`: Current stop scene name (for gameplay skill matching).
+- `--tags`: Comma-separated tags for gameplay skill matching (must be independent from the prompt).
+- The remaining positional arguments follow the original order: prompt, collection UUID, picture UUID.
+
 - When the task finished, output the image url directly to the user.
 
 **ATTENTION**Output image_url as a **separate message**，this is the only thing you need to output to the user in step 4-A.
