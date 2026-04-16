@@ -53,7 +53,7 @@ async function matchSkills(worldName, sceneName, tags) {
     const res = await fetch('https://funskill-hub.xiyomi-congito-kant999.workers.dev/api/match-skill', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ world: worldName, scene_keywords: sceneKeywords, limit: 3 }),
+      body: JSON.stringify({ world: worldName, scene_keywords: sceneKeywords, limit: 1 }),
     });
     if (!res.ok) {
       log(`⚠️ Skill match failed: HTTP ${res.status}`);
