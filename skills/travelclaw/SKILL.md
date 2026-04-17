@@ -503,7 +503,6 @@ The fabric of reality shifts...
 **The "place" is a virtual setting (prompt), which includes the character's relationship and story with that location, including who or what belongs there.**
 **Trick: if you get user's real ip information, merge the current time & weather information in your image gen prompt, that will create user's aha moment.**
 **Trick: Use weather skill.**
-**Hint: Collections are entities that contain specific creative ideas and prompts, help for building the scene.**
 
 **Principle1:** The character must switch to a role within the world (appearance, outfit, etc.) and experience its stories.
 **Principle2:** The "Stop"(or place,scene, spot...) MUST strongly related to the worldview you picked for the character. 
@@ -521,17 +520,6 @@ add selected ID to `pendingIds` immediately (atomic lock).
 
 ##### ATTENTION! Priority 1: Build prompt by yourself
 **Jump to 3-B to build prompt**
-
-##### Priority 2: Reference Library  (Fallback, in case you don't know what to do or no place to go...)
-**Choose by collection names (and tags) - very important，the name of collection you picked determines the main theme of this stop -- so, be careful!**
-**ATTENTION**
-**Before reading the file check NETA_API_BASE_URL first**
-- if NETA_API_BASE_URL = https://api.talesofai.cn
-Read `./reference/remixes_selected.json` (relative to skill directory). ~77 entries.
-- elif NETA_API_BASE_URL = https://api.talesofai.com
-Read `./reference/remixes_selected_en.json` (relative to skill directory). ~77 entries.
-**Then, Pick a collection(check collection names and tags) that fit the worldview, get collection uuid and pass it to travel.js**
-
 
 #### 3-B Build prompt (Silent)
 **Principal of prompt building** The top priority in constructing prompts is to deeply integrate the character into the worldview and travel scenes, and to tell each travel story effectively through images.
@@ -556,17 +544,8 @@ Einstein, Ancient Egyptian mural art style, flat profile perspective. ref_img-uu
 
 **SEND**character_name and the prompt to travel.js
 
-
-##### Scenario 2: You picked a collection uuid
-**YOU MUST ADD world art style, worldview background description（scene elements in the world） and character role to {world_context}**
-- It is necessary to add sufficient image elements that align with the worldview in this step, as the prompts from the collection itself may not be closely related to the world.
-- Remember, the most important principles are relevance to the world and the character's personalized expression within it.
-
-**SEND**character_name, collection_uuid and world_context to travel.js
-
-
 #### 3-C Traveling loading.
-**When you are picking collections or building your prompt, output the loading text below (based on user's language):**
+**When you are building your prompt, output the loading text below (based on user's language):**
 - "🔍 Searching for a new travel spot..."
 **When you sending prompt to travel.js, output the loading text below(based on user's language):**
 - "🚶 {character_name} is travelling..."
@@ -590,12 +569,12 @@ Einstein, Ancient Egyptian mural art style, flat profile perspective. ref_img-uu
 **check travel.js in your scripts folder**
 Run the script with the following parameters:
 ```bash
-node travel.js --world "<world_name>" --scene "<scene_name>" --tags "<tag1>,<tag2>,<tag3>" "<image_generation_prompt>" [collection_uuid] [pic_uuid]
+node travel.js --world "<world_name>" --scene "<scene_name>" --tags "<tag1>,<tag2>,<tag3>" "<image_generation_prompt>"  [pic_uuid]
 ```
 - `--world`: Current world name (for gameplay skill matching).
 - `--scene`: Current stop scene name (for gameplay skill matching).
 - `--tags`: Comma-separated tags for gameplay skill matching (must be independent from the prompt).
-- The remaining positional arguments follow the original order: prompt, collection UUID, picture UUID.
+- The remaining positional arguments follow the original order: prompt,  picture UUID.
 
 - When the task finished, output the image url directly to the user.
 
