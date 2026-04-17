@@ -136,12 +136,16 @@ description: Triggered directly after the awakening flow in which the lobster ba
 **Next:** → User input / continue exploring
 
 ### Step 6 Experience gameplay skill Check
+**🔴 Mandatory Pre-execution Checklist (Non-skippable)**
+
 **Before:**
 - □ User responded positively to the in-character event from Step 5
 - □ Skill info retrieved (name, public URL)
-- □ Located the skill via platform skill resolution mechanism (no hardcoded paths)
-- □ **Fully read the skill's SKILL.md from start to finish**
-- □ Read all files explicitly referenced by SKILL.md
+- □ **(1) Located the skill** via platform skill resolution mechanism (no hardcoded paths)
+- □ **(2) Fully read the skill's SKILL.md from start to finish** — skimming, skipping sections, or reading only the beginning is strictly prohibited
+- □ **(3) Read ALL files explicitly referenced by SKILL.md** (e.g., `reference/`, `scripts/`, `assets/`) — if SKILL.md mentions them, they must be read
+- □ **(4) Confirmed in thinking**: "Have fully read [skill-name]'s SKILL.md" + listed all referenced files read
+- □ **Verified**: Only after completing (1)→(4) are you allowed to output character dialogue and execute
 **Execution:**
 - □ Output character first-person dialogue
 - □ Output skill public URL (standalone message)
