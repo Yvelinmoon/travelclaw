@@ -17,6 +17,13 @@ Through interactive Q&A, transform OpenClaw into a specific character with autom
 
 ## 🎮 Usage Flow
 
+<div align="center">
+
+![Travelclaw Flow](https://oss.talesofai.cn/picture/555c73b5-832b-443b-9b2a-95e6b43c5651.webp)
+
+</div>
+
+**The Complete Loop:**
 ```
 Start Awakening → Q&A locks character → Auto-sync Discord → Enter Travel
     ↓
